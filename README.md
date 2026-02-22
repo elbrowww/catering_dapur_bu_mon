@@ -1,6 +1,6 @@
 # catering_dapur_bu_mon
 
-A new Flutter project.
+Application Catering Dapur Bu Mon
 
 ## Getting Started
 
