@@ -46,8 +46,8 @@ class Mulai extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Image.network(
-                    "https://placehold.co/293x293",
+                  child: Image.asset(
+                    "assets/icons/LOGO BU MON.png",
                     width: 293,
                     height: 293,
                     fit: BoxFit.cover,
