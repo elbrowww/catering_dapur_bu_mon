@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'page/mulai.dart';
+import 'page/login.dart';
+import 'page/daftar.dart';
 
 void main() {
   runApp(const MyApp());

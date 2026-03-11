@@ -1,20 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Mulai(),
-    );
-  }
-}
 
 class Mulai extends StatelessWidget {
   const Mulai({super.key});
@@ -78,7 +64,10 @@ class Mulai extends StatelessWidget {
                 right: 40,
                 child: GestureDetector(
                   onTap: () {
-                    print("Tombol ditekan");
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const Login()),
+                    );
                   },
                   child: Container(
                     height: 50,
