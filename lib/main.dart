@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/mulai.dart';
+import 'page/mulai.dart';
 
 void main() {
   runApp(const MyApp());
