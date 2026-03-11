@@ -29,11 +29,11 @@ class _LoginState extends State<Login> {
             width: 402,
             height: 874,
             clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment(0.45, 1.25),
                 end: Alignment(0.45, -0.64),
-                colors: [const Color(0xFFD05122), const Color(0xFFEE8B2E), const Color(0xFFFBA839)],
+                colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
               ),
             ),
             child: Stack(
@@ -59,7 +59,7 @@ class _LoginState extends State<Login> {
                   left: 111,
                   top: 70,
                   child: Image.asset(
-                    "assets/icons/LOGO BU MON.png",
+                    "assets/icons/icons.png",
                     width: 180,
                     height: 180,
                     fit: BoxFit.cover,
@@ -79,7 +79,7 @@ class _LoginState extends State<Login> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      shadows: [
+                      shadows: const [
                         BoxShadow(
                           color: Color(0x3F000000),
                           blurRadius: 4,
@@ -95,16 +95,16 @@ class _LoginState extends State<Login> {
                           child: Container(
                             height: 45.54,
                             decoration: ShapeDecoration(
-                              gradient: LinearGradient(
+                              gradient: const LinearGradient(
                                 begin: Alignment(0.45, 1.25),
                                 end: Alignment(0.45, -0.64),
-                                colors: [const Color(0xFFD05122), const Color(0xFFEE8B2E), const Color(0xFFFBA839)],
+                                colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(18),
                               ),
                             ),
-                            child: Center(
+                            child: const Center(
                               child: Text(
                                 'Masuk',
                                 style: TextStyle(
@@ -126,13 +126,13 @@ class _LoginState extends State<Login> {
                                 MaterialPageRoute(builder: (context) => const Daftar()),
                               );
                             },
-                            child: Center(
+                            child: const Center(
                               child: Opacity(
                                 opacity: 0.50,
                                 child: Text(
                                   'Daftar',
                                   style: TextStyle(
-                                    color: const Color(0xFFD9D9D9),
+                                    color: Color(0xFFD9D9D9),
                                     fontSize: 24,
                                     fontFamily: 'Alexandria',
                                     fontWeight: FontWeight.w400,
@@ -148,7 +148,7 @@ class _LoginState extends State<Login> {
                 ),
 
                 /// Label No Telp / Email
-                Positioned(
+                const Positioned(
                   left: 57,
                   top: 437,
                   child: Text(
@@ -174,7 +174,7 @@ class _LoginState extends State<Login> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      shadows: [
+                      shadows: const [
                         BoxShadow(
                           color: Color(0x3F000000),
                           blurRadius: 4,
@@ -187,7 +187,7 @@ class _LoginState extends State<Login> {
                       child: TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.black,
                           fontSize: 15,
                           fontFamily: 'Alexandria',
@@ -199,7 +199,7 @@ class _LoginState extends State<Login> {
                             fontSize: 15,
                             fontFamily: 'Alexandria',
                           ),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                           border: InputBorder.none,
                           isDense: true,
                         ),
@@ -209,7 +209,7 @@ class _LoginState extends State<Login> {
                 ),
 
                 /// Label Password
-                Positioned(
+                const Positioned(
                   left: 57,
                   top: 511,
                   child: Text(
@@ -235,7 +235,7 @@ class _LoginState extends State<Login> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      shadows: [
+                      shadows: const [
                         BoxShadow(
                           color: Color(0x3F000000),
                           blurRadius: 4,
@@ -248,7 +248,7 @@ class _LoginState extends State<Login> {
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       textAlignVertical: TextAlignVertical.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 15,
                         fontFamily: 'Alexandria',
@@ -260,7 +260,7 @@ class _LoginState extends State<Login> {
                           fontSize: 15,
                           fontFamily: 'Alexandria',
                         ),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                         border: InputBorder.none,
                         isDense: false,
                         suffixIcon: GestureDetector(
@@ -275,7 +275,7 @@ class _LoginState extends State<Login> {
                             size: 18,
                           ),
                         ),
-                        suffixIconConstraints: BoxConstraints(
+                        suffixIconConstraints: const BoxConstraints(
                           minWidth: 36,
                           minHeight: 48,
                         ),
@@ -296,15 +296,15 @@ class _LoginState extends State<Login> {
                         // TODO: Navigator ke halaman Reset Password
                         // Navigator.push(context, MaterialPageRoute(builder: (context) => const ResetPassword()));
                       },
-                      child: Text(
+                      child: const Text(
                         'Lupa Password ?',
                         style: TextStyle(
-                          color: const Color(0xFFD05122),
+                          color: Color(0xFFD05122),
                           fontSize: 12,
                           fontFamily: 'Alexandria',
                           fontWeight: FontWeight.w600,
                           decoration: TextDecoration.underline,
-                          decorationColor: const Color(0xFFD05122),
+                          decorationColor: Color(0xFFD05122),
                         ),
                       ),
                     ),
@@ -323,16 +323,16 @@ class _LoginState extends State<Login> {
                       width: 219.67,
                       height: 45.54,
                       decoration: ShapeDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           begin: Alignment(0.45, 1.25),
                           end: Alignment(0.45, -0.64),
-                          colors: [const Color(0xFFD05122), const Color(0xFFEE8B2E), const Color(0xFFFBA839)],
+                          colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
                       ),
-                      child: Center(
+                      child: const Center(
                         child: Text(
                           'Masuk Sekarang',
                           style: TextStyle(

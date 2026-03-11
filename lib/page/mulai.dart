@@ -33,7 +33,7 @@ class Mulai extends StatelessWidget {
                 right: 0,
                 child: Center(
                   child: Image.asset(
-                    "assets/icons/LOGO BU MON.png",
+                    "assets/icons/icons.png",
                     width: 293,
                     height: 293,
                     fit: BoxFit.cover,
