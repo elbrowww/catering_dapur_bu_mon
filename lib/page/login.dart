@@ -1,5 +1,7 @@
+import 'package:catering_dapur_bu_mon/main.dart';
 import 'package:flutter/material.dart';
 import 'daftar.dart';
+import 'beranda.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -317,8 +319,13 @@ class _LoginState extends State<Login> {
                   top: 667,
                   child: GestureDetector(
                     onTap: () {
-                      // TODO: logika login
-                    },
+                      Navigator.pushReplacement(
+                      context,
+                        MaterialPageRoute(
+                      builder: (context) => const MainScreen(),
+                          ),
+                        );
+                      },
                     child: Container(
                       width: 219.67,
                       height: 45.54,
