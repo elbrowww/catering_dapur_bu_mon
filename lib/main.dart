@@ -5,6 +5,7 @@ import 'page/beranda.dart';
 import 'page/menu.dart';
 import 'page/keranjang.dart';
 import 'page/aktivitas.dart';
+import 'page/profil.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,7 +43,7 @@ class _MainScreenState extends State<MainScreen> {
     MenuPage(),                           // index 1 - Menu
     KeranjangPage(),                      // index 2 - Keranjang
     AktivitasPage(),                      // index 3 - Aktivitas
-    _PlaceholderPage(title: 'Profil'),    // index 4 - Profil
+    ProfilPage(),                         // index 4 - Profil
   ];
 
   @override
