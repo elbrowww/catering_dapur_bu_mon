@@ -3,6 +3,7 @@ import 'page/mulai.dart';
 import 'page/navbar.dart';
 import 'page/beranda.dart';
 import 'page/menu.dart';
+import 'page/keranjang.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = const [
     BerandaPage(),                        // index 0 - Beranda
     MenuPage(),                           // index 1 - Menu
-    _PlaceholderPage(title: 'Keranjang'), // index 2 - Keranjang
+    KeranjangPage(),                      // index 2 - Keranjang
     _PlaceholderPage(title: 'Aktivitas'), // index 3 - Aktivitas
     _PlaceholderPage(title: 'Profil'),    // index 4 - Profil
   ];
