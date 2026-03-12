@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'detail-menu.dart';
 
 // ============================================================
 // MENU PAGE
@@ -7,8 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 // Navbar sudah dihandle oleh MainScreen di main.dart
 // ============================================================
 
-// Data model — pakai nama MenuItemData agar tidak bentrok
-// dengan class MenuItem bawaan Flutter
 class MenuItemData {
   final String nama;
   final String harga;
@@ -209,8 +208,7 @@ class _MenuPageState extends State<MenuPage> {
                     ),
                     child: TextField(
                       controller: _searchController,
-                      onChanged: (val) =>
-                          setState(() => _searchQuery = val),
+                      onChanged: (val) => setState(() => _searchQuery = val),
                       style: GoogleFonts.lora(
                         color: const Color(0xFF1A1818),
                         fontSize: 14,
@@ -218,8 +216,7 @@ class _MenuPageState extends State<MenuPage> {
                       decoration: InputDecoration(
                         hintText: 'Cari menu',
                         hintStyle: GoogleFonts.lora(
-                          color:
-                              const Color(0xFF1A1818).withOpacity(0.5),
+                          color: const Color(0xFF1A1818).withOpacity(0.5),
                           fontSize: 14,
                         ),
                         contentPadding:
@@ -245,8 +242,7 @@ class _MenuPageState extends State<MenuPage> {
                       stops: [0.18, 0.61, 0.85],
                     ),
                   ),
-                  child: const Icon(Icons.search,
-                      color: Colors.white, size: 22),
+                  child: const Icon(Icons.search, color: Colors.white, size: 22),
                 ),
               ],
             ),
@@ -261,8 +257,7 @@ class _MenuPageState extends State<MenuPage> {
                 children: _kategoriList.map((kat) {
                   final aktif = _kategoriAktif == kat;
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _kategoriAktif = kat),
+                    onTap: () => setState(() => _kategoriAktif = kat),
                     child: Container(
                       margin: const EdgeInsets.only(right: 10),
                       padding: const EdgeInsets.symmetric(
@@ -282,9 +277,8 @@ class _MenuPageState extends State<MenuPage> {
                         style: GoogleFonts.lora(
                           color: Colors.black,
                           fontSize: 12,
-                          fontWeight: aktif
-                              ? FontWeight.bold
-                              : FontWeight.w500,
+                          fontWeight:
+                              aktif ? FontWeight.bold : FontWeight.w500,
                         ),
                       ),
                     ),
@@ -303,14 +297,11 @@ class _MenuPageState extends State<MenuPage> {
                     child: Text(
                       'Menu tidak ditemukan',
                       style: GoogleFonts.alexandria(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
+                          color: Colors.grey, fontSize: 14),
                     ),
                   )
                 : GridView.builder(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
@@ -329,74 +320,83 @@ class _MenuPageState extends State<MenuPage> {
   }
 }
 
+// ── Menu Card — bisa di-tap ke halaman detail ──────────────────
 class _MenuCard extends StatelessWidget {
   final MenuItemData item;
   const _MenuCard({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x3F000000),
-            blurRadius: 6,
-            offset: Offset(0, 5),
-          ),
-        ],
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailMenuPage(item: item),
+        ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 118,
-            height: 118,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF79F36),
-              borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 6,
+              offset: Offset(0, 5),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.network(
-                item.imageUrl,
-                width: 106,
-                height: 106,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.fastfood,
-                  color: Colors.white,
-                  size: 48,
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 118,
+              height: 118,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF79F36),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.network(
+                  item.imageUrl,
+                  width: 106,
+                  height: 106,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.fastfood,
+                    color: Colors.white,
+                    size: 48,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              item.nama,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                item.nama,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.alexandria(
+                  color: const Color(0xFF1A1818),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.harga,
               style: GoogleFonts.alexandria(
-                color: const Color(0xFF1A1818),
-                fontSize: 12,
+                color: const Color(0xFF1A1818).withOpacity(0.7),
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            item.harga,
-            style: GoogleFonts.alexandria(
-              color: const Color(0xFF1A1818).withOpacity(0.7),
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

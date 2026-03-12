@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'keranjang-controller.dart';
 
 // ============================================================
 // KERANJANG PAGE
@@ -14,48 +15,22 @@ class KeranjangPage extends StatefulWidget {
 }
 
 class _KeranjangPageState extends State<KeranjangPage> {
-  // Data keranjang — bisa ditambah/kurangi secara dinamis
-  final List<Map<String, dynamic>> _items = [
-    {
-      'nama': 'Ayam Panggang',
-      'harga': 120000,
-      'jumlah': 1,
-      'imageUrl':
-          'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F523acacd6359d74640c5b9f05994ae4793dcf28fimage%206.png?alt=media&token=7416cb0c-e12e-49f2-bdb8-2d7feafeb80e',
-    },
-    {
-      'nama': 'Ayam Panggang',
-      'harga': 120000,
-      'jumlah': 1,
-      'imageUrl':
-          'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F523acacd6359d74640c5b9f05994ae4793dcf28fimage%206.png?alt=media&token=84fc86f9-2959-4e8b-8727-c612b02fd370',
-    },
-  ];
+  final _ctrl = KeranjangController.instance;
 
-  int get _total =>
-      _items.fold(0, (sum, item) => sum + (item['harga'] as int) * (item['jumlah'] as int));
-
-  String _formatRupiah(int value) {
-    final s = value.toString();
-    final result = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) result.write('.');
-      result.write(s[i]);
-    }
-    return 'Rp. ${result.toString()}';
+  @override
+  void initState() {
+    super.initState();
+    // Setiap ada perubahan di controller, rebuild UI ini
+    _ctrl.addListener(_onUpdate);
   }
 
-  void _tambah(int i) => setState(() => _items[i]['jumlah']++);
-
-  void _kurang(int i) {
-    setState(() {
-      if (_items[i]['jumlah'] > 1) {
-        _items[i]['jumlah']--;
-      } else {
-        _items.removeAt(i);
-      }
-    });
+  @override
+  void dispose() {
+    _ctrl.removeListener(_onUpdate);
+    super.dispose();
   }
+
+  void _onUpdate() => setState(() {});
 
   void _kosongkan() {
     showDialog(
@@ -74,7 +49,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
           ),
           TextButton(
             onPressed: () {
-              setState(() => _items.clear());
+              _ctrl.kosongkan();
               Navigator.pop(context);
             },
             child: Text('Ya, Kosongkan',
@@ -88,7 +63,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
   }
 
   void _checkout() {
-    if (_items.isEmpty) {
+    if (_ctrl.items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Keranjang masih kosong!',
@@ -100,7 +75,8 @@ class _KeranjangPageState extends State<KeranjangPage> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Checkout berhasil! Total: ${_formatRupiah(_total)}',
+        content: Text(
+            'Checkout berhasil! Total: ${_ctrl.formatRupiah(_ctrl.total)}',
             style: GoogleFonts.alexandria(color: Colors.white)),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 3),
@@ -110,6 +86,8 @@ class _KeranjangPageState extends State<KeranjangPage> {
 
   @override
   Widget build(BuildContext context) {
+    final items = _ctrl.items;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -122,7 +100,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
       child: SafeArea(
         child: Column(
           children: [
-            // ── Header "Keranjang" ─────────────────────────
+            // ── Header ─────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Container(
@@ -154,44 +132,45 @@ class _KeranjangPageState extends State<KeranjangPage> {
             ),
             const SizedBox(height: 16),
 
-            // ── Body putih ────────────────────────────────
+            // ── Body putih ────────────────────────────
             Expanded(
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(30)),
                 ),
-                child: _items.isEmpty
+                child: items.isEmpty
                     ? _buildKosong()
                     : Column(
                         children: [
-                          // List item keranjang
                           Expanded(
                             child: ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                              itemCount: _items.length,
+                              padding:
+                                  const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                              itemCount: items.length,
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: 12),
-                              itemBuilder: (_, i) =>
-                                  _KeranjangItem(
-                                nama: _items[i]['nama'],
-                                harga: _formatRupiah(_items[i]['harga']),
-                                jumlah: _items[i]['jumlah'],
-                                imageUrl: _items[i]['imageUrl'],
-                                onTambah: () => _tambah(i),
-                                onKurang: () => _kurang(i),
+                              itemBuilder: (_, i) => _KeranjangItem(
+                                nama: items[i]['nama'],
+                                harga: _ctrl
+                                    .formatRupiah(items[i]['harga']),
+                                jumlah: items[i]['jumlah'],
+                                imageUrl: items[i]['imageUrl'],
+                                onTambah: () => _ctrl.tambahSatu(i),
+                                onKurang: () => _ctrl.kurangSatu(i),
                               ),
                             ),
                           ),
 
-                          // ── Total + tombol ─────────────────
+                          // ── Total + tombol ──────────────
                           Padding(
                             padding:
                                 const EdgeInsets.fromLTRB(20, 12, 20, 16),
                             child: Column(
                               children: [
-                                // Garis total
+                                // Total
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(
@@ -214,10 +193,10 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                     children: [
                                       Text('Total',
                                           style: GoogleFonts.alexandria(
-                                            color: Colors.black,
-                                            fontSize: 16,
-                                          )),
-                                      Text(_formatRupiah(_total),
+                                              color: Colors.black,
+                                              fontSize: 16)),
+                                      Text(
+                                          _ctrl.formatRupiah(_ctrl.total),
                                           style: GoogleFonts.alexandria(
                                             color: const Color(0xFFDC6727),
                                             fontSize: 17,
@@ -226,7 +205,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 10),
 
                                 // Tombol Checkout
                                 GestureDetector(
@@ -235,23 +214,16 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                     width: double.infinity,
                                     height: 43,
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(18),
+                                      borderRadius:
+                                          BorderRadius.circular(18),
                                       gradient: const LinearGradient(
                                         colors: [
-                                          Color(0xFFD05122),
                                           Color(0xFFEE8B2E),
-                                          Color(0xFFFBA839),
+                                          Color(0xFFD05122),
+                                          Color(0xFFAC3715),
                                         ],
-                                        stops: [0.17, 0.47, 0.60],
+                                        stops: [0.17, 0.47, 0.79],
                                       ),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: Color(0x3F000000),
-                                          spreadRadius: 3,
-                                          offset: Offset(0, 2),
-                                          blurRadius: 4,
-                                        ),
-                                      ],
                                     ),
                                     child: Center(
                                       child: Text('Checkout',
@@ -263,16 +235,17 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 8),
 
-                                // Tombol Kosongkan Keranjang
+                                // Tombol Kosongkan
                                 GestureDetector(
                                   onTap: _kosongkan,
                                   child: Container(
                                     width: double.infinity,
                                     height: 43,
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(18),
+                                      borderRadius:
+                                          BorderRadius.circular(18),
                                       gradient: const LinearGradient(
                                         colors: [
                                           Color(0xFFAC3715),
@@ -314,8 +287,8 @@ class _KeranjangPageState extends State<KeranjangPage> {
               size: 72, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text('Keranjang masih kosong',
-              style: GoogleFonts.alexandria(
-                  color: Colors.grey, fontSize: 16)),
+              style:
+                  GoogleFonts.alexandria(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 8),
           Text('Yuk tambahkan menu favoritmu!',
               style: GoogleFonts.alexandria(
@@ -364,7 +337,7 @@ class _KeranjangItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Gambar menu
+          // Gambar
           Container(
             width: 65,
             height: 65,
@@ -392,9 +365,7 @@ class _KeranjangItem extends StatelessWidget {
               children: [
                 Text(nama,
                     style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 14,
-                    )),
+                        color: Colors.black, fontSize: 14)),
                 const SizedBox(height: 2),
                 Text(harga,
                     style: GoogleFonts.alexandria(
@@ -406,18 +377,11 @@ class _KeranjangItem extends StatelessWidget {
             ),
           ),
 
-          // Kontrol jumlah: kurang | angka | tambah
+          // Kontrol jumlah
           Row(
             children: [
-              // Tombol kurang (−)
-              _TombolJumlah(
-                imageUrl:
-                    'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMOKhEnss8buSiiHoow%2F1f515d82-8a3a-479c-81ec-e3b01d36f91f.png',
-                onTap: onKurang,
-                isReduce: true,
-              ),
+              _TombolJumlah(onTap: onKurang, isReduce: true),
               const SizedBox(width: 2),
-              // Angka jumlah
               Container(
                 width: 26,
                 height: 17,
@@ -435,13 +399,7 @@ class _KeranjangItem extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 2),
-              // Tombol tambah (+)
-              _TombolJumlah(
-                imageUrl:
-                    'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMOKhEnss8buSiiHoow%2F9e178141-7188-45f0-bcdd-c5c667a5fc47.png',
-                onTap: onTambah,
-                isReduce: false,
-              ),
+              _TombolJumlah(onTap: onTambah, isReduce: false),
             ],
           ),
         ],
@@ -452,15 +410,10 @@ class _KeranjangItem extends StatelessWidget {
 
 // ── Tombol + / − ───────────────────────────────────────────────
 class _TombolJumlah extends StatelessWidget {
-  final String imageUrl;
   final VoidCallback onTap;
   final bool isReduce;
 
-  const _TombolJumlah({
-    required this.imageUrl,
-    required this.onTap,
-    required this.isReduce,
-  });
+  const _TombolJumlah({required this.onTap, required this.isReduce});
 
   @override
   Widget build(BuildContext context) {
