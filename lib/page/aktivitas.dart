@@ -14,7 +14,6 @@ class AktivitasPage extends StatefulWidget {
 class _AktivitasPageState extends State<AktivitasPage> {
   String _filterAktif = 'Semua';
 
-  // Data riwayat pesanan
   final List<Map<String, dynamic>> _semuaAktivitas = [
     {
       'tanggal': '12 Maret 2026',
@@ -90,7 +89,6 @@ class _AktivitasPageState extends State<AktivitasPage> {
     },
   ];
 
-  // Bulan sekarang (Maret = 3)
   final int _bulanSekarang = 3;
   final int _bulanLalu = 2;
 
@@ -103,7 +101,6 @@ class _AktivitasPageState extends State<AktivitasPage> {
     return _semuaAktivitas;
   }
 
-  // Kelompokkan per tanggal
   Map<String, List<Map<String, dynamic>>> get _perTanggal {
     final Map<String, List<Map<String, dynamic>>> result = {};
     for (final item in _terfilter) {
@@ -115,6 +112,9 @@ class _AktivitasPageState extends State<AktivitasPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Ambil tinggi status bar
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -124,133 +124,128 @@ class _AktivitasPageState extends State<AktivitasPage> {
           stops: [0.21, 0.56, 0.83],
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // ── Header "Aktivitas" ─────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(23, 14, 23, 0),
-              child: Container(
-                width: double.infinity,
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(46),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF3F1F0C),
-                      Color(0xFFAC3715),
-                      Color(0xFFD05122),
-                      Color(0xFF66270F),
-                    ],
-                    stops: [0.13, 0.36, 0.61, 0.82],
-                  ),
+      child: Column( // ✅ Hapus SafeArea, ganti Column biasa
+        children: [
+          // ── Header "Aktivitas" ─────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(23, 14 + statusBarHeight, 23, 0), // ✅ Tambah statusBarHeight
+            child: Container(
+              width: double.infinity,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(46),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF3F1F0C),
+                    Color(0xFFAC3715),
+                    Color(0xFFD05122),
+                    Color(0xFF66270F),
+                  ],
+                  stops: [0.13, 0.36, 0.61, 0.82],
                 ),
-                child: Center(
-                  child: Text(
-                    'Aktivitas',
-                    style: GoogleFonts.alexandria(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                    ),
+              ),
+              child: Center(
+                child: Text(
+                  'Aktivitas',
+                  style: GoogleFonts.alexandria(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+          ),
+          const SizedBox(height: 14),
 
-            // ── Body putih ─────────────────────────────────
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                ),
-                child: Column(
-                  children: [
-                    // ── Filter chips ───────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(34, 18, 34, 12),
-                      child: Row(
-                        children: ['Semua', 'Bulan ini', 'Bulan Lalu']
-                            .map((f) => Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: _FilterChip(
-                                    label: f,
-                                    aktif: _filterAktif == f,
-                                    onTap: () =>
-                                        setState(() => _filterAktif = f),
-                                  ),
-                                ))
-                            .toList(),
-                      ),
+          // ── Body putih ─────────────────────────────────
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+              ),
+              child: Column(
+                children: [
+                  // ── Filter chips ───────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(34, 18, 34, 12),
+                    child: Row(
+                      children: ['Semua', 'Bulan ini', 'Bulan Lalu']
+                          .map((f) => Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: _FilterChip(
+                                  label: f,
+                                  aktif: _filterAktif == f,
+                                  onTap: () =>
+                                      setState(() => _filterAktif = f),
+                                ),
+                              ))
+                          .toList(),
                     ),
+                  ),
 
-                    // ── List aktivitas ─────────────────────
-                    Expanded(
-                      child: _terfilter.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                  // ── List aktivitas ─────────────────────
+                  Expanded(
+                    child: _terfilter.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.receipt_long_outlined,
+                                    size: 64, color: Colors.grey.shade300),
+                                const SizedBox(height: 12),
+                                Text('Belum ada aktivitas',
+                                    style: GoogleFonts.alexandria(
+                                        color: Colors.grey, fontSize: 15)),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(32, 0, 32, 16),
+                            itemCount: _perTanggal.keys.length,
+                            itemBuilder: (_, i) {
+                              final tgl = _perTanggal.keys.elementAt(i);
+                              final items = _perTanggal[tgl]!;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.receipt_long_outlined,
-                                      size: 64, color: Colors.grey.shade300),
-                                  const SizedBox(height: 12),
-                                  Text('Belum ada aktivitas',
-                                      style: GoogleFonts.alexandria(
-                                          color: Colors.grey, fontSize: 15)),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(32, 0, 32, 16),
-                              itemCount: _perTanggal.keys.length,
-                              itemBuilder: (_, i) {
-                                final tgl =
-                                    _perTanggal.keys.elementAt(i);
-                                final items = _perTanggal[tgl]!;
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Label tanggal
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 6, top: 4),
-                                      child: Opacity(
-                                        opacity: 0.5,
-                                        child: Text(
-                                          tgl,
-                                          style: GoogleFonts.alexandria(
-                                            color: const Color(0xFF1A1818),
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 6, top: 4),
+                                    child: Opacity(
+                                      opacity: 0.5,
+                                      child: Text(
+                                        tgl,
+                                        style: GoogleFonts.alexandria(
+                                          color: const Color(0xFF1A1818),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ),
-                                    // Item-item dalam tanggal ini
-                                    ...items.map((item) => Padding(
-                                          padding:
-                                              const EdgeInsets.only(bottom: 10),
-                                          child: _AktivitasItem(
-                                            nama: item['nama'],
-                                            harga: item['harga'],
-                                            pembayaran: item['pembayaran'],
-                                            imageUrl: item['imageUrl'],
-                                          ),
-                                        )),
-                                  ],
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
+                                  ),
+                                  ...items.map((item) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 10),
+                                        child: _AktivitasItem(
+                                          nama: item['nama'],
+                                          harga: item['harga'],
+                                          pembayaran: item['pembayaran'],
+                                          imageUrl: item['imageUrl'],
+                                        ),
+                                      )),
+                                ],
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -333,7 +328,6 @@ class _AktivitasItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Gambar menu
           Container(
             width: 65,
             height: 65,
@@ -353,7 +347,6 @@ class _AktivitasItem extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // Info pesanan
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -382,7 +375,6 @@ class _AktivitasItem extends StatelessWidget {
             ),
           ),
 
-          // Lihat Detail
           Align(
             alignment: Alignment.bottomRight,
             child: GestureDetector(

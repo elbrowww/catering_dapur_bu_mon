@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
+import 'editprofil.dart';
+import 'login.dart';
+import 'keamanan.dart'; // ← tambahan import
 
 class ProfilPage extends StatelessWidget {
   const ProfilPage({super.key});
@@ -86,46 +89,55 @@ class ProfilPage extends StatelessWidget {
             Positioned(
               left: 58,
               top: 710,
-              child: Container(
-                width: 287,
-                height: 47,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x3F000000),
-                      spreadRadius: 3,
-                      offset: Offset(0, 2),
-                      blurRadius: 4,
-                    ),
-                  ],
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFD05122),
-                      Color(0xFFEE8B2E),
-                      Color(0xFFFBA839),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const Login()),
+                    (route) => false,
+                  );
+                },
+                child: Container(
+                  width: 287,
+                  height: 47,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x3F000000),
+                        spreadRadius: 3,
+                        offset: Offset(0, 2),
+                        blurRadius: 4,
+                      ),
                     ],
-                    stops: [0.17, 0.47, 0.60],
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFD05122),
+                        Color(0xFFEE8B2E),
+                        Color(0xFFFBA839),
+                      ],
+                      stops: [0.17, 0.47, 0.60],
+                    ),
                   ),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned(
-                      left: 107,
-                      top: 11,
-                      child: Text(
-                        'Logout',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.getFont(
-                          'Alexandria',
-                          color: Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: 107,
+                        top: 11,
+                        child: Text(
+                          'Logout',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.getFont(
+                            'Alexandria',
+                            color: Colors.black,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -226,34 +238,45 @@ class ProfilPage extends StatelessWidget {
                 ),
               ),
             ),
-            // Panah Edit Profil
+
+            // ── Panah Edit Profil (klik → EditProfilPage) ─────────
             Positioned(
               left: 318,
               top: 424,
-              child: Transform.rotate(
-                angle: 180 * pi / 180,
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: const BoxDecoration(),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: 9,
-                        top: 7,
-                        child: Transform.rotate(
-                          angle: 180 * pi / 180,
-                          child: Image.network(
-                            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Fcd195282-f4ee-433e-af97-7beeb4fbc7f4.png',
-                            width: 9,
-                            height: 16,
-                            fit: BoxFit.contain,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EditProfilPage(),
+                    ),
+                  );
+                },
+                child: Transform.rotate(
+                  angle: 180 * pi / 180,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: const BoxDecoration(),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: 9,
+                          top: 7,
+                          child: Transform.rotate(
+                            angle: 180 * pi / 180,
+                            child: Image.network(
+                              'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Fcd195282-f4ee-433e-af97-7beeb4fbc7f4.png',
+                              width: 9,
+                              height: 16,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -355,34 +378,45 @@ class ProfilPage extends StatelessWidget {
                 ),
               ),
             ),
-            // Panah Keamanan
+
+            // ── Panah Keamanan (klik → KeamananPage) ─────────────
             Positioned(
               left: 319,
               top: 574,
-              child: Transform.rotate(
-                angle: 180 * pi / 180,
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: const BoxDecoration(),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: 9,
-                        top: 7,
-                        child: Transform.rotate(
-                          angle: 180 * pi / 180,
-                          child: Image.network(
-                            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F24228ec4-7dfe-4878-a30e-ae6b434c104c.png',
-                            width: 9,
-                            height: 16,
-                            fit: BoxFit.contain,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const KeamananPage(),
+                    ),
+                  );
+                },
+                child: Transform.rotate(
+                  angle: 180 * pi / 180,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: const BoxDecoration(),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: 9,
+                          top: 7,
+                          child: Transform.rotate(
+                            angle: 180 * pi / 180,
+                            child: Image.network(
+                              'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F24228ec4-7dfe-4878-a30e-ae6b434c104c.png',
+                              width: 9,
+                              height: 16,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
