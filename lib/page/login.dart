@@ -2,6 +2,7 @@ import 'package:catering_dapur_bu_mon/main.dart';
 import 'package:flutter/material.dart';
 import 'daftar.dart';
 import 'beranda.dart';
+import '../admin/loginadmin.dart'; // ← sudah disesuaikan path-nya
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -14,6 +15,7 @@ class _LoginState extends State<Login> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  int _logoTapCount = 0;
 
   @override
   void dispose() {
@@ -56,15 +58,31 @@ class _LoginState extends State<Login> {
                   ),
                 ),
 
-                /// Logo
+                /// Logo (klik 3x → Login Admin)
                 Positioned(
                   left: 111,
                   top: 70,
-                  child: Image.asset(
-                    "assets/icons/icons.png",
-                    width: 180,
-                    height: 180,
-                    fit: BoxFit.cover,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _logoTapCount++;
+                        if (_logoTapCount >= 3) {
+                          _logoTapCount = 0;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LoginAdmin(),
+                            ),
+                          );
+                        }
+                      });
+                    },
+                    child: Image.asset(
+                      "assets/icons/icons.png",
+                      width: 180,
+                      height: 180,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
 
@@ -87,7 +105,7 @@ class _LoginState extends State<Login> {
                           blurRadius: 4,
                           offset: Offset(0, 2),
                           spreadRadius: 0,
-                        )
+                        ),
                       ],
                     ),
                     child: Row(
@@ -182,7 +200,7 @@ class _LoginState extends State<Login> {
                           blurRadius: 4,
                           offset: Offset(0, 2),
                           spreadRadius: 3,
-                        )
+                        ),
                       ],
                     ),
                     child: Center(
@@ -243,7 +261,7 @@ class _LoginState extends State<Login> {
                           blurRadius: 4,
                           offset: Offset(0, 2),
                           spreadRadius: 3,
-                        )
+                        ),
                       ],
                     ),
                     child: TextField(
@@ -296,7 +314,6 @@ class _LoginState extends State<Login> {
                     child: GestureDetector(
                       onTap: () {
                         // TODO: Navigator ke halaman Reset Password
-                        // Navigator.push(context, MaterialPageRoute(builder: (context) => const ResetPassword()));
                       },
                       child: const Text(
                         'Lupa Password ?',
@@ -320,12 +337,12 @@ class _LoginState extends State<Login> {
                   child: GestureDetector(
                     onTap: () {
                       Navigator.pushReplacement(
-                      context,
+                        context,
                         MaterialPageRoute(
-                      builder: (context) => const MainScreen(),
-                          ),
-                        );
-                      },
+                          builder: (context) => const MainScreen(),
+                        ),
+                      );
+                    },
                     child: Container(
                       width: 219.67,
                       height: 45.54,

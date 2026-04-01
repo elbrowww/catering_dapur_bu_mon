@@ -6,6 +6,8 @@ import 'page/menu.dart';
 import 'page/keranjang.dart';
 import 'page/aktivitas.dart';
 import 'page/profil.dart';
+import 'admin/navbar_owner.dart'; // ← sudah diganti
+import 'admin/loginadmin.dart';   // ← sudah diganti
 
 void main() {
   runApp(const MyApp());
@@ -19,15 +21,12 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Catering Dapur Bu Mon',
-      home: Mulai(), // Halaman pertama (splash/onboarding)
+      home: Mulai(),
     );
   }
 }
 
-// ============================================================
-// MAIN SCREEN — satu-satunya tempat navbar dipanggil
-// Dipanggil setelah login berhasil dari login.dart
-// ============================================================
+// ── MainScreen untuk Customer ─────────────────────────────────
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -39,11 +38,11 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    BerandaPage(),                        // index 0 - Beranda
-    MenuPage(),                           // index 1 - Menu
-    KeranjangPage(),                      // index 2 - Keranjang
-    AktivitasPage(),                      // index 3 - Aktivitas
-    ProfilPage(),                         // index 4 - Profil
+    BerandaPage(),
+    MenuPage(),
+    KeranjangPage(),
+    AktivitasPage(),
+    ProfilPage(),
   ];
 
   @override
@@ -51,7 +50,6 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: _pages[_selectedIndex],
-      // Navbar dipanggil SEKALI, otomatis muncul di semua halaman
       bottomNavigationBar: CustomNavbar(
         selectedIndex: _selectedIndex,
         onItemTapped: (index) {
@@ -62,6 +60,40 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
+// ── MainOwner untuk Owner/Admin ───────────────────────────────
+class MainOwner extends StatefulWidget {
+  const MainOwner({super.key});
+
+  @override
+  State<MainOwner> createState() => _MainOwnerState();
+}
+
+class _MainOwnerState extends State<MainOwner> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = const [
+    _PlaceholderPage(title: 'Dashboard'),      // index 0
+    _PlaceholderPage(title: 'Pesanan'),        // index 1
+    _PlaceholderPage(title: 'Kelola Menu'),    // index 2
+    _PlaceholderPage(title: 'Data Customer'),  // index 3
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: NavbarOwner(
+        selectedIndex: _selectedIndex,
+        onItemTapped: (index) {
+          setState(() => _selectedIndex = index);
+        },
+      ),
+    );
+  }
+}
+
+// ── Placeholder sementara ─────────────────────────────────────
 class _PlaceholderPage extends StatelessWidget {
   final String title;
   const _PlaceholderPage({required this.title});
