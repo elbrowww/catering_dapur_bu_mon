@@ -14,10 +14,14 @@ class _KeamananPageState extends State<KeamananPage> {
 
   @override
   Widget build(BuildContext context) {
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Container(
-        width: 402,
-        height: 874,
+        width: screenWidth,
+        height: screenHeight,
         clipBehavior: Clip.hardEdge,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -34,10 +38,10 @@ class _KeamananPageState extends State<KeamananPage> {
               /// Panel putih bawah
               Positioned(
                 left: 0,
-                top: 314,
+                top: statusBarHeight + 251,
                 child: Container(
-                  width: 402,
-                  height: 608,
+                  width: screenWidth,
+                  height: screenHeight,
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -48,8 +52,8 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Ikon gembok
               Positioned(
-                left: 126,
-                top: 90,
+                left: screenWidth * 0.313,
+                top: statusBarHeight + 30,
                 child: Container(
                   width: 150,
                   height: 150,
@@ -95,8 +99,8 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Judul
               Positioned(
-                left: 69,
-                top: 254,
+                left: screenWidth * 0.172,
+                top: statusBarHeight + 194,
                 child: Text(
                   'Keamanan Dan Password',
                   style: GoogleFonts.getFont(
@@ -110,8 +114,8 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Label Password Saat Ini
               Positioned(
-                left: 56,
-                top: 360,
+                left: screenWidth * 0.139,
+                top: statusBarHeight + 300,
                 child: Text(
                   'Masukkan Password Saat ini',
                   style: GoogleFonts.getFont(
@@ -124,11 +128,11 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Input Password Saat Ini
               Positioned(
-                left: 57,
-                top: 386,
+                left: screenWidth * 0.142,
+                top: statusBarHeight + 326,
                 child: Container(
-                  width: 287,
-                  height: 35,
+                  width: screenWidth * 0.714,
+                  height: 48,
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -186,8 +190,8 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Label Password Baru
               Positioned(
-                left: 56,
-                top: 430,
+                left: screenWidth * 0.139,
+                top: statusBarHeight + 390,
                 child: Text(
                   'Masukkan Password Baru',
                   style: GoogleFonts.getFont(
@@ -200,11 +204,11 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Input Password Baru
               Positioned(
-                left: 57,
-                top: 456,
+                left: screenWidth * 0.142,
+                top: statusBarHeight + 416,
                 child: Container(
-                  width: 287,
-                  height: 35,
+                  width: screenWidth * 0.714,
+                  height: 48,
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -262,12 +266,10 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Lupa Password
               Positioned(
-                left: 260,
-                top: 500,
+                right: screenWidth * 0.139,
+                top: statusBarHeight + 475,
                 child: GestureDetector(
-                  onTap: () {
-                    // TODO: navigasi ke halaman lupa password
-                  },
+                  onTap: () {},
                   child: Text(
                     'Lupa Password ?',
                     style: GoogleFonts.getFont(
@@ -283,14 +285,12 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Tombol Konfirmasi
               Positioned(
-                left: 58,
-                top: 724,
+                left: screenWidth * 0.144,
+                top: statusBarHeight + 590,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                   child: Container(
-                    width: 287,
+                    width: screenWidth * 0.714,
                     height: 47,
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
@@ -328,14 +328,12 @@ class _KeamananPageState extends State<KeamananPage> {
 
               /// Tombol Batal
               Positioned(
-                left: 57,
-                top: 782,
+                left: screenWidth * 0.144,
+                top: statusBarHeight + 651,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                   child: Container(
-                    width: 287,
+                    width: screenWidth * 0.714,
                     height: 47,
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(

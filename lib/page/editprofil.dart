@@ -6,10 +6,14 @@ class EditProfilPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Container(
-        width: 402,
-        height: 874,
+        width: screenWidth,
+        height: screenHeight,
         clipBehavior: Clip.hardEdge,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -22,13 +26,14 @@ class EditProfilPage extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
+
               /// Panel putih bawah
               Positioned(
                 left: 0,
-                top: 300,
+                top: statusBarHeight + 237,
                 child: Container(
-                  width: 402,
-                  height: 622,
+                  width: screenWidth,
+                  height: screenHeight,
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -39,8 +44,8 @@ class EditProfilPage extends StatelessWidget {
 
               /// Foto profil
               Positioned(
-                left: 126,
-                top: 70,
+                left: screenWidth * 0.313,
+                top: statusBarHeight + 30,
                 child: Container(
                   width: 150,
                   height: 150,
@@ -68,8 +73,8 @@ class EditProfilPage extends StatelessWidget {
 
               /// Ikon edit foto
               Positioned(
-                left: 230,
-                top: 174,
+                left: screenWidth * 0.572,
+                top: statusBarHeight + 144,
                 child: Image.network(
                   'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Fc6f7abf4-bbd0-4265-9843-7332090b758c.png',
                   width: 50,
@@ -78,8 +83,8 @@ class EditProfilPage extends StatelessWidget {
                 ),
               ),
               Positioned(
-                left: 235,
-                top: 179,
+                left: screenWidth * 0.585,
+                top: statusBarHeight + 149,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(200),
                   clipBehavior: Clip.hardEdge,
@@ -94,27 +99,23 @@ class EditProfilPage extends StatelessWidget {
 
               /// Nama pengguna
               Positioned(
-                left: 74,
-                top: 235,
-                child: SizedBox(
-                  width: 217,
-                  height: 23,
-                  child: Text(
-                    'Christoper Colombus',
-                    style: GoogleFonts.getFont(
-                      'Alexandria',
-                      color: Colors.black,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                    ),
+                left: screenWidth * 0.184,
+                top: statusBarHeight + 195,
+                child: Text(
+                  'Christoper Colombus',
+                  style: GoogleFonts.getFont(
+                    'Alexandria',
+                    color: Colors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
 
               /// Ikon edit nama
               Positioned(
-                left: 301,
-                top: 236,
+                left: screenWidth * 0.749,
+                top: statusBarHeight + 196,
                 child: Image.network(
                   'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Fc8432e24-d6e6-4750-9ced-866efb2e7b4e.png',
                   width: 20,
@@ -125,8 +126,8 @@ class EditProfilPage extends StatelessWidget {
 
               /// Label No Telp
               Positioned(
-                left: 59,
-                top: 336,
+                left: screenWidth * 0.147,
+                top: statusBarHeight + 286,
                 child: Text(
                   'No Telp',
                   style: GoogleFonts.getFont(
@@ -139,10 +140,10 @@ class EditProfilPage extends StatelessWidget {
 
               /// Input No Telp
               Positioned(
-                left: 58,
-                top: 361,
+                left: screenWidth * 0.144,
+                top: statusBarHeight + 311,
                 child: Container(
-                  width: 287,
+                  width: screenWidth * 0.714,
                   height: 35,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -156,12 +157,10 @@ class EditProfilPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
+                  child: Row(
                     children: [
-                      Positioned(
-                        left: 11,
-                        top: 7,
+                      const SizedBox(width: 11),
+                      Expanded(
                         child: Opacity(
                           opacity: 0.5,
                           child: Text(
@@ -174,19 +173,16 @@ class EditProfilPage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Positioned(
-                        left: 259,
-                        top: 8,
-                        child: Opacity(
-                          opacity: 0.5,
-                          child: Image.network(
-                            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F6c33dc80-d572-463a-b3b5-c4d7829cf22e.png',
-                            width: 15,
-                            height: 15,
-                            fit: BoxFit.contain,
-                          ),
+                      Opacity(
+                        opacity: 0.5,
+                        child: Image.network(
+                          'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F6c33dc80-d572-463a-b3b5-c4d7829cf22e.png',
+                          width: 15,
+                          height: 15,
+                          fit: BoxFit.contain,
                         ),
                       ),
+                      const SizedBox(width: 8),
                     ],
                   ),
                 ),
@@ -194,8 +190,8 @@ class EditProfilPage extends StatelessWidget {
 
               /// Label Email
               Positioned(
-                left: 59,
-                top: 424,
+                left: screenWidth * 0.147,
+                top: statusBarHeight + 374,
                 child: Text(
                   'Email',
                   style: GoogleFonts.getFont(
@@ -208,10 +204,10 @@ class EditProfilPage extends StatelessWidget {
 
               /// Input Email
               Positioned(
-                left: 58,
-                top: 449,
+                left: screenWidth * 0.144,
+                top: statusBarHeight + 399,
                 child: Container(
-                  width: 287,
+                  width: screenWidth * 0.714,
                   height: 35,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -225,12 +221,10 @@ class EditProfilPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
+                  child: Row(
                     children: [
-                      Positioned(
-                        left: 11,
-                        top: 6,
+                      const SizedBox(width: 11),
+                      Expanded(
                         child: Opacity(
                           opacity: 0.5,
                           child: Text(
@@ -243,19 +237,16 @@ class EditProfilPage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Positioned(
-                        left: 259,
-                        top: 7,
-                        child: Opacity(
-                          opacity: 0.5,
-                          child: Image.network(
-                            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F86cb95fe-5de0-4a4e-a4cc-402c92289760.png',
-                            width: 15,
-                            height: 15,
-                            fit: BoxFit.contain,
-                          ),
+                      Opacity(
+                        opacity: 0.5,
+                        child: Image.network(
+                          'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F86cb95fe-5de0-4a4e-a4cc-402c92289760.png',
+                          width: 15,
+                          height: 15,
+                          fit: BoxFit.contain,
                         ),
                       ),
+                      const SizedBox(width: 8),
                     ],
                   ),
                 ),
@@ -263,8 +254,8 @@ class EditProfilPage extends StatelessWidget {
 
               /// Label Alamat
               Positioned(
-                left: 59,
-                top: 518,
+                left: screenWidth * 0.147,
+                top: statusBarHeight + 468,
                 child: Text(
                   'Alamat',
                   style: GoogleFonts.getFont(
@@ -277,10 +268,10 @@ class EditProfilPage extends StatelessWidget {
 
               /// Input Alamat
               Positioned(
-                left: 58,
-                top: 543,
+                left: screenWidth * 0.144,
+                top: statusBarHeight + 493,
                 child: Container(
-                  width: 287,
+                  width: screenWidth * 0.714,
                   height: 90,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -313,7 +304,7 @@ class EditProfilPage extends StatelessWidget {
                         ),
                       ),
                       Positioned(
-                        left: 259,
+                        right: 8,
                         top: 8,
                         child: Opacity(
                           opacity: 0.5,
@@ -332,14 +323,12 @@ class EditProfilPage extends StatelessWidget {
 
               /// Tombol Konfirmasi
               Positioned(
-                left: 58,
-                top: 718,
+                left: screenWidth * 0.144,
+                top: statusBarHeight + 618,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                   child: Container(
-                    width: 287,
+                    width: screenWidth * 0.714,
                     height: 47,
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
@@ -377,14 +366,12 @@ class EditProfilPage extends StatelessWidget {
 
               /// Tombol Batal
               Positioned(
-                left: 58,
-                top: 779,
+                left: screenWidth * 0.144,
+                top: statusBarHeight + 679,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                   child: Container(
-                    width: 287,
+                    width: screenWidth * 0.714,
                     height: 47,
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(

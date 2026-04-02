@@ -3,16 +3,20 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
 import 'editprofil.dart';
 import 'login.dart';
-import 'keamanan.dart'; // ← tambahan import
+import 'keamanan.dart';
 
 class ProfilPage extends StatelessWidget {
   const ProfilPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
     return Container(
-      width: 402,
-      height: 874,
+      width: screenWidth,
+      height: screenHeight,
       clipBehavior: Clip.hardEdge,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -27,8 +31,8 @@ class ProfilPage extends StatelessWidget {
           children: [
             // ── Foto profil ──────────────────────────────────────
             Positioned(
-              left: 144,
-              top: 133,
+              left: screenWidth * 0.358,
+              top: statusBarHeight + 70,
               child: Container(
                 width: 114,
                 height: 114,
@@ -56,8 +60,8 @@ class ProfilPage extends StatelessWidget {
 
             // ── Nama pengguna ─────────────────────────────────────
             Positioned(
-              left: 98,
-              top: 251,
+              left: screenWidth * 0.243,
+              top: statusBarHeight + 188,
               child: Text(
                 'Christoper Colombus',
                 style: GoogleFonts.getFont(
@@ -73,10 +77,10 @@ class ProfilPage extends StatelessWidget {
             // ── Panel putih bawah ─────────────────────────────────
             Positioned(
               left: 0,
-              top: 303,
+              top: statusBarHeight + 240,
               child: Container(
-                width: 402,
-                height: 622,
+                width: screenWidth,
+                height: screenHeight,
                 clipBehavior: Clip.hardEdge,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -87,8 +91,8 @@ class ProfilPage extends StatelessWidget {
 
             // ── Tombol Logout ─────────────────────────────────────
             Positioned(
-              left: 58,
-              top: 710,
+              left: screenWidth * 0.144,
+              top: statusBarHeight + 650,
               child: GestureDetector(
                 onTap: () {
                   Navigator.pushAndRemoveUntil(
@@ -98,7 +102,7 @@ class ProfilPage extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  width: 287,
+                  width: screenWidth * 0.714,
                   height: 47,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
@@ -119,24 +123,17 @@ class ProfilPage extends StatelessWidget {
                       stops: [0.17, 0.47, 0.60],
                     ),
                   ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: 107,
-                        top: 11,
-                        child: Text(
-                          'Logout',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.getFont(
-                            'Alexandria',
-                            color: Colors.black,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                  child: Center(
+                    child: Text(
+                      'Logout',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.getFont(
+                        'Alexandria',
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -144,28 +141,24 @@ class ProfilPage extends StatelessWidget {
 
             // ── Label "Akun Saya" ─────────────────────────────────
             Positioned(
-              left: 44,
-              top: 346,
-              child: SizedBox(
-                width: 122,
-                height: 28,
-                child: Text(
-                  'Akun Saya',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
-                    color: Colors.black,
-                    fontSize: 20,
-                  ),
+              left: screenWidth * 0.109,
+              top: statusBarHeight + 283,
+              child: Text(
+                'Akun Saya',
+                style: GoogleFonts.getFont(
+                  'Alexandria',
+                  color: Colors.black,
+                  fontSize: 20,
                 ),
               ),
             ),
 
             // ── Card Edit Profil ──────────────────────────────────
             Positioned(
-              left: 45,
-              top: 390,
+              left: screenWidth * 0.112,
+              top: statusBarHeight + 327,
               child: Container(
-                width: 313,
+                width: screenWidth * 0.779,
                 height: 104,
                 clipBehavior: Clip.hardEdge,
                 decoration: BoxDecoration(
@@ -183,8 +176,8 @@ class ProfilPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 63,
-              top: 407,
+              left: screenWidth * 0.157,
+              top: statusBarHeight + 344,
               child: Container(
                 width: 70,
                 height: 70,
@@ -196,8 +189,8 @@ class ProfilPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 73,
-              top: 417,
+              left: screenWidth * 0.182,
+              top: statusBarHeight + 354,
               child: Image.network(
                 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2F316b1609f20a8554436bf178b307cada634003f6user%201.png?alt=media&token=0dd54a77-ed31-408c-9241-66cd7452900f',
                 width: 50,
@@ -206,43 +199,35 @@ class ProfilPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 146,
-              top: 413,
-              child: SizedBox(
-                width: 164,
-                height: 57,
-                child: Text(
-                  'Edit Profil',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+              left: screenWidth * 0.363,
+              top: statusBarHeight + 350,
+              child: Text(
+                'Edit Profil',
+                style: GoogleFonts.getFont(
+                  'Alexandria',
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             Positioned(
-              left: 146,
-              top: 438,
-              child: SizedBox(
-                width: 188,
-                height: 57,
-                child: Text(
-                  'Ubah nama, alamat, foto, dll',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
-                    color: Colors.black,
-                    fontSize: 15,
-                  ),
+              left: screenWidth * 0.363,
+              top: statusBarHeight + 375,
+              child: Text(
+                'Ubah nama, alamat, foto, dll',
+                style: GoogleFonts.getFont(
+                  'Alexandria',
+                  color: Colors.black,
+                  fontSize: 15,
                 ),
               ),
             ),
 
-            // ── Panah Edit Profil (klik → EditProfilPage) ─────────
+            // ── Panah Edit Profil ─────────────────────────────────
             Positioned(
-              left: 318,
-              top: 424,
+              left: screenWidth * 0.791,
+              top: statusBarHeight + 361,
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -284,10 +269,10 @@ class ProfilPage extends StatelessWidget {
 
             // ── Card Keamanan & Password ──────────────────────────
             Positioned(
-              left: 45,
-              top: 537,
+              left: screenWidth * 0.112,
+              top: statusBarHeight + 474,
               child: Container(
-                width: 313,
+                width: screenWidth * 0.779,
                 height: 104,
                 clipBehavior: Clip.hardEdge,
                 decoration: BoxDecoration(
@@ -305,8 +290,8 @@ class ProfilPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 60,
-              top: 556,
+              left: screenWidth * 0.149,
+              top: statusBarHeight + 493,
               child: Container(
                 width: 70,
                 height: 70,
@@ -318,8 +303,8 @@ class ProfilPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 59,
-              top: 551,
+              left: screenWidth * 0.147,
+              top: statusBarHeight + 488,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(46),
                 clipBehavior: Clip.hardEdge,
@@ -346,43 +331,35 @@ class ProfilPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 146,
-              top: 553,
-              child: SizedBox(
-                width: 164,
-                height: 32,
-                child: Text(
-                  'Keamanan dan Password',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+              left: screenWidth * 0.363,
+              top: statusBarHeight + 490,
+              child: Text(
+                'Keamanan dan Password',
+                style: GoogleFonts.getFont(
+                  'Alexandria',
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             Positioned(
-              left: 146,
-              top: 605,
-              child: SizedBox(
-                width: 188,
-                height: 32,
-                child: Text(
-                  'Ubah Password',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
-                    color: Colors.black,
-                    fontSize: 15,
-                  ),
+              left: screenWidth * 0.363,
+              top: statusBarHeight + 542,
+              child: Text(
+                'Ubah Password',
+                style: GoogleFonts.getFont(
+                  'Alexandria',
+                  color: Colors.black,
+                  fontSize: 15,
                 ),
               ),
             ),
 
-            // ── Panah Keamanan (klik → KeamananPage) ─────────────
+            // ── Panah Keamanan ────────────────────────────────────
             Positioned(
-              left: 319,
-              top: 574,
+              left: screenWidth * 0.794,
+              top: statusBarHeight + 511,
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -424,10 +401,10 @@ class ProfilPage extends StatelessWidget {
 
             // ── Header "Profil" ───────────────────────────────────
             Positioned(
-              left: 24,
-              top: 62,
+              left: screenWidth * 0.060,
+              top: statusBarHeight + 14,
               child: Container(
-                width: 355,
+                width: screenWidth * 0.883,
                 height: 50,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(46),
@@ -441,24 +418,17 @@ class ProfilPage extends StatelessWidget {
                     stops: [0.13, 0.36, 0.61, 0.82],
                   ),
                 ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned(
-                      left: 144,
-                      top: 10,
-                      child: Text(
-                        'Profil',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.getFont(
-                          'Alexandria',
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                child: Center(
+                  child: Text(
+                    'Profil',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.getFont(
+                      'Alexandria',
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

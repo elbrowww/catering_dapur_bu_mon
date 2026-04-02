@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:catering_dapur_bu_mon/main.dart'; // ← tambahan import
+import 'package:catering_dapur_bu_mon/main.dart';
 
 class LoginAdmin extends StatefulWidget {
   const LoginAdmin({super.key});
@@ -23,11 +23,16 @@ class _LoginAdminState extends State<LoginAdmin> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      body: SingleChildScrollView(
+      body: SizedBox(
+        width: screenWidth,
+        height: screenHeight,
         child: Container(
-          width: 402,
-          height: 874,
+          width: screenWidth,
+          height: screenHeight,
           clipBehavior: Clip.hardEdge,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -41,10 +46,10 @@ class _LoginAdminState extends State<LoginAdmin> {
               /// Background putih bawah
               Positioned(
                 left: 0,
-                top: 325,
+                top: screenHeight * 0.372,
                 child: Container(
-                  width: 402,
-                  height: 595,
+                  width: screenWidth,
+                  height: screenHeight,
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -55,22 +60,22 @@ class _LoginAdminState extends State<LoginAdmin> {
 
               /// Logo
               Positioned(
-                left: 111,
-                top: 70,
+                left: screenWidth * 0.276,
+                top: screenHeight * 0.080,
                 child: Image.asset(
                   "assets/icons/icons.png",
-                  width: 180,
-                  height: 180,
+                  width: screenWidth * 0.448,
+                  height: screenWidth * 0.448,
                   fit: BoxFit.cover,
                 ),
               ),
 
               /// Tombol Masuk sebagai Admin
               Positioned(
-                left: 26,
-                top: 358,
+                left: screenWidth * 0.065,
+                top: screenHeight * 0.410,
                 child: Container(
-                  width: 350,
+                  width: screenWidth * 0.871,
                   height: 46,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
@@ -86,7 +91,6 @@ class _LoginAdminState extends State<LoginAdmin> {
                   child: Center(
                     child: Text(
                       'Masuk sebagai Admin',
-                      textAlign: TextAlign.center,
                       style: GoogleFonts.getFont(
                         'Alexandria',
                         color: Colors.white,
@@ -99,8 +103,8 @@ class _LoginAdminState extends State<LoginAdmin> {
 
               /// Label No Telp / Email
               Positioned(
-                left: 56,
-                top: 430,
+                left: screenWidth * 0.139,
+                top: screenHeight * 0.499,
                 child: Text(
                   'Masukkan No Telp / Email',
                   style: GoogleFonts.getFont(
@@ -113,10 +117,10 @@ class _LoginAdminState extends State<LoginAdmin> {
 
               /// Input No Telp / Email
               Positioned(
-                left: 56,
-                top: 455,
+                left: screenWidth * 0.139,
+                top: screenHeight * 0.521,
                 child: Container(
-                  width: 287,
+                  width: screenWidth * 0.714,
                   height: 48,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -145,10 +149,7 @@ class _LoginAdminState extends State<LoginAdmin> {
                         fontSize: 15,
                         fontFamily: 'Alexandria',
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: InputBorder.none,
                     ),
                   ),
@@ -157,8 +158,8 @@ class _LoginAdminState extends State<LoginAdmin> {
 
               /// Label Password
               Positioned(
-                left: 56,
-                top: 518,
+                left: screenWidth * 0.139,
+                top: screenHeight * 0.594,
                 child: Text(
                   'Masukkan Password',
                   style: GoogleFonts.getFont(
@@ -171,10 +172,10 @@ class _LoginAdminState extends State<LoginAdmin> {
 
               /// Input Password
               Positioned(
-                left: 56,
-                top: 543,
+                left: screenWidth * 0.139,
+                top: screenHeight * 0.616,
                 child: Container(
-                  width: 287,
+                  width: screenWidth * 0.714,
                   height: 48,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -204,49 +205,35 @@ class _LoginAdminState extends State<LoginAdmin> {
                         fontSize: 15,
                         fontFamily: 'Alexandria',
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: InputBorder.none,
                       suffixIcon: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                        onTap: () => setState(() => _obscurePassword = !_obscurePassword),
                         child: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
                           color: Colors.black26,
                           size: 20,
                         ),
                       ),
-                      suffixIconConstraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 48,
-                      ),
+                      suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 48),
                     ),
                   ),
                 ),
               ),
 
-              /// Tombol Masuk Sekarang ← NAVIGASI KE MainOwner
+              /// Tombol Masuk Sekarang
               Positioned(
-                left: 91,
-                top: 630,
+                left: screenWidth * 0.226,
+                top: screenHeight * 0.722,
                 child: GestureDetector(
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const MainOwner(), // ← tambahan
-                      ),
+                      MaterialPageRoute(builder: (_) => const MainOwner()),
                     );
                   },
                   child: Container(
-                    width: 220,
+                    width: screenWidth * 0.547,
                     height: 48,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
@@ -286,15 +273,11 @@ class _LoginAdminState extends State<LoginAdmin> {
               Positioned(
                 left: 0,
                 right: 0,
-                top: 700,
+                top: screenHeight * 0.802,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 100,
-                      height: 1,
-                      color: Colors.black26,
-                    ),
+                    Container(width: 100, height: 1, color: Colors.black26),
                     const SizedBox(width: 10),
                     Text(
                       'atau lanjut dengan',
@@ -305,21 +288,17 @@ class _LoginAdminState extends State<LoginAdmin> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Container(
-                      width: 100,
-                      height: 1,
-                      color: Colors.black26,
-                    ),
+                    Container(width: 100, height: 1, color: Colors.black26),
                   ],
                 ),
               ),
 
               /// Tombol WhatsApp
               Positioned(
-                left: 65,
-                top: 730,
+                left: screenWidth * 0.162,
+                top: screenHeight * 0.836,
                 child: Container(
-                  width: 124,
+                  width: screenWidth * 0.309,
                   height: 42,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF8EF),
@@ -358,10 +337,10 @@ class _LoginAdminState extends State<LoginAdmin> {
 
               /// Tombol Google
               Positioned(
-                left: 212,
-                top: 730,
+                right: screenWidth * 0.162,
+                top: screenHeight * 0.836,
                 child: Container(
-                  width: 124,
+                  width: screenWidth * 0.309,
                   height: 42,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF8EF),
@@ -397,7 +376,6 @@ class _LoginAdminState extends State<LoginAdmin> {
                   ),
                 ),
               ),
-
             ],
           ),
         ),
