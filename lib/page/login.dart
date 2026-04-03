@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'daftar.dart';
 import 'beranda.dart';
 import '../admin/loginadmin.dart';
+import 'lupa_password.dart'; // ← tambah import ini
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -133,7 +134,7 @@ class _LoginState extends State<Login> {
                           child: Center(
                             child: Text(
                               'Masuk',
-                              style: GoogleFonts.alexandria( // ✅
+                              style: GoogleFonts.alexandria(
                                 color: Colors.white,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w400,
@@ -156,7 +157,7 @@ class _LoginState extends State<Login> {
                               opacity: 0.50,
                               child: Text(
                                 'Daftar',
-                                style: GoogleFonts.alexandria( // ✅
+                                style: GoogleFonts.alexandria(
                                   color: const Color(0xFFD9D9D9),
                                   fontSize: 24,
                                   fontWeight: FontWeight.w400,
@@ -177,7 +178,7 @@ class _LoginState extends State<Login> {
                 top: screenHeight * 0.500,
                 child: Text(
                   'Masukkan No Telp / Email',
-                  style: GoogleFonts.alexandria( // ✅
+                  style: GoogleFonts.alexandria(
                     color: Colors.black,
                     fontSize: 14,
                   ),
@@ -208,13 +209,13 @@ class _LoginState extends State<Login> {
                   child: TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: GoogleFonts.alexandria( // ✅
+                    style: GoogleFonts.alexandria(
                       color: Colors.black,
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
                       hintText: 'No Telp / Email',
-                      hintStyle: GoogleFonts.alexandria( // ✅
+                      hintStyle: GoogleFonts.alexandria(
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
                       ),
@@ -231,7 +232,7 @@ class _LoginState extends State<Login> {
                 top: screenHeight * 0.585,
                 child: Text(
                   'Masukkan Password',
-                  style: GoogleFonts.alexandria( // ✅
+                  style: GoogleFonts.alexandria(
                     color: Colors.black,
                     fontSize: 14,
                   ),
@@ -263,13 +264,13 @@ class _LoginState extends State<Login> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textAlignVertical: TextAlignVertical.center,
-                    style: GoogleFonts.alexandria( // ✅
+                    style: GoogleFonts.alexandria(
                       color: Colors.black,
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: GoogleFonts.alexandria( // ✅
+                      hintStyle: GoogleFonts.alexandria(
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
                       ),
@@ -296,15 +297,22 @@ class _LoginState extends State<Login> {
                 ),
               ),
 
-              /// Lupa Password
+              /// Lupa Password ← DIPERBAIKI: onTap sekarang navigasi ke LupaPasswordPage
               Positioned(
                 right: screenWidth * 0.142,
                 top: screenHeight * 0.673,
                 child: GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LupaPasswordPage(),
+                      ),
+                    );
+                  },
                   child: Text(
                     'Lupa Password ?',
-                    style: GoogleFonts.alexandria( // ✅
+                    style: GoogleFonts.alexandria(
                       color: const Color(0xFFD05122),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -344,7 +352,7 @@ class _LoginState extends State<Login> {
                     child: Center(
                       child: Text(
                         'Masuk Sekarang',
-                        style: GoogleFonts.alexandria( // ✅
+                        style: GoogleFonts.alexandria(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
