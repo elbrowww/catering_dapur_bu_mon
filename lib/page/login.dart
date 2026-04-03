@@ -1,5 +1,6 @@
 import 'package:catering_dapur_bu_mon/main.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'daftar.dart';
 import 'beranda.dart';
 import '../admin/loginadmin.dart';
@@ -129,13 +130,12 @@ class _LoginState extends State<Login> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
                               'Masuk',
-                              style: TextStyle(
+                              style: GoogleFonts.alexandria( // ✅
                                 color: Colors.white,
                                 fontSize: 24,
-                                fontFamily: 'Alexandria',
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -151,15 +151,14 @@ class _LoginState extends State<Login> {
                               MaterialPageRoute(builder: (context) => const Daftar()),
                             );
                           },
-                          child: const Center(
+                          child: Center(
                             child: Opacity(
                               opacity: 0.50,
                               child: Text(
                                 'Daftar',
-                                style: TextStyle(
-                                  color: Color(0xFFD9D9D9),
+                                style: GoogleFonts.alexandria( // ✅
+                                  color: const Color(0xFFD9D9D9),
                                   fontSize: 24,
-                                  fontFamily: 'Alexandria',
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
@@ -176,12 +175,11 @@ class _LoginState extends State<Login> {
               Positioned(
                 left: screenWidth * 0.142,
                 top: screenHeight * 0.500,
-                child: const Text(
+                child: Text(
                   'Masukkan No Telp / Email',
-                  style: TextStyle(
+                  style: GoogleFonts.alexandria( // ✅
                     color: Colors.black,
                     fontSize: 14,
-                    fontFamily: 'Alexandria',
                   ),
                 ),
               ),
@@ -210,17 +208,15 @@ class _LoginState extends State<Login> {
                   child: TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(
+                    style: GoogleFonts.alexandria( // ✅
                       color: Colors.black,
                       fontSize: 15,
-                      fontFamily: 'Alexandria',
                     ),
                     decoration: InputDecoration(
                       hintText: 'No Telp / Email',
-                      hintStyle: TextStyle(
+                      hintStyle: GoogleFonts.alexandria( // ✅
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
-                        fontFamily: 'Alexandria',
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       border: InputBorder.none,
@@ -233,12 +229,11 @@ class _LoginState extends State<Login> {
               Positioned(
                 left: screenWidth * 0.142,
                 top: screenHeight * 0.585,
-                child: const Text(
+                child: Text(
                   'Masukkan Password',
-                  style: TextStyle(
+                  style: GoogleFonts.alexandria( // ✅
                     color: Colors.black,
                     fontSize: 14,
-                    fontFamily: 'Alexandria',
                   ),
                 ),
               ),
@@ -268,17 +263,15 @@ class _LoginState extends State<Login> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textAlignVertical: TextAlignVertical.center,
-                    style: const TextStyle(
+                    style: GoogleFonts.alexandria( // ✅
                       color: Colors.black,
                       fontSize: 15,
-                      fontFamily: 'Alexandria',
                     ),
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: TextStyle(
+                      hintStyle: GoogleFonts.alexandria( // ✅
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
-                        fontFamily: 'Alexandria',
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       border: InputBorder.none,
@@ -309,15 +302,14 @@ class _LoginState extends State<Login> {
                 top: screenHeight * 0.673,
                 child: GestureDetector(
                   onTap: () {},
-                  child: const Text(
+                  child: Text(
                     'Lupa Password ?',
-                    style: TextStyle(
-                      color: Color(0xFFD05122),
+                    style: GoogleFonts.alexandria( // ✅
+                      color: const Color(0xFFD05122),
                       fontSize: 12,
-                      fontFamily: 'Alexandria',
                       fontWeight: FontWeight.w600,
                       decoration: TextDecoration.underline,
-                      decorationColor: Color(0xFFD05122),
+                      decorationColor: const Color(0xFFD05122),
                     ),
                   ),
                 ),
@@ -349,13 +341,12 @@ class _LoginState extends State<Login> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Masuk Sekarang',
-                        style: TextStyle(
+                        style: GoogleFonts.alexandria( // ✅
                           color: Colors.white,
                           fontSize: 18,
-                          fontFamily: 'Alexandria',
                           fontWeight: FontWeight.w500,
                         ),
                       ),

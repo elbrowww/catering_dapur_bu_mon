@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'login.dart';
 
 class Daftar extends StatefulWidget {
@@ -107,15 +108,14 @@ class _DaftarState extends State<Daftar> {
                               MaterialPageRoute(builder: (context) => const Login()),
                             );
                           },
-                          child: const Center(
+                          child: Center(
                             child: Opacity(
                               opacity: 0.50,
                               child: Text(
                                 'Masuk',
-                                style: TextStyle(
-                                  color: Color(0xFFD9D9D9),
+                                style: GoogleFonts.alexandria( // ✅
+                                  color: const Color(0xFFD9D9D9),
                                   fontSize: 24,
-                                  fontFamily: 'Alexandria',
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
@@ -137,13 +137,12 @@ class _DaftarState extends State<Daftar> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
                               'Daftar',
-                              style: TextStyle(
+                              style: GoogleFonts.alexandria( // ✅
                                 color: Colors.white,
                                 fontSize: 24,
-                                fontFamily: 'Alexandria',
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -159,12 +158,11 @@ class _DaftarState extends State<Daftar> {
               Positioned(
                 left: screenWidth * 0.142,
                 top: screenHeight * 0.500,
-                child: const Text(
+                child: Text(
                   'Masukkan No Telp / Email',
-                  style: TextStyle(
+                  style: GoogleFonts.alexandria( // ✅
                     color: Colors.black,
                     fontSize: 14,
-                    fontFamily: 'Alexandria',
                   ),
                 ),
               ),
@@ -193,17 +191,15 @@ class _DaftarState extends State<Daftar> {
                   child: TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(
+                    style: GoogleFonts.alexandria( // ✅
                       color: Colors.black,
                       fontSize: 15,
-                      fontFamily: 'Alexandria',
                     ),
                     decoration: InputDecoration(
                       hintText: 'No Telp / Email',
-                      hintStyle: TextStyle(
+                      hintStyle: GoogleFonts.alexandria( // ✅
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
-                        fontFamily: 'Alexandria',
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       border: InputBorder.none,
@@ -216,12 +212,11 @@ class _DaftarState extends State<Daftar> {
               Positioned(
                 left: screenWidth * 0.142,
                 top: screenHeight * 0.585,
-                child: const Text(
+                child: Text(
                   'Masukkan Password',
-                  style: TextStyle(
+                  style: GoogleFonts.alexandria( // ✅
                     color: Colors.black,
                     fontSize: 14,
-                    fontFamily: 'Alexandria',
                   ),
                 ),
               ),
@@ -251,17 +246,15 @@ class _DaftarState extends State<Daftar> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textAlignVertical: TextAlignVertical.center,
-                    style: const TextStyle(
+                    style: GoogleFonts.alexandria( // ✅
                       color: Colors.black,
                       fontSize: 15,
-                      fontFamily: 'Alexandria',
                     ),
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: TextStyle(
+                      hintStyle: GoogleFonts.alexandria( // ✅
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
-                        fontFamily: 'Alexandria',
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       border: InputBorder.none,
@@ -283,12 +276,11 @@ class _DaftarState extends State<Daftar> {
               Positioned(
                 left: screenWidth * 0.142,
                 top: screenHeight * 0.666,
-                child: const Text(
+                child: Text(
                   'Masukkan Ulang Password',
-                  style: TextStyle(
+                  style: GoogleFonts.alexandria( // ✅
                     color: Colors.black,
                     fontSize: 14,
-                    fontFamily: 'Alexandria',
                   ),
                 ),
               ),
@@ -318,17 +310,15 @@ class _DaftarState extends State<Daftar> {
                     controller: _konfirmasiController,
                     obscureText: _obscureKonfirmasi,
                     textAlignVertical: TextAlignVertical.center,
-                    style: const TextStyle(
+                    style: GoogleFonts.alexandria( // ✅
                       color: Colors.black,
                       fontSize: 15,
-                      fontFamily: 'Alexandria',
                     ),
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: TextStyle(
+                      hintStyle: GoogleFonts.alexandria( // ✅
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
-                        fontFamily: 'Alexandria',
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       border: InputBorder.none,
@@ -349,7 +339,7 @@ class _DaftarState extends State<Daftar> {
               /// Tombol Konfirmasi
               Positioned(
                 left: screenWidth * 0.226,
-                top: screenHeight * 0.755,
+                top: screenHeight * 0.780,
                 child: GestureDetector(
                   onTap: () {},
                   child: Container(
@@ -365,13 +355,12 @@ class _DaftarState extends State<Daftar> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Konfirmasi',
-                        style: TextStyle(
+                        style: GoogleFonts.alexandria( // ✅
                           color: Colors.white,
                           fontSize: 20,
-                          fontFamily: 'Alexandria',
                           fontWeight: FontWeight.w500,
                         ),
                       ),

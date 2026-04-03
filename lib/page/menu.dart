@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'detail-menu.dart';
 
-// ============================================================
-// MENU PAGE
-// PENTING: Tidak pakai Scaffold & tidak pakai CustomNavbar
-// Navbar sudah dihandle oleh MainScreen di main.dart
-// ============================================================
-
 class MenuItemData {
   final String nama;
   final String harga;
@@ -128,7 +122,6 @@ class _MenuPageState extends State<MenuPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Ambil tinggi status bar
     final double statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Column(
@@ -136,7 +129,7 @@ class _MenuPageState extends State<MenuPage> {
         // ── Header ─────────────────────────────────────
         Container(
           width: double.infinity,
-          height: 100 + statusBarHeight, // ✅ Tambah statusBarHeight
+          height: 100 + statusBarHeight,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment(-0.04, 0.80),
@@ -159,7 +152,6 @@ class _MenuPageState extends State<MenuPage> {
               ),
             ],
           ),
-          // ✅ Padding top agar konten tidak tertutup status bar
           padding: EdgeInsets.only(top: statusBarHeight),
           child: Center(
             child: Container(
@@ -213,6 +205,7 @@ class _MenuPageState extends State<MenuPage> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: (val) => setState(() => _searchQuery = val),
+                    textAlignVertical: TextAlignVertical.center,
                     style: GoogleFonts.lora(
                       color: const Color(0xFF1A1818),
                       fontSize: 14,
@@ -223,10 +216,12 @@ class _MenuPageState extends State<MenuPage> {
                         color: const Color(0xFF1A1818).withOpacity(0.5),
                         fontSize: 14,
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       border: InputBorder.none,
-                      isDense: true,
+                      isDense: false,
                     ),
                   ),
                 ),
@@ -305,7 +300,7 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                 )
               : GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100), // ✅ Tambah padding bawah
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -323,7 +318,7 @@ class _MenuPageState extends State<MenuPage> {
   }
 }
 
-// ── Menu Card — bisa di-tap ke halaman detail ──────────────────
+// ── Menu Card ──────────────────────────────────────────────────
 class _MenuCard extends StatelessWidget {
   final MenuItemData item;
   const _MenuCard({required this.item});

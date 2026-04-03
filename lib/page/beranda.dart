@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
-// ============================================================
-// BERANDA PAGE — StatefulWidget karena ada search & form ulasan
-// ============================================================
 class BerandaPage extends StatefulWidget {
   const BerandaPage({super.key});
 
@@ -12,11 +11,11 @@ class BerandaPage extends StatefulWidget {
 }
 
 class _BerandaPageState extends State<BerandaPage> {
-  // ── Search ─────────────────────────────────────────────────
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // ── Ulasan ─────────────────────────────────────────────────
+  String _alamat = 'Memuat lokasi...';
+
   final TextEditingController _ulasanController = TextEditingController();
   List<Map<String, String>> _daftarUlasan = [
     {
@@ -31,7 +30,6 @@ class _BerandaPageState extends State<BerandaPage> {
     },
   ];
 
-  // ── Data menu tersedia ──────────────────────────────────────
   final List<Map<String, String>> _semuaMenu = const [
     {
       'nama': 'Ayam Panggang',
@@ -64,6 +62,55 @@ class _BerandaPageState extends State<BerandaPage> {
       'imageUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2Fe2e4435dcec0825005f424dfba6f841d734964b0image%204.png?alt=media&token=2145d1ba-3db3-4ab0-a440-a0cbb6ce1f02',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _getLocation();
+  }
+
+  Future<void> _getLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() => _alamat = 'GPS tidak aktif');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() => _alamat = 'Izin lokasi ditolak');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() => _alamat = 'Izin lokasi diblokir');
+        return;
+      }
+
+      final Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final Placemark place = placemarks.first;
+        setState(() {
+          _alamat =
+              '${place.street ?? ''}, ${place.subLocality ?? place.locality ?? ''}';
+        });
+      }
+    } catch (e) {
+      setState(() => _alamat = 'Gagal mendapatkan lokasi');
+    }
+  }
 
   List<Map<String, String>> get _menuTerfilter {
     if (_searchQuery.isEmpty) return _semuaMenu;
@@ -125,15 +172,17 @@ class _BerandaPageState extends State<BerandaPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView( // ✅ Hapus SafeArea, langsung SingleChildScrollView
+    // ✅ Ambil tinggi navbar agar konten tidak tertutup
+    final double navbarHeight = kBottomNavigationBarHeight + 60;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header oranye ──────────────────────────────
-          _buildHeader(context), // ✅ Pass context untuk ambil padding
+          _buildHeader(context),
           const SizedBox(height: 16),
 
-          // ── Tracking Pesanan ───────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Text('Tracking Pesanan',
@@ -150,7 +199,6 @@ class _BerandaPageState extends State<BerandaPage> {
           ),
           const SizedBox(height: 24),
 
-          // ── Menu Terlaris ──────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Text('Menu Terlaris',
@@ -175,7 +223,6 @@ class _BerandaPageState extends State<BerandaPage> {
           ),
           const SizedBox(height: 24),
 
-          // ── Menu Tersedia ──────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Row(
@@ -228,7 +275,6 @@ class _BerandaPageState extends State<BerandaPage> {
                 ),
           const SizedBox(height: 24),
 
-          // ── Ulasan ─────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Row(
@@ -270,20 +316,19 @@ class _BerandaPageState extends State<BerandaPage> {
           ),
           const SizedBox(height: 24),
 
-          // ── Form Beri Ulasan ───────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: _buildFormUlasan(),
           ),
-          const SizedBox(height: 32),
+
+          // ✅ Padding bawah agar konten tidak tertutup navbar
+          SizedBox(height: navbarHeight),
         ],
       ),
     );
   }
 
-  // ── Header dengan padding top otomatis ─────────────────────
   Widget _buildHeader(BuildContext context) {
-    // ✅ Ambil tinggi status bar agar header tidak ketutupan
     final double statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Container(
@@ -302,25 +347,27 @@ class _BerandaPageState extends State<BerandaPage> {
           ),
         ],
       ),
-      padding: EdgeInsets.fromLTRB(26, 20 + statusBarHeight, 26, 16), // ✅ Tambah statusBarHeight
+      padding: EdgeInsets.fromLTRB(26, 20 + statusBarHeight, 26, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Baris lokasi + notifikasi + avatar
           Row(
             children: [
-              Image.network(
-                'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F2b2de4d17f51ac8a89f789b2c3fc544c438dac8cGoogle%20Maps.png?alt=media&token=1981c3aa-7e35-4fa9-af86-6bfa499edfc8',
-                width: 35,
-                height: 35,
-                fit: BoxFit.contain,
+              GestureDetector(
+                onTap: _getLocation,
+                child: Image.network(
+                  'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F2b2de4d17f51ac8a89f789b2c3fc544c438dac8cGoogle%20Maps.png?alt=media&token=1981c3aa-7e35-4fa9-af86-6bfa499edfc8',
+                  width: 35,
+                  height: 35,
+                  fit: BoxFit.contain,
+                ),
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Opacity(
                   opacity: 0.8,
                   child: Text(
-                    'Jl. Asbdhainjshnsjaian',
+                    _alamat,
                     style: GoogleFonts.lora(
                       color: const Color(0xFF1A1818),
                       fontSize: 16,
@@ -354,7 +401,6 @@ class _BerandaPageState extends State<BerandaPage> {
             ],
           ),
           const SizedBox(height: 14),
-          // Search bar
           Row(
             children: [
               Expanded(
@@ -373,8 +419,8 @@ class _BerandaPageState extends State<BerandaPage> {
                   ),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (val) =>
-                        setState(() => _searchQuery = val),
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    textAlignVertical: TextAlignVertical.center,
                     style: GoogleFonts.lora(
                       color: const Color(0xFF1A1818),
                       fontSize: 14,
@@ -385,17 +431,20 @@ class _BerandaPageState extends State<BerandaPage> {
                         color: const Color(0xFF1A1818).withOpacity(0.5),
                         fontSize: 14,
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       border: InputBorder.none,
-                      isDense: true,
+                      isDense: false,
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 11),
               GestureDetector(
-                onTap: () => setState(() => _searchQuery = _searchController.text),
+                onTap: () =>
+                    setState(() => _searchQuery = _searchController.text),
                 child: Container(
                   width: 45,
                   height: 45,
@@ -420,7 +469,6 @@ class _BerandaPageState extends State<BerandaPage> {
     );
   }
 
-  // ── Form Beri Ulasan ───────────────────────────────────────
   Widget _buildFormUlasan() {
     return Container(
       width: double.infinity,
@@ -553,7 +601,7 @@ class _TrackingCard extends StatelessWidget {
           ],
           stops: [0.0, 0.35, 0.7, 1.0],
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color(0xFFD05122),
             blurRadius: 18,
@@ -727,7 +775,7 @@ class _TrackingCard extends StatelessWidget {
                         ),
                         child: Text('Lihat Detail',
                             style: GoogleFonts.alexandria(
-                              color: Color(0xFFD05122),
+                              color: const Color(0xFFD05122),
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             )),
@@ -932,8 +980,8 @@ class _UlasanCard extends StatelessWidget {
               child: Image.network(
                 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F316b1609f20a8554436bf178b307cada634003f6user%201.png?alt=media&token=7e8f650d-fedf-4394-bbc4-445243b57769',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.person, color: Color(0xFFD05122), size: 26),
+                errorBuilder: (_, __, ___) => const Icon(Icons.person,
+                    color: Color(0xFFD05122), size: 26),
               ),
             ),
           ),

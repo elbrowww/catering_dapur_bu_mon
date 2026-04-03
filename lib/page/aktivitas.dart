@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ============================================================
-// AKTIVITAS PAGE
-// ============================================================
 class AktivitasPage extends StatefulWidget {
   const AktivitasPage({super.key});
 
@@ -112,7 +109,6 @@ class _AktivitasPageState extends State<AktivitasPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Ambil tinggi status bar
     final double statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Container(
@@ -124,11 +120,11 @@ class _AktivitasPageState extends State<AktivitasPage> {
           stops: [0.21, 0.56, 0.83],
         ),
       ),
-      child: Column( // ✅ Hapus SafeArea, ganti Column biasa
+      child: Column(
         children: [
           // ── Header "Aktivitas" ─────────────────────────
           Padding(
-            padding: EdgeInsets.fromLTRB(23, 14 + statusBarHeight, 23, 0), // ✅ Tambah statusBarHeight
+            padding: EdgeInsets.fromLTRB(23, 14 + statusBarHeight, 23, 0),
             child: Container(
               width: double.infinity,
               height: 50,
@@ -203,7 +199,8 @@ class _AktivitasPageState extends State<AktivitasPage> {
                             ),
                           )
                         : ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(32, 0, 32, 16),
+                            // ✅ Tambah padding bawah agar tidak tertutup navbar
+                            padding: const EdgeInsets.fromLTRB(32, 0, 32, 100),
                             itemCount: _perTanggal.keys.length,
                             itemBuilder: (_, i) {
                               final tgl = _perTanggal.keys.elementAt(i);

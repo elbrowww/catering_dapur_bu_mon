@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'lupa_password.dart'; // ✅ Tambah import
 
 class KeamananPage extends StatefulWidget {
   const KeamananPage({super.key});
@@ -103,8 +104,7 @@ class _KeamananPageState extends State<KeamananPage> {
                 top: statusBarHeight + 194,
                 child: Text(
                   'Keamanan Dan Password',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
+                  style: GoogleFonts.alexandria(
                     color: Colors.black,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -118,8 +118,7 @@ class _KeamananPageState extends State<KeamananPage> {
                 top: statusBarHeight + 300,
                 child: Text(
                   'Masukkan Password Saat ini',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
+                  style: GoogleFonts.alexandria(
                     color: Colors.black,
                     fontSize: 14,
                   ),
@@ -148,23 +147,23 @@ class _KeamananPageState extends State<KeamananPage> {
                   ),
                   child: TextField(
                     obscureText: _obscurePasswordLama,
-                    style: GoogleFonts.getFont(
-                      'Alexandria',
+                    textAlignVertical: TextAlignVertical.center,
+                    style: GoogleFonts.alexandria(
                       color: Colors.black,
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
                       hintText: '********',
-                      hintStyle: GoogleFonts.getFont(
-                        'Alexandria',
+                      hintStyle: GoogleFonts.alexandria(
                         color: Colors.black,
                         fontSize: 15,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 8,
+                        vertical: 14,
                       ),
                       border: InputBorder.none,
+                      isDense: false,
                       suffixIcon: GestureDetector(
                         onTap: () {
                           setState(() {
@@ -194,8 +193,7 @@ class _KeamananPageState extends State<KeamananPage> {
                 top: statusBarHeight + 390,
                 child: Text(
                   'Masukkan Password Baru',
-                  style: GoogleFonts.getFont(
-                    'Alexandria',
+                  style: GoogleFonts.alexandria(
                     color: Colors.black,
                     fontSize: 14,
                   ),
@@ -224,23 +222,23 @@ class _KeamananPageState extends State<KeamananPage> {
                   ),
                   child: TextField(
                     obscureText: _obscurePasswordBaru,
-                    style: GoogleFonts.getFont(
-                      'Alexandria',
+                    textAlignVertical: TextAlignVertical.center,
+                    style: GoogleFonts.alexandria(
                       color: Colors.black,
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
                       hintText: '********',
-                      hintStyle: GoogleFonts.getFont(
-                        'Alexandria',
+                      hintStyle: GoogleFonts.alexandria(
                         color: Colors.black,
                         fontSize: 15,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 8,
+                        vertical: 14,
                       ),
                       border: InputBorder.none,
+                      isDense: false,
                       suffixIcon: GestureDetector(
                         onTap: () {
                           setState(() {
@@ -264,16 +262,20 @@ class _KeamananPageState extends State<KeamananPage> {
                 ),
               ),
 
-              /// Lupa Password
+              /// Lupa Password ✅ Navigasi ke LupaPasswordPage
               Positioned(
                 right: screenWidth * 0.139,
                 top: statusBarHeight + 475,
                 child: GestureDetector(
-                  onTap: () {},
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const LupaPasswordPage(),
+                    ),
+                  ),
                   child: Text(
                     'Lupa Password ?',
-                    style: GoogleFonts.getFont(
-                      'Alexandria',
+                    style: GoogleFonts.alexandria(
                       color: const Color(0xFFD05122),
                       fontSize: 10,
                       decoration: TextDecoration.underline,
@@ -315,8 +317,7 @@ class _KeamananPageState extends State<KeamananPage> {
                     child: Center(
                       child: Text(
                         'Konfirmasi',
-                        style: GoogleFonts.getFont(
-                          'Alexandria',
+                        style: GoogleFonts.alexandria(
                           color: Colors.black,
                           fontSize: 20,
                         ),
@@ -358,8 +359,7 @@ class _KeamananPageState extends State<KeamananPage> {
                     child: Center(
                       child: Text(
                         'Batal',
-                        style: GoogleFonts.getFont(
-                          'Alexandria',
+                        style: GoogleFonts.alexandria(
                           color: Colors.black,
                           fontSize: 20,
                         ),
