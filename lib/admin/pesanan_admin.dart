@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'header_admin.dart'; // ✅
 
-// ─────────────────────────────────────────
-//  Konstanta
-// ─────────────────────────────────────────
 const _gradientColors = [
   Color(0xFFD05122),
   Color(0xFFEE8B2E),
@@ -30,9 +28,6 @@ const _listShadow = [
   ),
 ];
 
-// ─────────────────────────────────────────
-//  Model
-// ─────────────────────────────────────────
 enum OrderStatus { pending, proses, selesai, batal }
 
 class _OrderItem {
@@ -53,9 +48,6 @@ class _OrderItem {
   });
 }
 
-// ─────────────────────────────────────────
-//  Data statis
-// ─────────────────────────────────────────
 const _statCards = [
   {'label': 'Total Pesanan', 'value': '17'},
   {'label': 'Pending', 'value': '3'},
@@ -92,9 +84,6 @@ const _orders = [
 
 const _filterLabels = ['Semua', 'Pending', 'Proses', 'Selesai', 'Batal'];
 
-// ─────────────────────────────────────────
-//  Screen
-// ─────────────────────────────────────────
 class PesananAdminPage extends StatefulWidget {
   const PesananAdminPage({super.key});
 
@@ -112,17 +101,15 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const _Header(),
+            const HeaderAdmin(), // ✅
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Kartu statistik bergradien
                     _StatsCard(),
                     const SizedBox(height: 20),
-                    // Judul daftar
                     Text(
                       'Daftar Pesanan',
                       style: GoogleFonts.alexandria(
@@ -132,17 +119,16 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Filter chips
                     _FilterRow(
                       selected: _selectedFilter,
                       onSelected: (i) => setState(() => _selectedFilter = i),
                     ),
                     const SizedBox(height: 12),
-                    // List pesanan
                     ..._orders.map((order) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _OrderCard(order: order),
                         )),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
@@ -154,81 +140,6 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
   }
 }
 
-// ─────────────────────────────────────────
-//  Header
-// ─────────────────────────────────────────
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              boxShadow: _cardShadow,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SONxcLGhX9Sc4jqH3qj%2F594b96019dd7bc1bd79b0d47333b044729a2f6f0Desain%20tanpa%20judul%20(16)%204.png?alt=media&token=63a8e88e-8716-40c1-a90b-ad41be4ea724',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Opacity(
-                  opacity: 0.8,
-                  child: Text(
-                    'Dashboard Admin',
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Text(
-                  'Dapur Bu Mon',
-                  style: GoogleFonts.alexandria(
-                    color: const Color(0xFF1A1818),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Image.network(
-            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Fc69d7bd9-8d87-495a-ab8b-af786a45c4ce.png',
-            width: 20,
-            height: 24,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(width: 12),
-          Image.network(
-            'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SONxcLGhX9Sc4jqH3qj%2Fd154b179abf9d4a6058e12e77678299644c82914Notification.png?alt=media&token=bf2ba796-0488-43af-ba86-a97073f9d688',
-            width: 25,
-            height: 25,
-            fit: BoxFit.contain,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────
-//  Stats Card (gradien + 4 mini card)
-// ─────────────────────────────────────────
 class _StatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -246,7 +157,6 @@ class _StatsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header baris: ikon + judul + filter waktu
           Row(
             children: [
               Image.network(
@@ -295,7 +205,6 @@ class _StatsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Grid 2x2 mini stat cards
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -355,9 +264,6 @@ class _MiniStatCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-//  Filter Row
-// ─────────────────────────────────────────
 class _FilterRow extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelected;
@@ -402,9 +308,6 @@ class _FilterRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-//  Order Card
-// ─────────────────────────────────────────
 class _OrderCard extends StatelessWidget {
   final _OrderItem order;
   const _OrderCard({required this.order});
@@ -443,7 +346,6 @@ class _OrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Baris atas: nama + status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -483,7 +385,6 @@ class _OrderCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 6),
-          // Baris tengah: tanggal + jumlah item + harga
           Row(
             children: [
               _Chip(label: order.date),
@@ -502,7 +403,6 @@ class _OrderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // Tombol detail
           _Chip(
             label: 'Detail',
             backgroundColor: const Color(0xFFA7ECFF),
@@ -515,9 +415,6 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-//  Chip kecil reusable
-// ─────────────────────────────────────────
 class _Chip extends StatelessWidget {
   final String label;
   final Color? backgroundColor;

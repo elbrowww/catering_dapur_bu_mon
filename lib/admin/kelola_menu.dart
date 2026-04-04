@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'header_admin.dart'; // ✅
 
-// ─────────────────────────────────────────
-//  Konstanta
-// ─────────────────────────────────────────
 const _gradientColors = [
   Color(0xFFD05122),
   Color(0xFFEE8B2E),
   Color(0xFFFBA839),
 ];
 const _gradientStops = [0.18, 0.61, 0.85];
-const _borderOrange  = Color(0xFFDB6626);
+const _borderOrange = Color(0xFFDB6626);
 
 const _listShadow = [
   BoxShadow(
@@ -21,9 +19,6 @@ const _listShadow = [
   ),
 ];
 
-// ─────────────────────────────────────────
-//  Model
-// ─────────────────────────────────────────
 class _MenuData {
   final String name;
   final String price;
@@ -36,9 +31,6 @@ class _MenuData {
   });
 }
 
-// ─────────────────────────────────────────
-//  Data statis (semua item sama karena desain placeholder)
-// ─────────────────────────────────────────
 const _imageUrl =
     'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SONxcLGhX9Sc4jqH3qj%2Fb611dcd57e8a8124c09e46eb95298a801a223e17image%203.png?alt=media&token=274a3b20-6268-4ae8-80a1-410fb38711f3';
 
@@ -53,9 +45,6 @@ final _menuList = List.generate(
 
 const _filterLabels = ['Semua', 'Paket Nasi', 'Olahan Ayam', 'Jajanan'];
 
-// ─────────────────────────────────────────
-//  Screen
-// ─────────────────────────────────────────
 class KelolaMenuPage extends StatefulWidget {
   const KelolaMenuPage({super.key});
 
@@ -80,35 +69,29 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const _Header(),
+            const HeaderAdmin(), // ✅
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Search bar + tombol filter
                     _SearchBar(controller: _searchController),
                     const SizedBox(height: 10),
-
-                    // Tombol Tambah Menu
                     _TambahMenuButton(onTap: () {}),
                     const SizedBox(height: 10),
-
-                    // Filter chips
                     _FilterRow(
                       selected: _selectedFilter,
                       onSelected: (i) => setState(() => _selectedFilter = i),
                     ),
                     const SizedBox(height: 12),
-
-                    // Daftar menu
                     ..._menuList.map(
                       (item) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _MenuItemCard(item: item),
                       ),
                     ),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
@@ -120,88 +103,6 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
   }
 }
 
-// ─────────────────────────────────────────
-//  Header
-// ─────────────────────────────────────────
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x3F000000),
-                  spreadRadius: 0,
-                  offset: Offset(0, 4),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SONxcLGhX9Sc4jqH3qj%2F594b96019dd7bc1bd79b0d47333b044729a2f6f0Desain%20tanpa%20judul%20(16)%204.png?alt=media&token=5c4f48e4-9c21-4ada-8b13-b0d640a36e33',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Opacity(
-                  opacity: 0.8,
-                  child: Text(
-                    'Dashboard Admin',
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Text(
-                  'Dapur Bu Mon',
-                  style: GoogleFonts.alexandria(
-                    color: const Color(0xFF1A1818),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Image.network(
-            'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Ff4674369-92fc-4382-bcb2-649b1f57723f.png',
-            width: 20,
-            height: 24,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(width: 12),
-          Image.network(
-            'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SONxcLGhX9Sc4jqH3qj%2Fd154b179abf9d4a6058e12e77678299644c82914Notification.png?alt=media&token=70bbe20a-d318-4538-bd8c-c45e83450b4b',
-            width: 25,
-            height: 25,
-            fit: BoxFit.contain,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────
-//  Search Bar
-// ─────────────────────────────────────────
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   const _SearchBar({required this.controller});
@@ -210,7 +111,6 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Input pencarian
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(15),
@@ -222,7 +122,6 @@ class _SearchBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        // Tombol search (gradien)
         Container(
           width: 45,
           height: 45,
@@ -247,9 +146,6 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-//  Tombol Tambah Menu
-// ─────────────────────────────────────────
 class _TambahMenuButton extends StatelessWidget {
   final VoidCallback onTap;
   const _TambahMenuButton({required this.onTap});
@@ -298,9 +194,6 @@ class _TambahMenuButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-//  Filter Row
-// ─────────────────────────────────────────
 class _FilterRow extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelected;
@@ -345,9 +238,6 @@ class _FilterRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-//  Menu Item Card
-// ─────────────────────────────────────────
 class _MenuItemCard extends StatelessWidget {
   final _MenuData item;
   const _MenuItemCard({required this.item});
@@ -363,7 +253,6 @@ class _MenuItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Row(
         children: [
-          // Foto menu
           Container(
             width: 65,
             height: 65,
@@ -382,7 +271,6 @@ class _MenuItemCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Nama & harga
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,20 +294,17 @@ class _MenuItemCard extends StatelessWidget {
               ],
             ),
           ),
-          // Tombol hapus & edit
           Column(
             children: [
               _ActionButton(
                 color: const Color(0xFFFD4141),
-                iconUrl:
-                    'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Fed786f6d-10b1-4bfb-8dc7-658ed3877c73.png',
+                iconUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Fed786f6d-10b1-4bfb-8dc7-658ed3877c73.png',
                 onTap: () {},
               ),
               const SizedBox(height: 4),
               _ActionButton(
                 color: const Color(0xFF0FBC5F),
-                iconUrl:
-                    'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2F4201a3cd-540d-4e5f-ade7-22dd16fb4eb1.png',
+                iconUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2F4201a3cd-540d-4e5f-ade7-22dd16fb4eb1.png',
                 onTap: () {},
               ),
             ],
@@ -430,9 +315,6 @@ class _MenuItemCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────
-//  Tombol aksi kecil (hapus / edit)
-// ─────────────────────────────────────────
 class _ActionButton extends StatelessWidget {
   final Color color;
   final String iconUrl;

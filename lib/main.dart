@@ -12,6 +12,7 @@ import 'admin/loginadmin.dart';
 import 'admin/dashboard_admin.dart';
 import 'admin/pesanan_admin.dart';
 import 'admin/kelola_menu.dart';
+import 'admin/data_customer.dart'; // ← tambah import
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,10 +25,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Catering Dapur Bu Mon',
-      home: const Mulai(),
+      home: Mulai(),
     );
   }
 }
@@ -79,10 +80,10 @@ class _MainOwnerState extends State<MainOwner> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    DashboardAdmin(),                       // ← sudah disambungkan
-    _PlaceholderPage(title: 'Pesanan'),
-    _PlaceholderPage(title: 'Kelola Menu'),
-    _PlaceholderPage(title: 'Data Customer'),
+    DashboardAdmin(),    // index 0
+    PesananAdminPage(),  // index 1
+    KelolaMenuPage(),    // index 2
+    DataCustomerPage(),  // index 3 ← ganti dari _PlaceholderPage
   ];
 
   @override
@@ -96,22 +97,6 @@ class _MainOwnerState extends State<MainOwner> {
         onItemTapped: (index) {
           setState(() => _selectedIndex = index);
         },
-      ),
-    );
-  }
-}
-
-// ── Placeholder sementara ─────────────────────────────────────
-class _PlaceholderPage extends StatelessWidget {
-  final String title;
-  const _PlaceholderPage({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Halaman $title',
-        style: const TextStyle(fontSize: 24, color: Colors.black54),
       ),
     );
   }
