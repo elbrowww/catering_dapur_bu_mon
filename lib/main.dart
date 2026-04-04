@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'page/mulai.dart';
 import 'page/navbar.dart';
 import 'page/beranda.dart';
@@ -6,8 +7,12 @@ import 'page/menu.dart';
 import 'page/keranjang.dart';
 import 'page/aktivitas.dart';
 import 'page/profil.dart';
+import 'admin/navbar_owner.dart';
+import 'admin/loginadmin.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const MyApp());
 }
 
@@ -16,18 +21,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Catering Dapur Bu Mon',
-      home: Mulai(), // Halaman pertama (splash/onboarding)
+      home: const Mulai(),
     );
   }
 }
 
-// ============================================================
-// MAIN SCREEN — satu-satunya tempat navbar dipanggil
-// Dipanggil setelah login berhasil dari login.dart
-// ============================================================
+// ── MainScreen untuk Customer ─────────────────────────────────
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -39,19 +41,19 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    BerandaPage(),                        // index 0 - Beranda
-    MenuPage(),                           // index 1 - Menu
-    KeranjangPage(),                      // index 2 - Keranjang
-    AktivitasPage(),                      // index 3 - Aktivitas
-    ProfilPage(),                         // index 4 - Profil
+    BerandaPage(),
+    MenuPage(),
+    KeranjangPage(),
+    AktivitasPage(),
+    ProfilPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      extendBody: true,
       body: _pages[_selectedIndex],
-      // Navbar dipanggil SEKALI, otomatis muncul di semua halaman
       bottomNavigationBar: CustomNavbar(
         selectedIndex: _selectedIndex,
         onItemTapped: (index) {
@@ -62,6 +64,41 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
+// ── MainOwner untuk Owner/Admin ───────────────────────────────
+class MainOwner extends StatefulWidget {
+  const MainOwner({super.key});
+
+  @override
+  State<MainOwner> createState() => _MainOwnerState();
+}
+
+class _MainOwnerState extends State<MainOwner> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = const [
+    _PlaceholderPage(title: 'Dashboard'),
+    _PlaceholderPage(title: 'Pesanan'),
+    _PlaceholderPage(title: 'Kelola Menu'),
+    _PlaceholderPage(title: 'Data Customer'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      extendBody: true,
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: NavbarOwner(
+        selectedIndex: _selectedIndex,
+        onItemTapped: (index) {
+          setState(() => _selectedIndex = index);
+        },
+      ),
+    );
+  }
+}
+
+// ── Placeholder sementara ─────────────────────────────────────
 class _PlaceholderPage extends StatelessWidget {
   final String title;
   const _PlaceholderPage({required this.title});
