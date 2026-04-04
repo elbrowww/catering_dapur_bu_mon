@@ -9,6 +9,9 @@ import 'page/aktivitas.dart';
 import 'page/profil.dart';
 import 'admin/navbar_owner.dart';
 import 'admin/loginadmin.dart';
+import 'admin/dashboard_admin.dart';
+import 'admin/pesanan_admin.dart';
+import 'admin/kelola_menu.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,7 +79,7 @@ class _MainOwnerState extends State<MainOwner> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    _PlaceholderPage(title: 'Dashboard'),
+    DashboardAdmin(),                       // ← sudah disambungkan
     _PlaceholderPage(title: 'Pesanan'),
     _PlaceholderPage(title: 'Kelola Menu'),
     _PlaceholderPage(title: 'Data Customer'),
