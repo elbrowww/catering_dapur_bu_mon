@@ -12,6 +12,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^1.2.0                    # HTTP request ke API PHP
+  shared_preferences: ^2.2.3      # Simpan token login
+  image_picker: ^1.1.2            # Pilih foto (upload bukti, foto profil)
 
 
   cupertino_icons: ^1.0.6
