@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'keranjang-controller.dart';
 
-// ============================================================
-// KERANJANG PAGE
-// Tidak pakai Scaffold & tidak pakai CustomNavbar
-// Navbar sudah dihandle oleh MainScreen di main.dart
-// ============================================================
 class KeranjangPage extends StatefulWidget {
   const KeranjangPage({super.key});
 
@@ -86,8 +81,8 @@ class _KeranjangPageState extends State<KeranjangPage> {
   @override
   Widget build(BuildContext context) {
     final items = _ctrl.items;
-    // ✅ Ambil tinggi status bar
     final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final double navbarHeight = kBottomNavigationBarHeight + 60; // ✅
 
     return Container(
       decoration: const BoxDecoration(
@@ -98,11 +93,11 @@ class _KeranjangPageState extends State<KeranjangPage> {
           stops: [0.21, 0.56, 0.83],
         ),
       ),
-      child: Column( // ✅ Hapus SafeArea, ganti Column biasa
+      child: Column(
         children: [
           // ── Header ─────────────────────────────────
           Padding(
-            padding: EdgeInsets.fromLTRB(24, 16 + statusBarHeight, 24, 0), // ✅ Tambah statusBarHeight
+            padding: EdgeInsets.fromLTRB(24, 16 + statusBarHeight, 24, 0),
             child: Container(
               width: double.infinity,
               height: 50,
@@ -138,17 +133,16 @@ class _KeranjangPageState extends State<KeranjangPage> {
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(30)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
               child: items.isEmpty
                   ? _buildKosong()
                   : Column(
                       children: [
+                        // ✅ List item scroll bebas
                         Expanded(
                           child: ListView.separated(
-                            padding:
-                                const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                             itemCount: items.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 12),
@@ -163,10 +157,9 @@ class _KeranjangPageState extends State<KeranjangPage> {
                           ),
                         ),
 
-                        // ── Total + tombol ──────────────
+                        // ✅ Total + tombol di luar Expanded, tidak ikut scroll
                         Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                          padding: EdgeInsets.fromLTRB(20, 0, 20, navbarHeight),
                           child: Column(
                             children: [
                               Container(
@@ -280,8 +273,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
               size: 72, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text('Keranjang masih kosong',
-              style:
-                  GoogleFonts.alexandria(color: Colors.grey, fontSize: 16)),
+              style: GoogleFonts.alexandria(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 8),
           Text('Yuk tambahkan menu favoritmu!',
               style: GoogleFonts.alexandria(
