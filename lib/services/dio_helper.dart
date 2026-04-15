@@ -1,48 +1,74 @@
 import 'package:dio/dio.dart';
-import 'session_manager.dart';
+import 'package:catering_dapur_bu_mon/services/session_manager.dart';
 
 class DioHelper {
-  static final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: 'http://10.0.2.2/dapur_bu_mon/api',
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
+  static late Dio _dio;
+  
+  static const String baseUrl = 'http://192.168.0.23/dapur_bu_mon/api';
+  
+  static void init() {
+    _dio = Dio(BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
       headers: {
         'Content-Type': 'application/json',
       },
-    ),
-  );
-
-  static Dio get instance => _dio;
-
-  static void init() {
-    _dio.interceptors.clear();
-
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await SessionManager.getToken();
-
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-
-          return handler.next(options);
-        },
-
-        onResponse: (response, handler) {
-          return handler.next(response);
-        },
-
-        onError: (DioException e, handler) async {
-          // Auto logout kalau token invalid
-          if (e.response?.statusCode == 401) {
-            await SessionManager.clearSession();
-          }
-
-          return handler.next(e);
-        },
-      ),
-    );
+      // Tambahkan ini untuk debugging
+      validateStatus: (status) {
+        // Terima semua status code untuk debugging
+        return status != null && status < 500;
+      },
+    ));
+    
+    // Interceptor untuk token
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('📤 REQUEST: ${options.method} ${options.path}');
+        print('📍 URL: ${options.baseUrl}${options.path}');
+        print('📋 Headers: ${options.headers}');
+        print('📦 Data: ${options.data}');
+        
+        final token = await SessionManager.getToken();
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+          print('🔑 Token: $token');
+        }
+        return handler.next(options);
+      },
+      onResponse: (response, handler) {
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('✅ RESPONSE: ${response.statusCode}');
+        print('📦 Data: ${response.data}');
+        return handler.next(response);
+      },
+      onError: (error, handler) {
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('❌ ERROR: ${error.type}');
+        print('💬 Message: ${error.message}');
+        print('📡 Response: ${error.response}');
+        
+        if (error.response != null) {
+          print('📊 Status: ${error.response?.statusCode}');
+          print('📦 Data: ${error.response?.data}');
+        }
+        
+        return handler.next(error);
+      },
+    ));
+    
+    // Tambahkan LogInterceptor untuk detail lebih
+    _dio.interceptors.add(LogInterceptor(
+      request: true,
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: true,
+      responseBody: true,
+      error: true,
+      logPrint: (obj) => print(obj),
+    ));
   }
+  
+  static Dio get dio => _dio;
 }
