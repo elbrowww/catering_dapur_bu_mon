@@ -13,9 +13,13 @@ import 'admin/dashboard/dashboard_admin.dart';
 import 'admin/data/pesanan_admin.dart';
 import 'admin/data/kelola_menu.dart';
 import 'admin/data/data_customer.dart'; // ← tambah import
+import 'services/dio_helper.dart'; // ← tambah ini
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  DioHelper.init(); // 🔥 WAJIB (init interceptor)
+
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const MyApp());
 }
