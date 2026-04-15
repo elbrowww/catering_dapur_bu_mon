@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'keranjang-controller.dart';
+import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 
 class KeranjangPage extends StatefulWidget {
   const KeranjangPage({super.key});

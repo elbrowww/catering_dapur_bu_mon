@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'login.dart';
+import 'package:catering_dapur_bu_mon/features/auth/login.dart';
 
 class Mulai extends StatelessWidget {
   const Mulai({super.key});

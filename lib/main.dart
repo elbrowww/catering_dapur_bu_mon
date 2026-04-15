@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'page/mulai.dart';
-import 'page/navbar.dart';
-import 'page/beranda.dart';
-import 'page/menu.dart';
-import 'page/keranjang.dart';
-import 'page/aktivitas.dart';
-import 'page/profil.dart';
-import 'admin/navbar_owner.dart';
-import 'admin/loginadmin.dart';
-import 'admin/dashboard_admin.dart';
-import 'admin/pesanan_admin.dart';
-import 'admin/kelola_menu.dart';
-import 'admin/data_customer.dart'; // ← tambah import
+import 'features/beranda/mulai.dart';
+import 'features/shared/navbar.dart';
+import 'features/beranda/beranda.dart';
+import 'features/menu/menu.dart';
+import 'features/keranjang/keranjang.dart';
+import 'features/aktivitas/aktivitas.dart';
+import 'features/profil/profil.dart';
+import 'admin/shared/navbar_owner.dart';
+
+import 'admin/dashboard/dashboard_admin.dart';
+import 'admin/data/pesanan_admin.dart';
+import 'admin/data/kelola_menu.dart';
+import 'admin/data/data_customer.dart'; // ← tambah import
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

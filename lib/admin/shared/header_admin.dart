@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:catering_dapur_bu_mon/page/mulai.dart';
+import 'package:catering_dapur_bu_mon/features/beranda/mulai.dart';
 
 class HeaderAdmin extends StatelessWidget {
   const HeaderAdmin({super.key});

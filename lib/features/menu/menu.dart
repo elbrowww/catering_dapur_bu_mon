@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'detail-menu.dart';
+import 'package:catering_dapur_bu_mon/features/menu/detail-menu.dart';
 
 class MenuItemData {
   final String nama;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'verifikasi_kode.dart'; // ← tambah import
+import 'package:catering_dapur_bu_mon/features/auth/verifikasi_kode.dart'; // ← tambah import
 
 class LupaPasswordPage extends StatefulWidget {
   const LupaPasswordPage({super.key});

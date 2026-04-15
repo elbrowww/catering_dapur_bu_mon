@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'menu.dart';
-import 'keranjang-controller.dart';
+import 'package:catering_dapur_bu_mon/features/menu/menu.dart';
+import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 
 // ============================================================
 // DETAIL MENU PAGE

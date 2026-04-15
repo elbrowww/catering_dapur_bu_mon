@@ -1,28 +1,26 @@
-import 'package:catering_dapur_bu_mon/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'daftar.dart';
-import 'beranda.dart';
-import '../admin/loginadmin.dart';
-import 'lupa_password.dart'; // ← tambah import ini
+import 'package:catering_dapur_bu_mon/features/auth/login.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+class Daftar extends StatefulWidget {
+  const Daftar({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
+  State<Daftar> createState() => _DaftarState();
 }
 
-class _LoginState extends State<Login> {
+class _DaftarState extends State<Daftar> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _konfirmasiController = TextEditingController();
   bool _obscurePassword = true;
-  int _logoTapCount = 0;
+  bool _obscureKonfirmasi = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _konfirmasiController.dispose();
     super.dispose();
   }
 
@@ -65,31 +63,15 @@ class _LoginState extends State<Login> {
                 ),
               ),
 
-              /// Logo (klik 3x → Login Admin)
+              /// Logo
               Positioned(
                 left: screenWidth * 0.276,
                 top: screenHeight * 0.080,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _logoTapCount++;
-                      if (_logoTapCount >= 3) {
-                        _logoTapCount = 0;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginAdmin(),
-                          ),
-                        );
-                      }
-                    });
-                  },
-                  child: Image.asset(
-                    "assets/icons/icons.png",
-                    width: screenWidth * 0.448,
-                    height: screenWidth * 0.448,
-                    fit: BoxFit.cover,
-                  ),
+                child: Image.asset(
+                  "assets/icons/icons.png",
+                  width: screenWidth * 0.448,
+                  height: screenWidth * 0.448,
+                  fit: BoxFit.cover,
                 ),
               ),
 
@@ -117,7 +99,31 @@ class _LoginState extends State<Login> {
                   ),
                   child: Row(
                     children: [
-                      /// Tab Masuk (aktif)
+                      /// Tab Masuk (tidak aktif)
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const Login()),
+                            );
+                          },
+                          child: Center(
+                            child: Opacity(
+                              opacity: 0.50,
+                              child: Text(
+                                'Masuk',
+                                style: GoogleFonts.alexandria( // ✅
+                                  color: const Color(0xFFD9D9D9),
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      /// Tab Daftar (aktif)
                       Expanded(
                         child: Container(
                           height: 45.54,
@@ -133,35 +139,11 @@ class _LoginState extends State<Login> {
                           ),
                           child: Center(
                             child: Text(
-                              'Masuk',
-                              style: GoogleFonts.alexandria(
+                              'Daftar',
+                              style: GoogleFonts.alexandria( // ✅
                                 color: Colors.white,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      /// Tab Daftar (tidak aktif)
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const Daftar()),
-                            );
-                          },
-                          child: Center(
-                            child: Opacity(
-                              opacity: 0.50,
-                              child: Text(
-                                'Daftar',
-                                style: GoogleFonts.alexandria(
-                                  color: const Color(0xFFD9D9D9),
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w400,
-                                ),
                               ),
                             ),
                           ),
@@ -178,7 +160,7 @@ class _LoginState extends State<Login> {
                 top: screenHeight * 0.500,
                 child: Text(
                   'Masukkan No Telp / Email',
-                  style: GoogleFonts.alexandria(
+                  style: GoogleFonts.alexandria( // ✅
                     color: Colors.black,
                     fontSize: 14,
                   ),
@@ -209,13 +191,13 @@ class _LoginState extends State<Login> {
                   child: TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: GoogleFonts.alexandria(
+                    style: GoogleFonts.alexandria( // ✅
                       color: Colors.black,
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
                       hintText: 'No Telp / Email',
-                      hintStyle: GoogleFonts.alexandria(
+                      hintStyle: GoogleFonts.alexandria( // ✅
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
                       ),
@@ -232,7 +214,7 @@ class _LoginState extends State<Login> {
                 top: screenHeight * 0.585,
                 child: Text(
                   'Masukkan Password',
-                  style: GoogleFonts.alexandria(
+                  style: GoogleFonts.alexandria( // ✅
                     color: Colors.black,
                     fontSize: 14,
                   ),
@@ -264,78 +246,102 @@ class _LoginState extends State<Login> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textAlignVertical: TextAlignVertical.center,
-                    style: GoogleFonts.alexandria(
+                    style: GoogleFonts.alexandria( // ✅
                       color: Colors.black,
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: GoogleFonts.alexandria(
+                      hintStyle: GoogleFonts.alexandria( // ✅
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       border: InputBorder.none,
                       suffixIcon: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                        onTap: () => setState(() => _obscurePassword = !_obscurePassword),
                         child: Icon(
                           _obscurePassword ? Icons.visibility_off : Icons.visibility,
                           color: Colors.black26,
                           size: 18,
                         ),
                       ),
-                      suffixIconConstraints: const BoxConstraints(
-                        minWidth: 36,
-                        minHeight: 48,
-                      ),
+                      suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 48),
                     ),
                   ),
                 ),
               ),
 
-              /// Lupa Password ← DIPERBAIKI: onTap sekarang navigasi ke LupaPasswordPage
+              /// Label Konfirmasi Password
               Positioned(
-                right: screenWidth * 0.142,
-                top: screenHeight * 0.673,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LupaPasswordPage(),
+                left: screenWidth * 0.142,
+                top: screenHeight * 0.666,
+                child: Text(
+                  'Masukkan Ulang Password',
+                  style: GoogleFonts.alexandria( // ✅
+                    color: Colors.black,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+
+              /// Input Konfirmasi Password
+              Positioned(
+                left: screenWidth * 0.142,
+                top: screenHeight * 0.689,
+                child: Container(
+                  width: screenWidth * 0.714,
+                  height: 48,
+                  decoration: ShapeDecoration(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    shadows: const [
+                      BoxShadow(
+                        color: Color(0x3F000000),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                        spreadRadius: 3,
                       ),
-                    );
-                  },
-                  child: Text(
-                    'Lupa Password ?',
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFFD05122),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                      decorationColor: const Color(0xFFD05122),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _konfirmasiController,
+                    obscureText: _obscureKonfirmasi,
+                    textAlignVertical: TextAlignVertical.center,
+                    style: GoogleFonts.alexandria( // ✅
+                      color: Colors.black,
+                      fontSize: 15,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      hintStyle: GoogleFonts.alexandria( // ✅
+                        color: Colors.black.withOpacity(0.3),
+                        fontSize: 15,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      border: InputBorder.none,
+                      suffixIcon: GestureDetector(
+                        onTap: () => setState(() => _obscureKonfirmasi = !_obscureKonfirmasi),
+                        child: Icon(
+                          _obscureKonfirmasi ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.black26,
+                          size: 18,
+                        ),
+                      ),
+                      suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 48),
                     ),
                   ),
                 ),
               ),
 
-              /// Tombol Masuk Sekarang
+              /// Tombol Konfirmasi
               Positioned(
                 left: screenWidth * 0.226,
-                top: screenHeight * 0.763,
+                top: screenHeight * 0.780,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MainScreen(),
-                      ),
-                    );
-                  },
+                  onTap: () {},
                   child: Container(
                     width: screenWidth * 0.547,
                     height: 45.54,
@@ -351,10 +357,10 @@ class _LoginState extends State<Login> {
                     ),
                     child: Center(
                       child: Text(
-                        'Masuk Sekarang',
-                        style: GoogleFonts.alexandria(
+                        'Konfirmasi',
+                        style: GoogleFonts.alexandria( // ✅
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

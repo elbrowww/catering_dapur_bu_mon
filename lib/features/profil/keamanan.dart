@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'lupa_password.dart'; // ✅ Tambah import
+import 'package:catering_dapur_bu_mon/features/auth/lupa_password.dart'; // ✅ Tambah import
 
 class KeamananPage extends StatefulWidget {
   const KeamananPage({super.key});
