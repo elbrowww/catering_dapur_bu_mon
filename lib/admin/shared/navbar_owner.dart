@@ -45,8 +45,8 @@ class NavbarOwner extends StatelessWidget {
           ),
           _NavItemOwner(
             imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F15a22875-ff29-4bf1-a688-0556d35ad4a3.png',
-            iconWidth: 42,
-            iconHeight: 40,
+            iconWidth: 28,
+            iconHeight: 28,
             label: 'Kelola Menu',
             isSelected: selectedIndex == 2,
             onTap: () => onItemTapped(2),

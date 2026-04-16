@@ -19,12 +19,12 @@ const _shadowDefault = [
 ];
 
 class _StatItem {
-  final String imageUrl;
+  final Widget iconWidget;
   final String label;
   final String count;
 
   const _StatItem({
-    required this.imageUrl,
+    required this.iconWidget,
     required this.label,
     required this.count,
   });
@@ -44,25 +44,57 @@ class _MenuItem {
   });
 }
 
-const _statItems = [
+final _statItems = [
   _StatItem(
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Ff8c525fa-ed93-4df9-be04-32c52a23f9c2.png',
+    iconWidget: Image.network(
+      'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F9afca5a0-4639-4856-8589-72159b5e4c57.png',
+      width: 30,
+      height: 30,
+      fit: BoxFit.contain,
+    ),
     label: 'Total Pesanan',
     count: '300',
   ),
   _StatItem(
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Fb9b676eb-0125-45fe-aa14-63414f221fd6.png',
+    iconWidget: Image.network(
+      'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Fb9b676eb-0125-45fe-aa14-63414f221fd6.png',
+      width: 30,
+      height: 30,
+      fit: BoxFit.contain,
+    ),
     label: 'Menu Ready',
     count: '300',
   ),
   _StatItem(
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2Fc460e23d-1e4a-4e1a-a75d-9c20a1c5c5bf.png',
+    iconWidget: SizedBox.square(
+      dimension: 30,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 3,
+            top: 4,
+            child: Image.network(
+              'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Fe1937411-31f6-45ce-9aaf-2a6e6d455c6f.png',
+              width: 25,
+              height: 23,
+              fit: BoxFit.contain,
+            ),
+          )
+        ],
+      ),
+    ),
     label: 'Pesanan Diproses',
     count: '300',
   ),
   _StatItem(
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SONxcLGhX9Sc4jqH3qj%2F1c21c4be-8470-4fab-b337-f6e80fd71212.png',
-    label: 'Total Pemesanan',
+    iconWidget: Image.network(
+      'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F9dbd5ecc-82b4-46f3-b7a8-386c8e0f4649.png',
+      width: 23,
+      height: 25,
+      fit: BoxFit.contain,
+    ),
+    label: 'Pesanan Masuk',
     count: '300',
   ),
 ];
@@ -272,7 +304,7 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Row(
         children: [
-          Image.network(item.imageUrl, width: 25, height: 25, fit: BoxFit.contain),
+          item.iconWidget,
           const SizedBox(width: 8),
           Expanded(
             child: Column(
