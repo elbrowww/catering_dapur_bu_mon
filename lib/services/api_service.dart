@@ -216,6 +216,9 @@ class ApiService {
         '/keranjang.php',
         data: {'id_menu': idMenu, 'jumlah': jumlah},
       );
+
+      print('📦 Response tambahKeranjang: ${response.data}'); // 
+
       return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));

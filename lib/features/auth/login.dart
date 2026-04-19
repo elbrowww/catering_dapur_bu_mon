@@ -2,7 +2,7 @@ import 'package:catering_dapur_bu_mon/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/auth/daftar.dart';
-import 'package:catering_dapur_bu_mon/features/beranda/beranda.dart';
+// import 'package:catering_dapur_bu_mon/features/beranda/beranda.dart';
 import 'package:catering_dapur_bu_mon/admin/auth/loginadmin.dart';
 import 'package:catering_dapur_bu_mon/features/auth/lupa_password.dart'; // ← tambah import ini
 

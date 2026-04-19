@@ -16,6 +16,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
   void initState() {
     super.initState();
     _ctrl.addListener(_onUpdate);
+    _loadKeranjang();
   }
 
   @override
@@ -25,6 +26,10 @@ class _KeranjangPageState extends State<KeranjangPage> {
   }
 
   void _onUpdate() => setState(() {});
+
+  Future<void> _loadKeranjang() async {
+    await _ctrl.loadKeranjang();
+  }
 
   void _kosongkan() {
     showDialog(
@@ -42,9 +47,9 @@ class _KeranjangPageState extends State<KeranjangPage> {
                 style: GoogleFonts.alexandria(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () {
-              _ctrl.kosongkan();
-              Navigator.pop(context);
+            onPressed: () async {
+              await _ctrl.kosongkan();
+              if (mounted) Navigator.pop(context);
             },
             child: Text('Ya, Kosongkan',
                 style: GoogleFonts.alexandria(
@@ -56,7 +61,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
     );
   }
 
-  void _checkout() {
+  Future<void> _checkout() async {
     if (_ctrl.items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -67,22 +72,74 @@ class _KeranjangPageState extends State<KeranjangPage> {
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            'Checkout berhasil! Total: ${_ctrl.formatRupiah(_ctrl.total)}',
-            style: GoogleFonts.alexandria(color: Colors.white)),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
+
+    // Tampilkan dialog pilihan metode pembayaran
+    final metodeBayar = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Pilih Metode Pembayaran',
+            style: GoogleFonts.alexandria(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet),
+              title: const Text('Transfer Bank'),
+              onTap: () => Navigator.pop(_, 'transfer'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.qr_code),
+              title: const Text('QRIS'),
+              onTap: () => Navigator.pop(_, 'qris'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.money),
+              title: const Text('COD (Bayar di Tempat)'),
+              onTap: () => Navigator.pop(_, 'cod'),
+            ),
+          ],
+        ),
       ),
     );
+
+    if (metodeBayar == null) return;
+
+    // Proses checkout
+    final result = await _ctrl.checkout(
+      metodeBayar: metodeBayar,
+      catatan: '',
+    );
+
+    if (mounted) {
+      if (result['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Checkout berhasil! Total: ${_ctrl.formatRupiah(_ctrl.total)}',
+                style: GoogleFonts.alexandria(color: Colors.white)),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Checkout gagal: ${result['message']}',
+                style: GoogleFonts.alexandria(color: Colors.white)),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final items = _ctrl.items;
     final double statusBarHeight = MediaQuery.of(context).padding.top;
-    final double navbarHeight = kBottomNavigationBarHeight + 60; // ✅
+    final double navbarHeight = kBottomNavigationBarHeight + 60;
 
     return Container(
       decoration: const BoxDecoration(
@@ -135,128 +192,140 @@ class _KeranjangPageState extends State<KeranjangPage> {
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
-              child: items.isEmpty
-                  ? _buildKosong()
-                  : Column(
-                      children: [
-                        // ✅ List item scroll bebas
-                        Expanded(
-                          child: ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                            itemCount: items.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (_, i) => _KeranjangItem(
-                              nama: items[i]['nama'],
-                              harga: _ctrl.formatRupiah(items[i]['harga']),
-                              jumlah: items[i]['jumlah'],
-                              imageUrl: items[i]['imageUrl'],
-                              onTambah: () => _ctrl.tambahSatu(i),
-                              onKurang: () => _ctrl.kurangSatu(i),
+              child: _ctrl.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFD05122),
+                      ),
+                    )
+                  : items.isEmpty
+                      ? _buildKosong()
+                      : Column(
+                          children: [
+                            Expanded(
+                              child: ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                                itemCount: items.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (_, i) => _KeranjangItem(
+                                  nama: items[i]['nama'],
+                                  harga: _ctrl.formatRupiah(items[i]['harga']),
+                                  jumlah: items[i]['jumlah'],
+                                  imageUrl: items[i]['imageUrl'] ?? '',
+                                  onTambah: () => _ctrl.tambahSatu(i),
+                                  onKurang: () => _ctrl.kurangSatu(i),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-
-                        // ✅ Total + tombol di luar Expanded, tidak ikut scroll
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(20, 0, 20, navbarHeight),
-                          child: Column(
-                            children: [
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(9),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x3F000000),
-                                      spreadRadius: 3,
-                                      offset: Offset(0, 1.7),
-                                      blurRadius: 3,
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('Total',
-                                        style: GoogleFonts.alexandria(
-                                            color: Colors.black,
-                                            fontSize: 16)),
-                                    Text(
-                                        _ctrl.formatRupiah(_ctrl.total),
-                                        style: GoogleFonts.alexandria(
-                                          color: const Color(0xFFDC6727),
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.bold,
-                                        )),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-
-                              GestureDetector(
-                                onTap: _checkout,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 43,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(18),
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFEE8B2E),
-                                        Color(0xFFD05122),
-                                        Color(0xFFAC3715),
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(20, 0, 20, navbarHeight),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(9),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Color(0x3F000000),
+                                          spreadRadius: 3,
+                                          offset: Offset(0, 1.7),
+                                          blurRadius: 3,
+                                        ),
                                       ],
-                                      stops: [0.17, 0.47, 0.79],
                                     ),
-                                  ),
-                                  child: Center(
-                                    child: Text('Checkout',
-                                        style: GoogleFonts.alexandria(
-                                          color: Colors.black,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        )),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-
-                              GestureDetector(
-                                onTap: _kosongkan,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 43,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(18),
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFAC3715),
-                                        Color(0xFFD05122),
-                                        Color(0xFFAC3715),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Total',
+                                            style: GoogleFonts.alexandria(
+                                                color: Colors.black,
+                                                fontSize: 16)),
+                                        Text(
+                                            _ctrl.formatRupiah(_ctrl.total),
+                                            style: GoogleFonts.alexandria(
+                                              color: const Color(0xFFDC6727),
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.bold,
+                                            )),
                                       ],
-                                      stops: [0.17, 0.43, 0.61],
                                     ),
                                   ),
-                                  child: Center(
-                                    child: Text('Kosongkan Keranjang',
-                                        style: GoogleFonts.alexandria(
-                                          color: Colors.black,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        )),
+                                  const SizedBox(height: 10),
+
+                                  GestureDetector(
+                                    onTap: _ctrl.isLoading ? null : _checkout,
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 43,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(18),
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFEE8B2E),
+                                            Color(0xFFD05122),
+                                            Color(0xFFAC3715),
+                                          ],
+                                          stops: [0.17, 0.47, 0.79],
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: _ctrl.isLoading
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : Text('Checkout',
+                                                style: GoogleFonts.alexandria(
+                                                  color: Colors.black,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                )),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+
+                                  GestureDetector(
+                                    onTap: _ctrl.isLoading ? null : _kosongkan,
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 43,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(18),
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFAC3715),
+                                            Color(0xFFD05122),
+                                            Color(0xFFAC3715),
+                                          ],
+                                          stops: [0.17, 0.43, 0.61],
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text('Kosongkan Keranjang',
+                                            style: GoogleFonts.alexandria(
+                                              color: Colors.black,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            )),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
             ),
           ),
         ],
