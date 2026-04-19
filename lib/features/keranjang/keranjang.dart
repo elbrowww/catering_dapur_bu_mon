@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
+import 'package:catering_dapur_bu_mon/features/keranjang/checkout.dart';
 
 class KeranjangPage extends StatefulWidget {
   const KeranjangPage({super.key});
@@ -61,80 +62,24 @@ class _KeranjangPageState extends State<KeranjangPage> {
     );
   }
 
-  Future<void> _checkout() async {
-    if (_ctrl.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Keranjang masih kosong!',
-              style: GoogleFonts.alexandria(color: Colors.white)),
-          backgroundColor: const Color(0xFFD05122),
-        ),
-      );
-      return;
-    }
-
-    // Tampilkan dialog pilihan metode pembayaran
-    final metodeBayar = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Pilih Metode Pembayaran',
-            style: GoogleFonts.alexandria(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet),
-              title: const Text('Transfer Bank'),
-              onTap: () => Navigator.pop(_, 'transfer'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.qr_code),
-              title: const Text('QRIS'),
-              onTap: () => Navigator.pop(_, 'qris'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.money),
-              title: const Text('COD (Bayar di Tempat)'),
-              onTap: () => Navigator.pop(_, 'cod'),
-            ),
-          ],
-        ),
+void _checkout() {
+  if (_ctrl.items.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Keranjang masih kosong!',
+            style: GoogleFonts.alexandria(color: Colors.white)),
+        backgroundColor: const Color(0xFFD05122),
       ),
     );
-
-    if (metodeBayar == null) return;
-
-    // Proses checkout
-    final result = await _ctrl.checkout(
-      metodeBayar: metodeBayar,
-      catatan: '',
-    );
-
-    if (mounted) {
-      if (result['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Checkout berhasil! Total: ${_ctrl.formatRupiah(_ctrl.total)}',
-                style: GoogleFonts.alexandria(color: Colors.white)),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Checkout gagal: ${result['message']}',
-                style: GoogleFonts.alexandria(color: Colors.white)),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
+    return;
   }
-
+  
+  // Navigasi ke halaman checkout
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const CheckoutPage()),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final items = _ctrl.items;
