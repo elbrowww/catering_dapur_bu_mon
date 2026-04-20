@@ -2,9 +2,9 @@ import 'package:catering_dapur_bu_mon/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/auth/daftar.dart';
-// import 'package:catering_dapur_bu_mon/features/beranda/beranda.dart';
 import 'package:catering_dapur_bu_mon/admin/auth/loginadmin.dart';
-import 'package:catering_dapur_bu_mon/features/auth/lupa_password.dart'; // ← tambah import ini
+import 'package:catering_dapur_bu_mon/features/auth/lupa_password.dart';
+import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -18,12 +18,90 @@ class _LoginState extends State<Login> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   int _logoTapCount = 0;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // FUNGSI LOGIN
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // Validasi
+    if (email.isEmpty) {
+      _showSnackbar('Email/No Telepon harus diisi');
+      return;
+    }
+    if (password.isEmpty) {
+      _showSnackbar('Password harus diisi');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await ApiService.login(
+        email: email,
+        password: password,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        _showSnackbar('Login berhasil! Selamat datang ${result['user']['nama']}', isError: false);
+        
+        // Transisi smooth ke MainScreen
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const MainScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              const begin = Offset(1.0, 0.0);
+              const end = Offset.zero;
+              const curve = Curves.easeInOut;
+              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+              var offsetAnimation = animation.drive(tween);
+              return SlideTransition(position: offsetAnimation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showSnackbar(e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showSnackbar('Terjadi kesalahan: $e');
+      }
+    }
+  }
+
+  void _showSnackbar(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -77,8 +155,16 @@ class _LoginState extends State<Login> {
                         _logoTapCount = 0;
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginAdmin(),
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation, secondaryAnimation) => const LoginAdmin(),
+                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                              const begin = Offset(1.0, 0.0);
+                              const end = Offset.zero;
+                              const curve = Curves.easeInOut;
+                              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                              var offsetAnimation = animation.drive(tween);
+                              return SlideTransition(position: offsetAnimation, child: child);
+                            },
                           ),
                         );
                       }
@@ -143,13 +229,24 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                       ),
-                      /// Tab Daftar (tidak aktif)
+                      /// Tab Daftar (tidak aktif) - dengan transisi smooth
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const Daftar()),
+                              PageRouteBuilder(
+                                pageBuilder: (context, animation, secondaryAnimation) => const Daftar(),
+                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                  const begin = Offset(-1.0, 0.0);
+                                  const end = Offset.zero;
+                                  const curve = Curves.easeInOut;
+                                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                                  var offsetAnimation = animation.drive(tween);
+                                  return SlideTransition(position: offsetAnimation, child: child);
+                                },
+                                transitionDuration: const Duration(milliseconds: 400),
+                              ),
                             );
                           },
                           child: Center(
@@ -172,12 +269,12 @@ class _LoginState extends State<Login> {
                 ),
               ),
 
-              /// Label No Telp / Email
+              /// Label Email / No Telp
               Positioned(
                 left: screenWidth * 0.142,
                 top: screenHeight * 0.500,
                 child: Text(
-                  'Masukkan No Telp / Email',
+                  'Masukkan Email / No Telp',
                   style: GoogleFonts.alexandria(
                     color: Colors.black,
                     fontSize: 14,
@@ -185,7 +282,7 @@ class _LoginState extends State<Login> {
                 ),
               ),
 
-              /// Input No Telp / Email
+              /// Input Email / No Telp
               Positioned(
                 left: screenWidth * 0.142,
                 top: screenHeight * 0.524,
@@ -214,7 +311,7 @@ class _LoginState extends State<Login> {
                       fontSize: 15,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'No Telp / Email',
+                      hintText: 'Email / No Telepon',
                       hintStyle: GoogleFonts.alexandria(
                         color: Colors.black.withOpacity(0.3),
                         fontSize: 15,
@@ -297,7 +394,7 @@ class _LoginState extends State<Login> {
                 ),
               ),
 
-              /// Lupa Password ← DIPERBAIKI: onTap sekarang navigasi ke LupaPasswordPage
+              /// Lupa Password
               Positioned(
                 right: screenWidth * 0.142,
                 top: screenHeight * 0.673,
@@ -305,8 +402,17 @@ class _LoginState extends State<Login> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const LupaPasswordPage(),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => const LupaPasswordPage(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(1.0, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOut;
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          return SlideTransition(position: offsetAnimation, child: child);
+                        },
+                        transitionDuration: const Duration(milliseconds: 300),
                       ),
                     );
                   },
@@ -328,14 +434,7 @@ class _LoginState extends State<Login> {
                 left: screenWidth * 0.226,
                 top: screenHeight * 0.763,
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MainScreen(),
-                      ),
-                    );
-                  },
+                  onTap: _isLoading ? null : _handleLogin,
                   child: Container(
                     width: screenWidth * 0.547,
                     height: 45.54,
@@ -350,14 +449,23 @@ class _LoginState extends State<Login> {
                       ),
                     ),
                     child: Center(
-                      child: Text(
-                        'Masuk Sekarang',
-                        style: GoogleFonts.alexandria(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Masuk Sekarang',
+                              style: GoogleFonts.alexandria(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                     ),
                   ),
                 ),
