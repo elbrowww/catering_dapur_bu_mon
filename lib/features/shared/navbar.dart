@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 // ============================================================
 // CUSTOM NAVBAR — dipanggil hanya di MainScreen (main.dart)
+// Ukuran lebih kecil, style tetap sama
 // ============================================================
 class CustomNavbar extends StatelessWidget {
   final int selectedIndex;
@@ -16,9 +17,10 @@ class CustomNavbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double navbarHeight = 74;
-    const double floatingButtonSize = 74;
-    const double floatingButtonOverflow = 19;
+    // Ukuran yang dikecilkan
+    const double navbarHeight = 58;        // dari 74
+    const double floatingButtonSize = 58;  // dari 74
+    const double floatingButtonOverflow = 14; // dari 19
 
     return SizedBox(
       height: navbarHeight + floatingButtonOverflow,
@@ -104,24 +106,24 @@ class CustomNavbar extends StatelessWidget {
                     ),
                     // Ikon keranjang
                     Positioned(
-                      top: 14,
+                      top: 10, // dari 14
                       child: Image.network(
                         'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMOKhEnss8buSiiHoow%2Ffba6dd6d-919f-435f-9f11-bdf00eb3c959.png',
-                        width: 35,
-                        height: 34,
+                        width: 28,  // dari 35
+                        height: 27, // dari 34
                         fit: BoxFit.contain,
                       ),
                     ),
                     // Label Keranjang
                     Positioned(
-                      bottom: 12,
+                      bottom: 8, // dari 12
                       child: Opacity(
                         opacity: 0.8,
                         child: Text(
                           'Keranjang',
                           style: GoogleFonts.lora(
                             color: const Color(0xFFFFF8EF),
-                            fontSize: 10,
+                            fontSize: 8, // dari 10
                           ),
                         ),
                       ),
@@ -157,7 +159,7 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 64,
+        width: 52, // dari 64
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -166,12 +168,12 @@ class _NavItem extends StatelessWidget {
               opacity: isSelected ? 1.0 : 0.75,
               child: Image.network(
                 imageUrl,
-                width: 30,
-                height: 30,
+                width: 24, // dari 30
+                height: 24, // dari 30
                 fit: BoxFit.contain,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3), // dari 4
             Opacity(
               opacity: 0.8,
               child: Text(
@@ -179,9 +181,8 @@ class _NavItem extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lora(
                   color: const Color(0xFFFFF8EF),
-                  fontSize: 12,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 10, // dari 12
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),
