@@ -1,65 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:catering_dapur_bu_mon/admin/shared/header_admin.dart'; // ✅
+import 'package:catering_dapur_bu_mon/admin/shared/header_admin.dart';
+import 'package:catering_dapur_bu_mon/services/api_service.dart';
+import 'package:catering_dapur_bu_mon/services/session_manager.dart';
 
 class _CustomerData {
   final String nama;
-  final String noHp;
+  final String email;
   final String alamat;
-  final String imageUrl;
 
   const _CustomerData({
     required this.nama,
-    required this.noHp,
+    required this.email,
     required this.alamat,
-    required this.imageUrl,
   });
-}
 
-const _customers = [
-  _CustomerData(
-    nama: 'Tomoka Miyazaki',
-    noHp: '081234567890',
-    alamat: 'Jl. Gemradak RT 06/RW 1',
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F72c32657-9987-4031-ad4b-ec3362e0f9c4.png',
-  ),
-  _CustomerData(
-    nama: 'Christoper Colombus',
-    noHp: '081234567890',
-    alamat: 'Jl. Jalanin Aja Dulu RT 09/RW 09',
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Ffa87a095-3052-4961-b802-ef18ba9f0933.png',
-  ),
-  _CustomerData(
-    nama: 'Shin Eunsoo',
-    noHp: '081234567890',
-    alamat: 'Jl. Jalanin Aja Dulu RT 09/RW 09',
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Fe3f3b504-a85b-42f1-ab2f-9a1acd36ff3e.png',
-  ),
-  _CustomerData(
-    nama: 'Sal Supriadi',
-    noHp: '081234567890',
-    alamat: 'Jl. Jalanin Aja Dulu RT 09/RW 09',
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F5a2e4711-455b-4ad7-af4a-aaabef8d6a9d.png',
-  ),
-  _CustomerData(
-    nama: 'Shin Eunsoo',
-    noHp: '081234567890',
-    alamat: 'Jl. Jalanin Aja Dulu RT 09/RW 09',
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F3e675e1a-4073-4cd6-a080-087f4a93730e.png',
-  ),
-  _CustomerData(
-    nama: 'Sal Supriadi',
-    noHp: '081234567890',
-    alamat: 'Jl. Jalanin Aja Dulu RT 09/RW 09',
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F3616304c-da78-4c01-bae8-450debde0193.png',
-  ),
-  _CustomerData(
-    nama: 'Shin Eunsoo',
-    noHp: '081234567890',
-    alamat: 'Jl. Jalanin Aja Dulu RT 09/RW 09',
-    imageUrl: 'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F38a0ecc6-d20b-4047-b568-505a2f1e9d34.png',
-  ),
-];
+  factory _CustomerData.fromJson(Map<String, dynamic> json) {
+    return _CustomerData(
+      nama: json['nama'] ?? '',
+      email: json['email'] ?? '',
+      alamat: json['alamat'] ?? '',
+    );
+  }
+}
 
 const _ulasanNama = 'Dayat';
 const _ulasanIsi =
@@ -75,6 +38,15 @@ class DataCustomerPage extends StatefulWidget {
 class _DataCustomerPageState extends State<DataCustomerPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  List<_CustomerData> _customers = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCustomers();
+  }
 
   @override
   void dispose() {
@@ -82,11 +54,40 @@ class _DataCustomerPageState extends State<DataCustomerPage> {
     super.dispose();
   }
 
+  Future<void> _fetchCustomers() async {
+    // DEBUG: cek token dan user
+    final token = await SessionManager.getToken();
+    final user = await SessionManager.getUser();
+    print('🔍 Token: $token');
+    print('🔍 User: $user');
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final rawList = await ApiService.getDataCustomer();
+      setState(() {
+        _customers = rawList
+            .map((item) => _CustomerData.fromJson(item as Map<String, dynamic>))
+            .toList();
+        _isLoading = false;
+      });
+    } on ApiException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+        _isLoading = false;
+      });
+    }
+  }
+
   List<_CustomerData> get _filtered {
     if (_searchQuery.isEmpty) return _customers;
-    return _customers.where((c) =>
-        c.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        c.noHp.contains(_searchQuery)).toList();
+    return _customers
+        .where((c) =>
+            c.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            c.email.contains(_searchQuery))
+        .toList();
   }
 
   @override
@@ -96,10 +97,11 @@ class _DataCustomerPageState extends State<DataCustomerPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const HeaderAdmin(), // ✅
+            const HeaderAdmin(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -116,13 +118,61 @@ class _DataCustomerPageState extends State<DataCustomerPage> {
                     const SizedBox(height: 10),
                     _SearchBar(
                       controller: _searchController,
-                      onChanged: (val) => setState(() => _searchQuery = val),
+                      onChanged: (val) =>
+                          setState(() => _searchQuery = val),
                     ),
                     const SizedBox(height: 12),
-                    ..._filtered.map((c) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _CustomerCard(customer: c),
-                        )),
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFD05122),
+                          ),
+                        ),
+                      )
+                    else if (_errorMessage != null)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              Text(
+                                _errorMessage!,
+                                style: GoogleFonts.alexandria(
+                                    color: Colors.red, fontSize: 14),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _fetchCustomers,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD05122),
+                                ),
+                                child: Text('Coba Lagi',
+                                    style: GoogleFonts.alexandria(
+                                        color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (_filtered.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Text(
+                            'Tidak ada customer ditemukan.',
+                            style: GoogleFonts.alexandria(
+                                color: Colors.black54, fontSize: 14),
+                          ),
+                        ),
+                      )
+                    else
+                      ..._filtered.map((c) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _CustomerCard(customer: c),
+                          )),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -253,10 +303,7 @@ class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
 
-  const _SearchBar({
-    required this.controller,
-    required this.onChanged,
-  });
+  const _SearchBar({required this.controller, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -282,9 +329,7 @@ class _SearchBar extends StatelessWidget {
               onChanged: onChanged,
               textAlignVertical: TextAlignVertical.center,
               style: GoogleFonts.lora(
-                color: const Color(0xFF1A1818),
-                fontSize: 14,
-              ),
+                  color: const Color(0xFF1A1818), fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Cari Nama atau Nomor HP',
                 hintStyle: GoogleFonts.lora(
@@ -305,11 +350,7 @@ class _SearchBar extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFFD05122),
-                Color(0xFFEE8B2E),
-                Color(0xFFFBA839),
-              ],
+              colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
               stops: [0.18, 0.61, 0.85],
             ),
           ),
@@ -350,15 +391,18 @@ class _CustomerCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Image.network(
-            customer.imageUrl,
-            width: 50,
-            height: 50,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const CircleAvatar(
-              radius: 25,
-              backgroundColor: Color(0xFFF79F36),
-              child: Icon(Icons.person, color: Colors.white),
+          CircleAvatar(
+            radius: 25,
+            backgroundColor: const Color(0xFFF79F36),
+            child: Text(
+              customer.nama.isNotEmpty
+                  ? customer.nama[0].toUpperCase()
+                  : '?',
+              style: GoogleFonts.alexandria(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -366,33 +410,24 @@ class _CustomerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  customer.nama,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(customer.nama,
+                    style: GoogleFonts.alexandria(
+                        color: Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
-                Text(
-                  customer.noHp,
-                  style: GoogleFonts.alexandria(
-                    color: const Color(0xFFC98C63),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  customer.alamat,
-                  style: GoogleFonts.alexandria(
-                    color: const Color(0xFFC98C63),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(customer.email,
+                    style: GoogleFonts.alexandria(
+                        color: const Color(0xFFC98C63),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                Text(customer.alamat,
+                    style: GoogleFonts.alexandria(
+                        color: const Color(0xFFC98C63),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),

@@ -306,6 +306,23 @@ class ApiService {
       throw ApiException(_getErrorMessage(e));
     }
   }
+  
+  // ==========================================================
+  //  CUSTOMER
+  // ==========================================================
+
+  static Future<List<dynamic>> getDataCustomer() async {
+    try {
+      final response = await _dio.get('/auth.php?action=list_customer');
+      final data = _parse(response);
+
+      if (data is List) return data;
+      if (data['data'] is List) return data['data'];
+      return [];
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
 }
 
 class ApiException implements Exception {
