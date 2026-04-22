@@ -21,91 +21,130 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
   int _jumlah = 1;
   bool _isLoading = false;
 
-  void _tambah() => setState(() => _jumlah++);
-  void _kurang() => setState(() { if (_jumlah > 1) _jumlah--; });
+  void _tambah() {
+    // Jangan bisa tambah melebihi stok
+    if (_jumlah < widget.menu.stok) {
+      setState(() => _jumlah++);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Stok hanya tersisa ${widget.menu.stok}',
+            style: GoogleFonts.alexandria(color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFFFFA726),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
 
-Future<void> _tambahKeranjang() async {
-  setState(() => _isLoading = true);
-  
-  try {
-    final success = await KeranjangController.instance.tambah(
-      nama: widget.menu.nama,
-      harga: widget.menu.harga.toInt(),
-      imageUrl: widget.menu.foto,
-      jumlah: _jumlah,
-      idMenu: widget.menu.idMenu,  // Pastikan idMenu tidak null
-    );
-    
-    if (mounted) {
-      if (success) {
+  void _kurang() => setState(() {
+        if (_jumlah > 1) _jumlah--;
+      });
+
+  Future<void> _tambahKeranjang() async {
+    // Jangan bisa pesan jika stok habis
+    if (widget.menu.isHabis) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Stok ${widget.menu.nama} sedang habis.',
+            style: GoogleFonts.alexandria(color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFFE53935),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final success = await KeranjangController.instance.tambah(
+        nama: widget.menu.nama,
+        harga: widget.menu.harga.toInt(),
+        imageUrl: widget.menu.foto,
+        jumlah: _jumlah,
+        idMenu: widget.menu.idMenu,
+      );
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$_jumlah× ${widget.menu.nama} ditambahkan ke keranjang!',
+                      style: GoogleFonts.alexandria(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$_jumlah× ${widget.menu.nama} ditambahkan ke keranjang! (Lokal)',
+                      style: GoogleFonts.alexandria(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '$_jumlah× ${widget.menu.nama} ditambahkan ke keranjang!',
-                    style: GoogleFonts.alexandria(color: Colors.white),
-                  ),
-                ),
-              ],
+            content: Text(
+              '$_jumlah× ${widget.menu.nama} ditambahkan',
+              style: GoogleFonts.alexandria(color: Colors.white),
             ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-        Navigator.pop(context);
-      } else {
-        // Jika gagal, tetap tampilkan sukses karena sudah di-fallback ke lokal
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '$_jumlah× ${widget.menu.nama} ditambahkan ke keranjang! (Lokal)',
-                    style: GoogleFonts.alexandria(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.orange,
             duration: const Duration(seconds: 2),
           ),
         );
         Navigator.pop(context);
       }
-    }
-  } catch (e) {
-    if (mounted) {
-      // Tetap anggap sukses untuk UX
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '$_jumlah× ${widget.menu.nama} ditambahkan',
-            style: GoogleFonts.alexandria(color: Colors.white),
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      Navigator.pop(context);
-    }
-  } finally {
-    if (mounted) {
-      setState(() => _isLoading = false);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    final bool habis = widget.menu.isHabis;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -146,39 +185,75 @@ Future<void> _tambahKeranjang() async {
                   ),
                   // Gambar makanan di tengah
                   Center(
-                    child: Container(
-                      width: 201,
-                      height: 201,
-                      margin: const EdgeInsets.only(top: 50),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF79F36),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: widget.menu.foto.isNotEmpty
-                            ? Image.network(
-                                widget.menu.foto,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.fastfood,
-                                  color: Colors.white,
-                                  size: 80,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.fastfood,
-                                color: Colors.white,
-                                size: 80,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 201,
+                          height: 201,
+                          margin: const EdgeInsets.only(top: 50),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF79F36),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
                               ),
-                      ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: widget.menu.foto.isNotEmpty
+                                ? Image.network(
+                                    widget.menu.foto,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.fastfood,
+                                      color: Colors.white,
+                                      size: 80,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.fastfood,
+                                    color: Colors.white,
+                                    size: 80,
+                                  ),
+                          ),
+                        ),
+                        // Overlay "Stok Habis" di atas gambar
+                        if (habis)
+                          Positioned(
+                            top: 50,
+                            child: Container(
+                              width: 201,
+                              height: 201,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.45),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE53935),
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: Text(
+                                    'Stok Habis',
+                                    style: GoogleFonts.alexandria(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -237,7 +312,8 @@ Future<void> _tambahKeranjang() async {
                           child: Text(
                             widget.menu.nama,
                             style: GoogleFonts.alexandria(
-                              color: const Color(0xFF1A1818).withOpacity(0.85),
+                              color:
+                                  const Color(0xFF1A1818).withOpacity(0.85),
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
                             ),
@@ -251,7 +327,8 @@ Future<void> _tambahKeranjang() async {
                             Text(
                               '5',
                               style: GoogleFonts.alexandria(
-                                color: const Color(0xFF1A1818).withOpacity(0.8),
+                                color: const Color(0xFF1A1818)
+                                    .withOpacity(0.8),
                                 fontSize: 22,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -263,14 +340,50 @@ Future<void> _tambahKeranjang() async {
 
                     const SizedBox(height: 4),
 
-                    // Harga
-                    Text(
-                      widget.menu.formattedHarga,
-                      style: GoogleFonts.alexandria(
-                        color: const Color(0xFFD76025),
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    // Harga + Badge Stok berdampingan
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.menu.formattedHarga,
+                          style: GoogleFonts.alexandria(
+                            color: const Color(0xFFD76025),
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Badge stok
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Color(widget.menu.warnaStok),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                widget.menu.isHabis
+                                    ? Icons.remove_shopping_cart_rounded
+                                    : Icons.inventory_2_rounded,
+                                color: Colors.white,
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                widget.menu.labelStok,
+                                style: GoogleFonts.alexandria(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 6),
@@ -303,8 +416,8 @@ Future<void> _tambahKeranjang() async {
                       widget.menu.deskripsi.isNotEmpty
                           ? widget.menu.deskripsi
                           : 'Menu spesial Dapur Bu Mon yang dimasak dengan bumbu rempah pilihan. '
-                            'Cocok untuk berbagai acara seperti arisan, pernikahan, maupun pesanan harian. '
-                            'Dijamin lezat dan higienis, disiapkan dengan penuh cinta oleh Bu Mon.',
+                              'Cocok untuk berbagai acara seperti arisan, pernikahan, maupun pesanan harian. '
+                              'Dijamin lezat dan higienis, disiapkan dengan penuh cinta oleh Bu Mon.',
                       style: GoogleFonts.alexandria(
                         color: const Color(0xFF1A1818).withOpacity(0.6),
                         fontSize: 14,
@@ -318,7 +431,7 @@ Future<void> _tambahKeranjang() async {
             ),
           ),
 
-          // ── Bottom bar: − | jumlah | + | Tambah Keranjang ──
+          // ── Bottom bar ──────────────────────────────────
           Positioned(
             bottom: 0,
             left: 0,
@@ -337,8 +450,12 @@ Future<void> _tambahKeranjang() async {
               ),
               child: Row(
                 children: [
-                  // Tombol kurang
-                  _TombolBulat(icon: Icons.remove, onTap: _kurang),
+                  // Tombol kurang — disabled jika habis
+                  _TombolBulat(
+                    icon: Icons.remove,
+                    onTap: habis ? () {} : _kurang,
+                    disabled: habis,
+                  ),
                   const SizedBox(width: 8),
 
                   // Angka jumlah
@@ -351,7 +468,7 @@ Future<void> _tambahKeranjang() async {
                     ),
                     child: Center(
                       child: Text(
-                        '$_jumlah',
+                        habis ? '0' : '$_jumlah',
                         style: GoogleFonts.alexandria(
                           color: const Color(0xFF1A1818),
                           fontSize: 20,
@@ -362,31 +479,42 @@ Future<void> _tambahKeranjang() async {
                   ),
                   const SizedBox(width: 8),
 
-                  // Tombol tambah
-                  _TombolBulat(icon: Icons.add, onTap: _tambah),
+                  // Tombol tambah — disabled jika habis
+                  _TombolBulat(
+                    icon: Icons.add,
+                    onTap: habis ? () {} : _tambah,
+                    disabled: habis,
+                  ),
                   const SizedBox(width: 14),
 
                   // Tombol Tambah Keranjang
                   Expanded(
                     child: GestureDetector(
-                      onTap: _isLoading ? null : _tambahKeranjang,
+                      onTap: (_isLoading || habis) ? null : _tambahKeranjang,
                       child: Container(
                         height: 50,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
-                            colors: [
-                              Color(0xFFEE8B2E),
-                              Color(0xFFD05122),
-                              Color(0xFFAC3715),
-                            ],
-                            stops: [0.0, 0.5, 1.0],
+                            colors: habis
+                                ? [
+                                    Colors.grey.shade400,
+                                    Colors.grey.shade500,
+                                  ]
+                                : const [
+                                    Color(0xFFEE8B2E),
+                                    Color(0xFFD05122),
+                                    Color(0xFFAC3715),
+                                  ],
+                            stops: habis ? [0.0, 1.0] : [0.0, 0.5, 1.0],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFD05122).withOpacity(0.4),
+                              color: habis
+                                  ? Colors.grey.withOpacity(0.3)
+                                  : const Color(0xFFD05122).withOpacity(0.4),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -406,11 +534,18 @@ Future<void> _tambahKeranjang() async {
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.shopping_cart_outlined,
-                                      color: Colors.white, size: 20),
+                                  Icon(
+                                    habis
+                                        ? Icons.remove_shopping_cart_rounded
+                                        : Icons.shopping_cart_outlined,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Tambah Keranjang',
+                                    habis
+                                        ? 'Stok Habis'
+                                        : 'Tambah Keranjang',
                                     style: GoogleFonts.alexandria(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -436,7 +571,12 @@ Future<void> _tambahKeranjang() async {
 class _TombolBulat extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _TombolBulat({required this.icon, required this.onTap});
+  final bool disabled;
+  const _TombolBulat({
+    required this.icon,
+    required this.onTap,
+    this.disabled = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -447,9 +587,15 @@ class _TombolBulat extends StatelessWidget {
         height: 42,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          gradient: const LinearGradient(
-            colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
-            stops: [0.17, 0.47, 0.60],
+          gradient: LinearGradient(
+            colors: disabled
+                ? [Colors.grey.shade400, Colors.grey.shade400]
+                : const [
+                    Color(0xFFD05122),
+                    Color(0xFFEE8B2E),
+                    Color(0xFFFBA839),
+                  ],
+            stops: disabled ? [0.0, 1.0] : [0.17, 0.47, 0.60],
           ),
           boxShadow: const [
             BoxShadow(

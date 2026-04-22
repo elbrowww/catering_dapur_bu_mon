@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:catering_dapur_bu_mon/services/api_service.dart';
+import 'package:catering_dapur_bu_mon/models/menu_model.dart';
+import 'package:catering_dapur_bu_mon/features/menu/detail-menu.dart';
 
+// ── Beranda Page ───────────────────────────────────────────────
 class BerandaPage extends StatefulWidget {
   const BerandaPage({super.key});
 
@@ -13,8 +17,12 @@ class BerandaPage extends StatefulWidget {
 class _BerandaPageState extends State<BerandaPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
   String _alamat = 'Memuat lokasi...';
+
+  // ── State Menu dari Backend ──
+  List<MenuModel> _semuaMenu = [];
+  bool _isLoadingMenu = true;
+  String? _errorMenu;
 
   final TextEditingController _ulasanController = TextEditingController();
   List<Map<String, String>> _daftarUlasan = [
@@ -30,45 +38,42 @@ class _BerandaPageState extends State<BerandaPage> {
     },
   ];
 
-  final List<Map<String, String>> _semuaMenu = const [
-    {
-      'nama': 'Ayam Panggang',
-      'harga': 'Rp. 120.000',
-      'imageUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F523acacd6359d74640c5b9f05994ae4793dcf28fimage%206.png?alt=media&token=e97220f5-44dc-4197-b2df-34b3c3ea8f8f',
-    },
-    {
-      'nama': 'Ayam Lodho',
-      'harga': 'Rp. 130.000',
-      'imageUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F5bc84abcc8b704a6f2eb8d5a04879214d400d6c2image%2013.png?alt=media&token=518d40a4-c52c-45d9-aee9-54127deded32',
-    },
-    {
-      'nama': 'Tumpeng',
-      'harga': 'Rp. 250.000',
-      'imageUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2Fb611dcd57e8a8124c09e46eb95298a801a223e17image%204.png?alt=media&token=d76b27fe-1c4e-4600-815a-ec313f41bdbe',
-    },
-    {
-      'nama': 'Paket Nasi Kotak',
-      'harga': 'Rp. 15.000',
-      'imageUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F18a7fa0274cf38aa111ffa1eca9095ca82d92887image%204.png?alt=media&token=5fdda0e5-1c56-427d-9226-549dc4b4546f',
-    },
-    {
-      'nama': 'Paket Nasi Hemat',
-      'harga': 'Rp. 10.000',
-      'imageUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2Fa987c04c57196015702fdfed151f41d5771b925cimage%2014.png?alt=media&token=bd16b1ce-2df7-49d9-ac5e-f471a8aae2bd',
-    },
-    {
-      'nama': 'Putu Ayu',
-      'harga': 'Rp. 2.500/pcs',
-      'imageUrl': 'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2Fe2e4435dcec0825005f424dfba6f841d734964b0image%204.png?alt=media&token=2145d1ba-3db3-4ab0-a440-a0cbb6ce1f02',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
     _getLocation();
+    _fetchMenu();
   }
 
+  // ── Fetch Menu dari API ──────────────────────────────────────
+  Future<void> _fetchMenu() async {
+    setState(() {
+      _isLoadingMenu = true;
+      _errorMenu = null;
+    });
+    try {
+      final raw = await ApiService.getMenu();
+      final list = raw
+          .map((e) => MenuModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      setState(() {
+        _semuaMenu = list;
+        _isLoadingMenu = false;
+      });
+    } on ApiException catch (e) {
+      setState(() {
+        _errorMenu = e.message;
+        _isLoadingMenu = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMenu = 'Gagal memuat menu.';
+        _isLoadingMenu = false;
+      });
+    }
+  }
+
+  // ── Lokasi ──────────────────────────────────────────────────
   Future<void> _getLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -76,7 +81,6 @@ class _BerandaPageState extends State<BerandaPage> {
         setState(() => _alamat = 'GPS tidak aktif');
         return;
       }
-
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -85,21 +89,17 @@ class _BerandaPageState extends State<BerandaPage> {
           return;
         }
       }
-
       if (permission == LocationPermission.deniedForever) {
         setState(() => _alamat = 'Izin lokasi diblokir');
         return;
       }
-
       final Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-
       final List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );
-
       if (placemarks.isNotEmpty) {
         final Placemark place = placemarks.first;
         setState(() {
@@ -112,14 +112,28 @@ class _BerandaPageState extends State<BerandaPage> {
     }
   }
 
-  List<Map<String, String>> get _menuTerfilter {
+  // ── Filter Menu ──────────────────────────────────────────────
+  List<MenuModel> get _menuTerfilter {
     if (_searchQuery.isEmpty) return _semuaMenu;
     return _semuaMenu
         .where((m) =>
-            m['nama']!.toLowerCase().contains(_searchQuery.toLowerCase()))
+            m.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            m.kategori.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
 
+  // ── Navigasi ke Detail Menu ──────────────────────────────────
+  void _keDetailMenu(MenuModel menu) {
+    if (menu.isHabis) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailMenuPage(menu: menu),
+      ),
+    );
+  }
+
+  // ── Ulasan ──────────────────────────────────────────────────
   void _kirimUlasan() {
     final isi = _ulasanController.text.trim();
     if (isi.isEmpty) {
@@ -157,8 +171,19 @@ class _BerandaPageState extends State<BerandaPage> {
   String _tanggalSekarang() {
     final now = DateTime.now();
     const bulan = [
-      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
     ];
     return '${now.day} ${bulan[now.month]} ${now.year}';
   }
@@ -170,9 +195,9 @@ class _BerandaPageState extends State<BerandaPage> {
     super.dispose();
   }
 
+  // ── BUILD ────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    // ✅ Ambil tinggi navbar agar konten tidak tertutup
     final double navbarHeight = kBottomNavigationBarHeight + 60;
 
     return SingleChildScrollView(
@@ -183,6 +208,7 @@ class _BerandaPageState extends State<BerandaPage> {
           _buildHeader(context),
           const SizedBox(height: 16),
 
+          // Tracking Pesanan
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Text('Tracking Pesanan',
@@ -199,6 +225,7 @@ class _BerandaPageState extends State<BerandaPage> {
           ),
           const SizedBox(height: 24),
 
+          // Menu Terlaris
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Text('Menu Terlaris',
@@ -211,18 +238,38 @@ class _BerandaPageState extends State<BerandaPage> {
           const SizedBox(height: 8),
           SizedBox(
             height: 210,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 26),
-              itemCount: 4,
-              itemBuilder: (_, i) => const Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: _MenuTerlarisCard(),
-              ),
-            ),
+            child: _isLoadingMenu
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: Color(0xFFD05122)))
+                : _semuaMenu.isEmpty
+                    ? const SizedBox()
+                    : ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 26),
+                        itemCount: _semuaMenu
+                            .where((m) => m.stok > 0)
+                            .take(4)
+                            .length,
+                        itemBuilder: (_, i) {
+                          final tersedia = _semuaMenu
+                              .where((m) => m.stok > 0)
+                              .toList();
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: GestureDetector(
+                              onTap: () => _keDetailMenu(tersedia[i]),
+                              child: _MenuTerlarisCard(
+                                  menu: tersedia[i]),
+                            ),
+                          );
+                        },
+                      ),
           ),
           const SizedBox(height: 24),
 
+          // Menu Tersedia
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Row(
@@ -234,47 +281,109 @@ class _BerandaPageState extends State<BerandaPage> {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     )),
-                Opacity(
-                  opacity: 0.5,
-                  child: Text('Lihat semua',
-                      style: GoogleFonts.alexandria(
-                        color: const Color(0xFF1A1818),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      )),
+                GestureDetector(
+                  onTap: _fetchMenu,
+                  child: Opacity(
+                    opacity: 0.5,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.refresh,
+                            size: 14, color: Color(0xFF1A1818)),
+                        const SizedBox(width: 4),
+                        Text('Refresh',
+                            style: GoogleFonts.alexandria(
+                              color: const Color(0xFF1A1818),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            )),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          _menuTerfilter.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 26, vertical: 16),
-                  child: Text('Menu tidak ditemukan',
+
+          // State: Loading / Error / Empty / Data
+          if (_isLoadingMenu)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: CircularProgressIndicator(
+                    color: Color(0xFFD05122)),
+              ),
+            )
+          else if (_errorMenu != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 26, vertical: 16),
+              child: Column(
+                children: [
+                  Icon(Icons.wifi_off_rounded,
+                      color: Colors.grey.shade400, size: 40),
+                  const SizedBox(height: 8),
+                  Text(_errorMenu!,
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.alexandria(
                           color: Colors.grey, fontSize: 13)),
-                )
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 26),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.9,
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: _fetchMenu,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFD05122),
+                            Color(0xFFEE8B2E)
+                          ],
+                        ),
+                      ),
+                      child: Text('Coba Lagi',
+                          style: GoogleFonts.alexandria(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          )),
+                    ),
                   ),
-                  itemCount: _menuTerfilter.length,
-                  itemBuilder: (_, i) => _MenuTersediaCard(
-                    nama: _menuTerfilter[i]['nama']!,
-                    harga: _menuTerfilter[i]['harga']!,
-                    imageUrl: _menuTerfilter[i]['imageUrl']!,
-                  ),
-                ),
+                ],
+              ),
+            )
+          else if (_menuTerfilter.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 26, vertical: 16),
+              child: Text('Menu tidak ditemukan',
+                  style: GoogleFonts.alexandria(
+                      color: Colors.grey, fontSize: 13)),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 26),
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.82,
+              ),
+              itemCount: _menuTerfilter.length,
+              itemBuilder: (_, i) => GestureDetector(
+                onTap: _menuTerfilter[i].isHabis
+                    ? null
+                    : () => _keDetailMenu(_menuTerfilter[i]),
+                child: _MenuTersediaCard(menu: _menuTerfilter[i]),
+              ),
+            ),
           const SizedBox(height: 24),
 
+          // Ulasan
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 26),
             child: Row(
@@ -321,13 +430,13 @@ class _BerandaPageState extends State<BerandaPage> {
             child: _buildFormUlasan(),
           ),
 
-          // ✅ Padding bawah agar konten tidak tertutup navbar
           SizedBox(height: navbarHeight),
         ],
       ),
     );
   }
 
+  // ── Header ───────────────────────────────────────────────────
   Widget _buildHeader(BuildContext context) {
     final double statusBarHeight = MediaQuery.of(context).padding.top;
 
@@ -338,7 +447,8 @@ class _BerandaPageState extends State<BerandaPage> {
           colors: [Color(0xFFEE8B2E), Color(0xFFD05122), Color(0xFFAC3715)],
           stops: [0.17, 0.44, 0.79],
         ),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30)),
+        borderRadius:
+            BorderRadius.only(bottomLeft: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
             color: Color(0x3F000000),
@@ -347,7 +457,8 @@ class _BerandaPageState extends State<BerandaPage> {
           ),
         ],
       ),
-      padding: EdgeInsets.fromLTRB(26, 20 + statusBarHeight, 26, 16),
+      padding:
+          EdgeInsets.fromLTRB(26, 20 + statusBarHeight, 26, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -419,7 +530,8 @@ class _BerandaPageState extends State<BerandaPage> {
                   ),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val),
+                    onChanged: (val) =>
+                        setState(() => _searchQuery = val),
                     textAlignVertical: TextAlignVertical.center,
                     style: GoogleFonts.lora(
                       color: const Color(0xFF1A1818),
@@ -459,7 +571,8 @@ class _BerandaPageState extends State<BerandaPage> {
                       stops: [0.18, 0.61, 0.85],
                     ),
                   ),
-                  child: const Icon(Icons.search, color: Colors.white, size: 22),
+                  child: const Icon(Icons.search,
+                      color: Colors.white, size: 22),
                 ),
               ),
             ],
@@ -469,6 +582,7 @@ class _BerandaPageState extends State<BerandaPage> {
     );
   }
 
+  // ── Form Ulasan ──────────────────────────────────────────────
   Widget _buildFormUlasan() {
     return Container(
       width: double.infinity,
@@ -663,7 +777,8 @@ class _TrackingCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white24,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white38, width: 1),
+                        border:
+                            Border.all(color: Colors.white38, width: 1),
                       ),
                       child: Row(
                         children: [
@@ -697,7 +812,8 @@ class _TrackingCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
                         color: Colors.white24,
-                        border: Border.all(color: Colors.white38, width: 1.5),
+                        border: Border.all(
+                            color: Colors.white38, width: 1.5),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(13),
@@ -794,7 +910,8 @@ class _TrackingCard extends StatelessWidget {
 
 // ── Menu Terlaris Card ─────────────────────────────────────────
 class _MenuTerlarisCard extends StatelessWidget {
-  const _MenuTerlarisCard();
+  final MenuModel menu;
+  const _MenuTerlarisCard({required this.menu});
 
   @override
   Widget build(BuildContext context) {
@@ -805,30 +922,31 @@ class _MenuTerlarisCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: Image.network(
-              'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F6a0353fb7d912965f7d455e118cb1a97189b30e1AYAM%20PANGGANG%20PERSEGI%20PANJANG.png%202.png?alt=media&token=125c9061-066f-4ae3-86b4-40637d18849e',
-              width: 300,
-              height: 160,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 300,
-                height: 160,
-                color: const Color(0xFFF79F36),
-                child: const Icon(Icons.fastfood, color: Colors.white, size: 60),
-              ),
-            ),
+            child: menu.foto.isNotEmpty
+                ? Image.network(
+                    menu.foto,
+                    width: 300,
+                    height: 160,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _placeholder(),
+                  )
+                : _placeholder(),
           ),
           const SizedBox(height: 6),
           Row(
             children: [
-              Opacity(
-                opacity: 0.8,
-                child: Text('Ayam Panggang',
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    )),
+              Flexible(
+                child: Opacity(
+                  opacity: 0.8,
+                  child: Text(menu.nama,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.alexandria(
+                        color: const Color(0xFF1A1818),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      )),
+                ),
               ),
               const SizedBox(width: 8),
               const Icon(Icons.star, size: 12, color: Color(0xFFF79F36)),
@@ -843,96 +961,139 @@ class _MenuTerlarisCard extends StatelessWidget {
                     )),
               ),
               const SizedBox(width: 8),
-              Opacity(
-                opacity: 0.6,
-                child: Text('50 Terjual',
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    )),
-              ),
+              if (menu.kategori.isNotEmpty)
+                Opacity(
+                  opacity: 0.6,
+                  child: Text(menu.kategori,
+                      style: GoogleFonts.alexandria(
+                        color: const Color(0xFF1A1818),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      )),
+                ),
             ],
           ),
         ],
       ),
     );
   }
+
+  Widget _placeholder() => Container(
+        width: 300,
+        height: 160,
+        color: const Color(0xFFF79F36),
+        child: const Icon(Icons.fastfood, color: Colors.white, size: 60),
+      );
 }
 
 // ── Menu Tersedia Card ─────────────────────────────────────────
 class _MenuTersediaCard extends StatelessWidget {
-  final String nama;
-  final String harga;
-  final String imageUrl;
-  const _MenuTersediaCard({
-    required this.nama,
-    required this.harga,
-    required this.imageUrl,
-  });
+  final MenuModel menu;
+  const _MenuTersediaCard({required this.menu});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x3F000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x3F000000),
+                blurRadius: 4,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF79F36),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.fastfood, color: Colors.white, size: 36),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Foto menu
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF79F36),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: menu.foto.isNotEmpty
+                      ? Image.network(
+                          menu.foto,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.fastfood,
+                              color: Colors.white,
+                              size: 36),
+                        )
+                      : const Icon(Icons.fastfood,
+                          color: Colors.white, size: 36),
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Nama menu
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Opacity(
+                  opacity: 0.8,
+                  child: Text(menu.nama,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.alexandria(
+                        color: const Color(0xFF1A1818),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                      )),
+                ),
+              ),
+              // Harga dari backend — pakai formattedHarga dari MenuModel
+              Opacity(
+                opacity: 0.7,
+                child: Text(menu.formattedHarga,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.alexandria(
+                      color: const Color(0xFF1A1818),
+                      fontSize: 7,
+                      fontWeight: FontWeight.w500,
+                    )),
+              ),
+              const SizedBox(height: 4),
+              // Badge Stok — pakai labelStok & warnaStok dari MenuModel
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Color(menu.warnaStok),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  menu.labelStok,
+                  style: GoogleFonts.alexandria(
+                    color: Colors.white,
+                    fontSize: 7,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Overlay abu-abu jika stok habis
+        if (menu.isHabis)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Opacity(
-              opacity: 0.8,
-              child: Text(nama,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.alexandria(
-                    color: const Color(0xFF1A1818),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
-                  )),
-            ),
-          ),
-          Opacity(
-            opacity: 0.7,
-            child: Text(harga,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.alexandria(
-                  color: const Color(0xFF1A1818),
-                  fontSize: 7,
-                  fontWeight: FontWeight.w500,
-                )),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
