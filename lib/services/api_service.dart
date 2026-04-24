@@ -217,7 +217,7 @@ class ApiService {
         data: {'id_menu': idMenu, 'jumlah': jumlah},
       );
 
-      print('📦 Response tambahKeranjang: ${response.data}'); // 
+      print('📦 Response tambahKeranjang: ${response.data}');
 
       return _parse(response);
     } on DioException catch (e) {
@@ -319,6 +319,46 @@ class ApiService {
       if (data is List) return data;
       if (data['data'] is List) return data['data'];
       return [];
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  // ==========================================================
+  //  ULASAN
+  // ==========================================================
+
+  /// Ambil semua ulasan (publik, tidak perlu login)
+  static Future<List<dynamic>> getUlasan({int limit = 20, int offset = 0}) async {
+    try {
+      final response = await _dio.get(
+        '/ulasan.php',
+        queryParameters: {'limit': limit, 'offset': offset},
+      );
+      final data = _parse(response);
+
+      if (data is List) return data;
+      if (data['data'] is List) return data['data'];
+      return [];
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  /// Kirim ulasan baru (harus sudah login sebagai customer)
+  static Future<Map<String, dynamic>> kirimUlasan({
+    required int rating,
+    required String komentar,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/ulasan.php',
+        data: {
+          'rating': rating,
+          'komentar': komentar,
+        },
+      );
+      return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));
     }
