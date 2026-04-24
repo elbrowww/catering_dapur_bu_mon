@@ -153,6 +153,7 @@ class ApiService {
     required String deskripsi,
     required double harga,
     String foto = '',
+    String kategori = '',  
   }) async {
     try {
       final response = await _dio.post(
@@ -162,6 +163,7 @@ class ApiService {
           'deskripsi': deskripsi,
           'harga': harga,
           'foto': foto,
+          'kategori' : kategori,
         },
       );
       return _parse(response);
