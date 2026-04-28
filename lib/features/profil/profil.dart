@@ -1,12 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// import 'dart:math';
 import 'package:catering_dapur_bu_mon/features/profil/editprofil.dart';
 import 'package:catering_dapur_bu_mon/features/auth/login.dart';
 import 'package:catering_dapur_bu_mon/features/profil/keamanan.dart';
+import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
-class ProfilPage extends StatelessWidget {
+class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
+
+  @override
+  State<ProfilPage> createState() => _ProfilPageState();
+}
+
+class _ProfilPageState extends State<ProfilPage> {
+  // Data profil yang diambil dari API
+  String _nama = '';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfil();
+  }
+
+  Future<void> _loadProfil() async {
+    try {
+      final data = await ApiService.getProfil();
+      setState(() {
+        _nama = data['nama'] ?? '';
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat profil: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,21 +124,32 @@ class ProfilPage extends StatelessWidget {
               ),
             ),
 
-            // ── Nama pengguna ─────────────────────────────────────
+            // ── Nama pengguna (dari API) ─────────────────────────
             Positioned(
               left: screenWidth * 0.05,
               right: screenWidth * 0.05,
               top: statusBarHeight + 188,
-              child: Text(
-                'Christoper Colombus',
-                textAlign: TextAlign.center, // ✅ center agar rapi
-                style: GoogleFonts.alexandria(
-                  color: Colors.black,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w600,
-                  height: 1.5,
-                ),
-              ),
+              child: _isLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      _nama.isEmpty ? '-' : _nama,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.alexandria(
+                        color: Colors.black,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
+                    ),
             ),
 
             // ── Panel putih bawah ─────────────────────────────────
@@ -140,16 +183,18 @@ class ProfilPage extends StatelessWidget {
             // ── Card Edit Profil ──────────────────────────────────
             Positioned(
               left: screenWidth * 0.056,
-              right: screenWidth * 0.056, // ✅ pakai right agar tidak terpotong
+              right: screenWidth * 0.056,
               top: statusBarHeight + 327,
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  // Setelah kembali dari EditProfil, refresh nama
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => const EditProfilPage(),
                     ),
                   );
+                  _loadProfil(); // Reload nama setelah edit
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -185,7 +230,7 @@ class ProfilPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded( // ✅ Expanded agar teks tidak terpotong
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -217,7 +262,7 @@ class ProfilPage extends StatelessWidget {
             // ── Card Keamanan & Password ──────────────────────────
             Positioned(
               left: screenWidth * 0.056,
-              right: screenWidth * 0.056, // ✅ pakai right agar tidak terpotong
+              right: screenWidth * 0.056,
               top: statusBarHeight + 457,
               child: GestureDetector(
                 onTap: () {
@@ -262,7 +307,7 @@ class ProfilPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded( // ✅ Expanded agar teks tidak terpotong
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -297,12 +342,15 @@ class ProfilPage extends StatelessWidget {
               right: screenWidth * 0.144,
               top: statusBarHeight + 620,
               child: GestureDetector(
-                onTap: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const Login()),
-                    (route) => false,
-                  );
+                onTap: () async {
+                  await ApiService.logout();
+                  if (mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const Login()),
+                      (route) => false,
+                    );
+                  }
                 },
                 child: Container(
                   height: 47,

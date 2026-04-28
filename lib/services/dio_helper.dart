@@ -3,72 +3,64 @@ import 'package:catering_dapur_bu_mon/services/session_manager.dart';
 
 class DioHelper {
   static late Dio _dio;
-  
-  static const String baseUrl = 'http://192.168.0.104/dapur_bu_mon/api';
-  
+
+  // Ganti IP ini sesuai IP server/XAMPP Anda
+  static const String baseUrl = 'http://172.16.103.197/dapur_bu_mon/api/';
+
   static void init() {
-    _dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Tambahkan ini untuk debugging
-      validateStatus: (status) {
-        // Terima semua status code untuk debugging
-        return status != null && status < 500;
-      },
-    ));
-    
-    // Interceptor untuk token
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        print('📤 REQUEST: ${options.method} ${options.path}');
-        print('📍 URL: ${options.baseUrl}${options.path}');
-        print('📋 Headers: ${options.headers}');
-        print('📦 Data: ${options.data}');
-        
-        final token = await SessionManager.getToken();
-        if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
-          print('🔑 Token: $token');
-        }
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        print('✅ RESPONSE: ${response.statusCode}');
-        print('📦 Data: ${response.data}');
-        return handler.next(response);
-      },
-      onError: (error, handler) {
-        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        print('❌ ERROR: ${error.type}');
-        print('💬 Message: ${error.message}');
-        print('📡 Response: ${error.response}');
-        
-        if (error.response != null) {
-          print('📊 Status: ${error.response?.statusCode}');
-          print('📦 Data: ${error.response?.data}');
-        }
-        
-        return handler.next(error);
-      },
-    ));
-    
-    // Tambahkan LogInterceptor untuk detail lebih
-    _dio.interceptors.add(LogInterceptor(
-      request: true,
-      requestHeader: true,
-      requestBody: true,
-      responseHeader: true,
-      responseBody: true,
-      error: true,
-      logPrint: (obj) => print(obj),
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        // Terima semua status agar error bisa diproses di ApiService
+        validateStatus: (status) => status != null && status < 600,
+      ),
+    );
+
+    // ── Interceptor: sisipkan token + logging ──────────────────
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await SessionManager.getToken();
+
+          if (token != null && token.isNotEmpty) {
+            // Pastikan tidak ada spasi di awal/akhir token
+            options.headers['Authorization'] = 'Bearer ${token.trim()}';
+          }
+
+          // Debug log (hapus di production)
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('📤 ${options.method} ${options.uri}');
+          print('🔑 Auth: ${options.headers['Authorization'] ?? 'TIDAK ADA'}');
+          if (options.data != null) print('📦 Body: ${options.data}');
+
+          return handler.next(options);
+        },
+
+        onResponse: (response, handler) {
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('✅ ${response.statusCode} ${response.requestOptions.uri}');
+          print('📦 Response: ${response.data}');
+          return handler.next(response);
+        },
+
+        onError: (error, handler) {
+          print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          print('❌ ERROR ${error.type}: ${error.message}');
+          if (error.response != null) {
+            print('📊 Status : ${error.response?.statusCode}');
+            print('📦 Data   : ${error.response?.data}');
+          }
+          return handler.next(error);
+        },
+      ),
+    );
   }
-  
+
   static Dio get dio => _dio;
 }
