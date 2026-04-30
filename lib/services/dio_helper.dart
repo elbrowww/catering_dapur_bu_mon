@@ -5,7 +5,7 @@ class DioHelper {
   static late Dio _dio;
 
   // Ganti IP ini sesuai IP server/XAMPP Anda
-  static const String baseUrl = 'http://172.16.103.197/dapur_bu_mon/api/';
+  static const String baseUrl = 'http://172.16.202.86/dapur_bu_mon/api/';
 
   static void init() {
     _dio = Dio(
