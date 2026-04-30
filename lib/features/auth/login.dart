@@ -5,7 +5,6 @@ import 'package:catering_dapur_bu_mon/features/auth/daftar.dart';
 import 'package:catering_dapur_bu_mon/features/auth/lupa_password.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
-// ⚠️ Sesuaikan import halaman admin kamu di sini
 import 'package:catering_dapur_bu_mon/admin/dashboard/dashboard_admin.dart';
 
 class Login extends StatefulWidget {
@@ -21,7 +20,14 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  // Animasi controller untuk efek shake saat error
+  // Sama dengan daftar.dart
+  static const _gradientColors = [
+    Color(0xFFD05122),
+    Color(0xFFEE8B2E),
+    Color(0xFFFBA839),
+  ];
+  static const _gradientStops = [0.17, 0.47, 0.60];
+
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
 
@@ -45,14 +51,10 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  // =============================================
-  // FUNGSI LOGIN — AUTO DETECT ROLE
-  // =============================================
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // --- Validasi input ---
     if (email.isEmpty) {
       _showSnackbar('Email/No Telepon harus diisi');
       _shakeController.forward(from: 0);
@@ -76,38 +78,25 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
 
       setState(() => _isLoading = false);
 
-      // --- Ambil data user dari response ---
       final Map<String, dynamic> user = result['user'];
       final String nama = user['nama'] ?? 'Pengguna';
-
-      // ⚠️ Sesuaikan nama field role dari API kamu
-      // Contoh: 'role', 'tipe', 'jabatan', 'level', dsb.
       final String role = (user['role'] ?? 'customer').toString().toLowerCase();
 
-      _showSnackbar(
-        'Selamat datang, $nama! 👋',
-        isError: false,
-      );
+      _showSnackbar('Selamat datang, $nama! 👋', isError: false);
 
-      // --- Tentukan halaman tujuan berdasarkan role ---
       Widget destination;
       Offset slideDirection;
 
-      // Role yang dianggap sebagai ADMIN/OWNER
-      // Tambahkan role lain sesuai kebutuhan
       const List<String> adminRoles = ['admin', 'owner', 'superadmin'];
 
       if (adminRoles.contains(role)) {
-        // → Halaman Admin
         destination = const MainOwner();
-        slideDirection = const Offset(0.0, -1.0); // slide dari atas (beda arah, biar berasa beda)
+        slideDirection = const Offset(0.0, -1.0);
       } else {
-        // → Halaman Customer (default)
         destination = const MainScreen();
-        slideDirection = const Offset(1.0, 0.0); // slide dari kanan
+        slideDirection = const Offset(1.0, 0.0);
       }
 
-      // --- Navigasi dengan transisi smooth ---
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -117,10 +106,7 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                 .chain(CurveTween(curve: Curves.easeInOut));
             return SlideTransition(
               position: animation.drive(tween),
-              child: FadeTransition(
-                opacity: animation,
-                child: child,
-              ),
+              child: FadeTransition(opacity: animation, child: child),
             );
           },
           transitionDuration: const Duration(milliseconds: 450),
@@ -154,10 +140,7 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.alexandria(
-                  color: Colors.white,
-                  fontSize: 13,
-                ),
+                style: GoogleFonts.alexandria(color: Colors.white, fontSize: 13),
               ),
             ),
           ],
@@ -171,30 +154,27 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
     );
   }
 
-  // =============================================
-  // BUILD
-  // =============================================
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double screenHeight = MediaQuery.of(context).size.height;
+    final double sw = MediaQuery.of(context).size.width;
+    final double sh = MediaQuery.of(context).size.height;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
         child: SizedBox(
-          width: screenWidth,
-          height: screenHeight,
+          width: sw,
+          height: sh,
           child: Container(
-            width: screenWidth,
-            height: screenHeight,
-            clipBehavior: Clip.antiAlias,
+            width: sw,
+            height: sh,
+            // ✅ Disamakan dengan daftar.dart
+            clipBehavior: Clip.hardEdge,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment(0.45, 1.25),
-                end: Alignment(0.45, -0.64),
-                colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+                colors: _gradientColors,
+                stops: _gradientStops,
               ),
             ),
             child: Stack(
@@ -203,10 +183,10 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                 // ── Background putih bawah ──
                 Positioned(
                   left: 0,
-                  top: screenHeight * 0.372,
+                  top: sh * 0.372,
                   child: Container(
-                    width: screenWidth,
-                    height: screenHeight,
+                    width: sw,
+                    height: sh,
                     decoration: ShapeDecoration(
                       color: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -218,22 +198,22 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
 
                 // ── Logo ──
                 Positioned(
-                  left: screenWidth * 0.276,
-                  top: screenHeight * 0.080,
+                  left: sw * 0.276,
+                  top: sh * 0.080,
                   child: Image.asset(
                     "assets/icons/icons.png",
-                    width: screenWidth * 0.448,
-                    height: screenWidth * 0.448,
+                    width: sw * 0.448,
+                    height: sw * 0.448,
                     fit: BoxFit.cover,
                   ),
                 ),
 
                 // ── Tab Masuk & Daftar ──
                 Positioned(
-                  left: screenWidth * 0.087,
-                  top: screenHeight * 0.397,
+                  left: sw * 0.087,
+                  top: sh * 0.397,
                   child: Container(
-                    width: screenWidth * 0.826,
+                    width: sw * 0.826,
                     height: 53,
                     padding: const EdgeInsets.only(top: 4, left: 3, right: 3, bottom: 3),
                     decoration: ShapeDecoration(
@@ -259,9 +239,8 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                             height: 45.54,
                             decoration: ShapeDecoration(
                               gradient: const LinearGradient(
-                                begin: Alignment(0.45, 1.25),
-                                end: Alignment(0.45, -0.64),
-                                colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+                                colors: _gradientColors,
+                                stops: _gradientStops,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(18),
@@ -286,23 +265,7 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                             onTap: () {
                               Navigator.pushReplacement(
                                 context,
-                                PageRouteBuilder(
-                                  pageBuilder: (context, animation, secondaryAnimation) =>
-                                      const Daftar(),
-                                  transitionsBuilder:
-                                      (context, animation, secondaryAnimation, child) {
-                                    const begin = Offset(-1.0, 0.0);
-                                    const end = Offset.zero;
-                                    const curve = Curves.easeInOut;
-                                    final tween = Tween(begin: begin, end: end)
-                                        .chain(CurveTween(curve: curve));
-                                    return SlideTransition(
-                                      position: animation.drive(tween),
-                                      child: child,
-                                    );
-                                  },
-                                  transitionDuration: const Duration(milliseconds: 400),
-                                ),
+                                MaterialPageRoute(builder: (_) => const Daftar()),
                               );
                             },
                             child: Center(
@@ -327,34 +290,28 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
 
                 // ── Label Email / No Telp ──
                 Positioned(
-                  left: screenWidth * 0.142,
-                  top: screenHeight * 0.500,
+                  left: sw * 0.142,
+                  top: sh * 0.500,
                   child: Text(
                     'Masukkan Email / No Telp',
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 14,
-                    ),
+                    style: GoogleFonts.alexandria(color: Colors.black, fontSize: 14),
                   ),
                 ),
 
                 // ── Input Email / No Telp ──
                 Positioned(
-                  left: screenWidth * 0.142,
-                  top: screenHeight * 0.524,
+                  left: sw * 0.142,
+                  top: sh * 0.524,
                   child: AnimatedBuilder(
                     animation: _shakeAnimation,
                     builder: (context, child) {
                       final shake = _shakeAnimation.value == 0
                           ? 0.0
                           : ((_shakeAnimation.value * 4).round().isEven ? 6.0 : -6.0);
-                      return Transform.translate(
-                        offset: Offset(shake, 0),
-                        child: child,
-                      );
+                      return Transform.translate(offset: Offset(shake, 0), child: child);
                     },
                     child: Container(
-                      width: screenWidth * 0.714,
+                      width: sw * 0.714,
                       height: 48,
                       decoration: ShapeDecoration(
                         color: Colors.white,
@@ -373,18 +330,14 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                       child: TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 15,
-                        ),
+                        style: GoogleFonts.alexandria(color: Colors.black, fontSize: 15),
                         decoration: InputDecoration(
                           hintText: 'Email / No Telepon',
                           hintStyle: GoogleFonts.alexandria(
                             color: Colors.black.withOpacity(0.3),
                             fontSize: 15,
                           ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                           border: InputBorder.none,
                         ),
                       ),
@@ -394,34 +347,28 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
 
                 // ── Label Password ──
                 Positioned(
-                  left: screenWidth * 0.142,
-                  top: screenHeight * 0.585,
+                  left: sw * 0.142,
+                  top: sh * 0.585,
                   child: Text(
                     'Masukkan Password',
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 14,
-                    ),
+                    style: GoogleFonts.alexandria(color: Colors.black, fontSize: 14),
                   ),
                 ),
 
                 // ── Input Password ──
                 Positioned(
-                  left: screenWidth * 0.142,
-                  top: screenHeight * 0.608,
+                  left: sw * 0.142,
+                  top: sh * 0.608,
                   child: AnimatedBuilder(
                     animation: _shakeAnimation,
                     builder: (context, child) {
                       final shake = _shakeAnimation.value == 0
                           ? 0.0
                           : ((_shakeAnimation.value * 4).round().isEven ? 6.0 : -6.0);
-                      return Transform.translate(
-                        offset: Offset(shake, 0),
-                        child: child,
-                      );
+                      return Transform.translate(offset: Offset(shake, 0), child: child);
                     },
                     child: Container(
-                      width: screenWidth * 0.714,
+                      width: sw * 0.714,
                       height: 48,
                       decoration: ShapeDecoration(
                         color: Colors.white,
@@ -441,25 +388,17 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         textAlignVertical: TextAlignVertical.center,
-                        style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 15,
-                        ),
+                        style: GoogleFonts.alexandria(color: Colors.black, fontSize: 15),
                         decoration: InputDecoration(
                           hintText: 'Password',
                           hintStyle: GoogleFonts.alexandria(
                             color: Colors.black.withOpacity(0.3),
                             fontSize: 15,
                           ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                           border: InputBorder.none,
                           suffixIcon: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
+                            onTap: () => setState(() => _obscurePassword = !_obscurePassword),
                             child: Icon(
                               _obscurePassword ? Icons.visibility_off : Icons.visibility,
                               color: Colors.black26,
@@ -478,28 +417,13 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
 
                 // ── Lupa Password ──
                 Positioned(
-                  right: screenWidth * 0.142,
-                  top: screenHeight * 0.673,
+                  right: sw * 0.142,
+                  top: sh * 0.673,
                   child: GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              const LupaPasswordPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                            const begin = Offset(1.0, 0.0);
-                            const end = Offset.zero;
-                            final tween = Tween(begin: begin, end: end)
-                                .chain(CurveTween(curve: Curves.easeInOut));
-                            return SlideTransition(
-                              position: animation.drive(tween),
-                              child: child,
-                            );
-                          },
-                          transitionDuration: const Duration(milliseconds: 300),
-                        ),
+                        MaterialPageRoute(builder: (_) => const LupaPasswordPage()),
                       );
                     },
                     child: Text(
@@ -517,18 +441,16 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
 
                 // ── Tombol Masuk Sekarang ──
                 Positioned(
-                  left: screenWidth * 0.226,
-                  top: screenHeight * 0.763,
+                  left: sw * 0.226,
+                  top: sh * 0.763,
                   child: GestureDetector(
                     onTap: _isLoading ? null : _handleLogin,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      width: screenWidth * 0.547,
+                      width: sw * 0.547,
                       height: 45.54,
                       decoration: ShapeDecoration(
                         gradient: LinearGradient(
-                          begin: const Alignment(0.45, 1.25),
-                          end: const Alignment(0.45, -0.64),
                           colors: _isLoading
                               ? [
                                   const Color(0xFFD05122).withOpacity(0.6),
@@ -540,6 +462,7 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                                   Color(0xFFEE8B2E),
                                   Color(0xFFFBA839),
                                 ],
+                          stops: _isLoading ? null : _gradientStops,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),

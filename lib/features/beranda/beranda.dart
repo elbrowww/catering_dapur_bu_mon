@@ -184,7 +184,6 @@ class _BerandaPageState extends State<BerandaPage> {
       setState(() => _rating = 5);
       FocusScope.of(context).unfocus();
 
-      // Refresh daftar ulasan
       await _fetchUlasan();
 
       if (mounted) {
@@ -381,16 +380,17 @@ class _BerandaPageState extends State<BerandaPage> {
                       GoogleFonts.alexandria(color: Colors.grey, fontSize: 13)),
             )
           else
+            // ── 3 kolom, childAspectRatio disesuaikan ──
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 26),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               gridDelegate:
                   const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.82,
+                crossAxisCount: 3,        // 3 kolom
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.68,   // proporsional untuk 3 kolom
               ),
               itemCount: _menuTerfilter.length,
               itemBuilder: (_, i) => GestureDetector(
@@ -1056,98 +1056,106 @@ class _MenuTersediaCard extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x3F000000),
-                blurRadius: 4,
-                offset: Offset(0, 4),
+                color: Color(0x1A000000),
+                blurRadius: 6,
+                offset: Offset(0, 2),
               ),
             ],
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF79F36),
-                  borderRadius: BorderRadius.circular(6),
+              // Gambar full-width di atas
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: menu.foto.isNotEmpty
-                      ? Image.network(
-                          menu.foto,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                              Icons.fastfood,
-                              color: Colors.white,
-                              size: 36),
-                        )
-                      : const Icon(Icons.fastfood,
-                          color: Colors.white, size: 36),
-                ),
+                child: menu.foto.isNotEmpty
+                    ? Image.network(
+                        menu.foto,
+                        width: double.infinity,
+                        height: 80,          // lebih kecil karena 3 kolom
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _placeholder(),
+                      )
+                    : _placeholder(),
               ),
-              const SizedBox(height: 6),
+              // Info menu
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Opacity(
-                  opacity: 0.8,
-                  child: Text(menu.nama,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
+                padding: const EdgeInsets.fromLTRB(6, 5, 6, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      menu.nama,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.alexandria(
                         color: const Color(0xFF1A1818),
+                        fontSize: 10,        // font lebih kecil untuk 3 kolom
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      menu.formattedHarga,
+                      style: GoogleFonts.alexandria(
+                        color: const Color(0xFFD05122),
                         fontSize: 9,
-                        fontWeight: FontWeight.w500,
-                      )),
-                ),
-              ),
-              Opacity(
-                opacity: 0.7,
-                child: Text(menu.formattedHarga,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 7,
-                      fontWeight: FontWeight.w500,
-                    )),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Color(menu.warnaStok),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  menu.labelStok,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.white,
-                    fontSize: 7,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Color(menu.warnaStok).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Color(menu.warnaStok),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        menu.labelStok,
+                        style: GoogleFonts.alexandria(
+                          color: Color(menu.warnaStok),
+                          fontSize: 8,       // badge lebih kecil
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+        // Overlay jika habis
         if (menu.isHabis)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(10),
+                color: Colors.white.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
       ],
     );
   }
+
+  Widget _placeholder() => Container(
+        width: double.infinity,
+        height: 80,
+        color: const Color(0xFFF79F36),
+        child: const Icon(Icons.fastfood, color: Colors.white, size: 30),
+      );
 }
 
 // ── Ulasan Card ────────────────────────────────────────────────
