@@ -11,18 +11,17 @@ class Daftar extends StatefulWidget {
 }
 
 class _DaftarState extends State<Daftar> {
-  final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _noTelpController = TextEditingController();
-  final TextEditingController _alamatController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _namaController       = TextEditingController();
+  final TextEditingController _emailController      = TextEditingController();
+  final TextEditingController _noTelpController     = TextEditingController();
+  final TextEditingController _alamatController     = TextEditingController();
+  final TextEditingController _passwordController   = TextEditingController();
   final TextEditingController _konfirmasiController = TextEditingController();
 
-  bool _obscurePassword = true;
+  bool _obscurePassword   = true;
   bool _obscureKonfirmasi = true;
-  bool _isLoading = false;
+  bool _isLoading         = false;
 
-  // Gradient dari desain Figma
   static const _gradientColors = [
     Color(0xFFD05122),
     Color(0xFFEE8B2E),
@@ -42,13 +41,14 @@ class _DaftarState extends State<Daftar> {
   }
 
   Future<void> _handleRegister() async {
-    final nama = _namaController.text.trim();
-    final email = _emailController.text.trim();
-    final noTelp = _noTelpController.text.trim();
-    final alamat = _alamatController.text.trim();
-    final password = _passwordController.text.trim();
+    final nama       = _namaController.text.trim();
+    final email      = _emailController.text.trim();
+    final noTelp     = _noTelpController.text.trim();
+    final alamat     = _alamatController.text.trim();
+    final password   = _passwordController.text.trim();
     final konfirmasi = _konfirmasiController.text.trim();
 
+    // Semua field wajib diisi
     if (nama.isEmpty) {
       _showSnackbar('Nama lengkap harus diisi');
       return;
@@ -58,11 +58,11 @@ class _DaftarState extends State<Daftar> {
       return;
     }
     if (!email.contains('@') || !email.contains('.')) {
-      _showSnackbar('Email tidak valid');
+      _showSnackbar('Format email tidak valid');
       return;
     }
     if (noTelp.isEmpty) {
-      _showSnackbar('No telepon harus diisi');
+      _showSnackbar('No Telepon harus diisi');
       return;
     }
     if (alamat.isEmpty) {
@@ -86,17 +86,17 @@ class _DaftarState extends State<Daftar> {
 
     try {
       await ApiService.register(
-        nama: nama,
-        email: email,
-        noTelp: noTelp,
-        alamat: alamat,
+        nama:     nama,
+        email:    email,
+        noTelp:   noTelp,
+        alamat:   alamat,
         password: password,
       );
 
       if (mounted) {
         setState(() => _isLoading = false);
         _showSnackbar('Registrasi berhasil! Silakan login.', isError: false);
-        _navigateToLogin(fromRight: true);
+        _navigateToLogin();
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -111,7 +111,7 @@ class _DaftarState extends State<Daftar> {
     }
   }
 
-  void _navigateToLogin({bool fromRight = false}) {
+  void _navigateToLogin() {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const Login()),
@@ -129,7 +129,6 @@ class _DaftarState extends State<Daftar> {
     );
   }
 
-  // Widget helper: label field
   Widget _buildLabel(String text) {
     return Text(
       text,
@@ -141,7 +140,6 @@ class _DaftarState extends State<Daftar> {
     );
   }
 
-  // Widget helper: input field tunggal (1 baris)
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -171,10 +169,7 @@ class _DaftarState extends State<Daftar> {
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
-        style: GoogleFonts.alexandria(
-          color: Colors.black,
-          fontSize: 15,
-        ),
+        style: GoogleFonts.alexandria(color: Colors.black, fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.alexandria(
@@ -203,7 +198,6 @@ class _DaftarState extends State<Daftar> {
     );
   }
 
-  // Widget helper: textarea (multi baris, untuk Alamat)
   Widget _buildTextArea({
     required TextEditingController controller,
     required String hint,
@@ -228,10 +222,7 @@ class _DaftarState extends State<Daftar> {
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        style: GoogleFonts.alexandria(
-          color: Colors.black,
-          fontSize: 15,
-        ),
+        style: GoogleFonts.alexandria(color: Colors.black, fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: GoogleFonts.alexandria(
@@ -256,81 +247,105 @@ class _DaftarState extends State<Daftar> {
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
         child: SizedBox(
-        width: sw,
-        height: sh,
-        child: Container(
           width: sw,
           height: sh,
-          clipBehavior: Clip.hardEdge,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: _gradientColors,
-              stops: _gradientStops,
+          child: Container(
+            width: sw,
+            height: sh,
+            clipBehavior: Clip.hardEdge,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: _gradientColors,
+                stops: _gradientStops,
+              ),
             ),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // ── Panel putih bawah ──────────────────────────────────────
-              Positioned(
-                left: 0,
-                top: sh * 0.372,
-                child: Container(
-                  width: sw,
-                  height: sh,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(46),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Panel putih bawah
+                Positioned(
+                  left: 0,
+                  top: sh * 0.372,
+                  child: Container(
+                    width: sw,
+                    height: sh,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(46),
+                    ),
                   ),
                 ),
-              ),
 
-              // ── Logo / Ikon ────────────────────────────────────────────
-              Positioned(
-                left: sw * 0.276,
-                top: sh * 0.080,
-                child: Image.asset(
-                  'assets/icons/icons.png',
-                  width: sw * 0.448,
-                  height: sw * 0.448,
-                  fit: BoxFit.cover,
-                ),
-              ),
-
-              // ── Tab Masuk / Daftar ─────────────────────────────────────
-              Positioned(
-                left: sw * 0.087,
-                top: sh * 0.397,
-                child: Container(
-                  width: sw * 0.826,
-                  height: 53,
-                  padding: const EdgeInsets.only(
-                      top: 4, left: 3, right: 3, bottom: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0D8),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                        spreadRadius: 0,
-                      ),
-                    ],
+                // Logo
+                Positioned(
+                  left: sw * 0.276,
+                  top: sh * 0.080,
+                  child: Image.asset(
+                    'assets/icons/icons.png',
+                    width: sw * 0.448,
+                    height: sw * 0.448,
+                    fit: BoxFit.cover,
                   ),
-                  child: Row(
-                    children: [
-                      // Tab Masuk (tidak aktif)
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _navigateToLogin(),
-                          child: Center(
-                            child: Opacity(
-                              opacity: 0.50,
+                ),
+
+                // Tab Masuk / Daftar
+                Positioned(
+                  left: sw * 0.087,
+                  top: sh * 0.397,
+                  child: Container(
+                    width: sw * 0.826,
+                    height: 53,
+                    padding: const EdgeInsets.only(
+                        top: 4, left: 3, right: 3, bottom: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF0D8),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x3F000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Tab Masuk (tidak aktif)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _navigateToLogin,
+                            child: Center(
+                              child: Opacity(
+                                opacity: 0.50,
+                                child: Text(
+                                  'Masuk',
+                                  style: GoogleFonts.alexandria(
+                                    color: const Color(0xFFD9D9D9),
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Tab Daftar (aktif)
+                        Expanded(
+                          child: Container(
+                            height: 45.54,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: _gradientColors,
+                                stops: _gradientStops,
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Center(
                               child: Text(
-                                'Masuk',
+                                'Daftar',
                                 style: GoogleFonts.alexandria(
-                                  color: const Color(0xFFD9D9D9),
+                                  color: Colors.white,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w400,
                                 ),
@@ -338,179 +353,155 @@ class _DaftarState extends State<Daftar> {
                             ),
                           ),
                         ),
-                      ),
-                      // Tab Daftar (aktif)
-                      Expanded(
-                        child: Container(
-                          height: 45.54,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: _gradientColors,
-                              stops: _gradientStops,
-                            ),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Daftar',
-                              style: GoogleFonts.alexandria(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // ── Area Form (scrollable) ─────────────────────────────────
-              Positioned(
-                left: sw * 0.087,
-                top: sh * 0.470,
-                right: sw * 0.087,
-                bottom: 16,
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: sw * 0.055),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Nama Lengkap
-                      _buildLabel('Nama Lengkap'),
-                      const SizedBox(height: 5),
-                      _buildTextField(
-                        controller: _namaController,
-                        hint: 'Nama Lengkap',
-                        keyboardType: TextInputType.name,
-                      ),
-                      const SizedBox(height: 12),
+                // Area Form
+                Positioned(
+                  left: sw * 0.087,
+                  top: sh * 0.470,
+                  right: sw * 0.087,
+                  bottom: 16,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: sw * 0.055),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Nama Lengkap
+                        _buildLabel('Nama Lengkap'),
+                        const SizedBox(height: 5),
+                        _buildTextField(
+                          controller: _namaController,
+                          hint: 'Nama Lengkap',
+                          keyboardType: TextInputType.name,
+                        ),
+                        const SizedBox(height: 12),
 
-                      // Email
-                      _buildLabel('Email'),
-                      const SizedBox(height: 5),
-                      _buildTextField(
-                        controller: _emailController,
-                        hint: 'Email',
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 12),
+                        // Email
+                        _buildLabel('Email'),
+                        const SizedBox(height: 5),
+                        _buildTextField(
+                          controller: _emailController,
+                          hint: 'Email',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 12),
 
-                      // No Telepon
-                      _buildLabel('No Telepon'),
-                      const SizedBox(height: 5),
-                      _buildTextField(
-                        controller: _noTelpController,
-                        hint: 'No Telepon',
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 12),
+                        // No Telepon
+                        _buildLabel('No Telepon'),
+                        const SizedBox(height: 5),
+                        _buildTextField(
+                          controller: _noTelpController,
+                          hint: 'No Telepon',
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 12),
 
-                      // Alamat
-                      _buildLabel('Alamat'),
-                      const SizedBox(height: 5),
-                      _buildTextArea(
-                        controller: _alamatController,
-                        hint: 'Alamat Lengkap',
-                      ),
-                      const SizedBox(height: 12),
+                        // Alamat
+                        _buildLabel('Alamat'),
+                        const SizedBox(height: 5),
+                        _buildTextArea(
+                          controller: _alamatController,
+                          hint: 'Alamat Lengkap',
+                        ),
+                        const SizedBox(height: 12),
 
-                      // Password
-                      _buildLabel('Masukkan Password'),
-                      const SizedBox(height: 5),
-                      _buildTextField(
-                        controller: _passwordController,
-                        hint: 'Password (min 6 karakter)',
-                        obscure: _obscurePassword,
-                        showToggle: true,
-                        onToggleObscure: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                      const SizedBox(height: 12),
+                        // Password
+                        _buildLabel('Masukkan Password'),
+                        const SizedBox(height: 5),
+                        _buildTextField(
+                          controller: _passwordController,
+                          hint: 'Password (min 6 karakter)',
+                          obscure: _obscurePassword,
+                          showToggle: true,
+                          onToggleObscure: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
+                        ),
+                        const SizedBox(height: 12),
 
-                      // Konfirmasi Password
-                      _buildLabel('Masukkan Ulang Password'),
-                      const SizedBox(height: 5),
-                      _buildTextField(
-                        controller: _konfirmasiController,
-                        hint: 'Konfirmasi Password',
-                        obscure: _obscureKonfirmasi,
-                        showToggle: true,
-                        onToggleObscure: () => setState(
-                            () => _obscureKonfirmasi = !_obscureKonfirmasi),
-                      ),
-                      const SizedBox(height: 20),
+                        // Konfirmasi Password
+                        _buildLabel('Masukkan Ulang Password'),
+                        const SizedBox(height: 5),
+                        _buildTextField(
+                          controller: _konfirmasiController,
+                          hint: 'Konfirmasi Password',
+                          obscure: _obscureKonfirmasi,
+                          showToggle: true,
+                          onToggleObscure: () => setState(
+                              () => _obscureKonfirmasi = !_obscureKonfirmasi),
+                        ),
+                        const SizedBox(height: 20),
 
-                      // Tombol Konfirmasi
-                      Center(
-                        child: GestureDetector(
-                          onTap: _isLoading ? null : _handleRegister,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            width: sw * 0.547,
-                            height: 45.54,
-                            decoration: ShapeDecoration(
-                              gradient: LinearGradient(
-                                begin: const Alignment(0.45, 1.25),
-                                end: const Alignment(0.45, -0.64),
-                                colors: _isLoading
-                                    ? [
-                                        const Color(0xFFD05122).withOpacity(0.6),
-                                        const Color(0xFFEE8B2E).withOpacity(0.6),
-                                        const Color(0xFFFBA839).withOpacity(0.6),
-                                      ]
-                                    : const [
-                                        Color(0xFFD05122),
-                                        Color(0xFFEE8B2E),
-                                        Color(0xFFFBA839),
-                                      ],
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              shadows: const [
-                                BoxShadow(
-                                  color: Color(0x4FD05122),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 4),
-                                  spreadRadius: 0,
+                        // Tombol Konfirmasi
+                        Center(
+                          child: GestureDetector(
+                            onTap: _isLoading ? null : _handleRegister,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: sw * 0.547,
+                              height: 45.54,
+                              decoration: ShapeDecoration(
+                                gradient: LinearGradient(
+                                  begin: const Alignment(0.45, 1.25),
+                                  end: const Alignment(0.45, -0.64),
+                                  colors: _isLoading
+                                      ? [
+                                          const Color(0xFFD05122).withOpacity(0.6),
+                                          const Color(0xFFEE8B2E).withOpacity(0.6),
+                                          const Color(0xFFFBA839).withOpacity(0.6),
+                                        ]
+                                      : const [
+                                          Color(0xFFD05122),
+                                          Color(0xFFEE8B2E),
+                                          Color(0xFFFBA839),
+                                        ],
                                 ),
-                              ],
-                            ),
-                            child: Center(
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                shadows: const [
+                                  BoxShadow(
+                                    color: Color(0x4FD05122),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 4),
+                                    spreadRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
+                                        ),
+                                      )
+                                    : Text(
+                                        'Konfirmasi',
+                                        style: GoogleFonts.alexandria(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    )
-                                  : Text(
-                                      'Konfirmasi',
-                                      style: GoogleFonts.alexandria(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-        ),
     );
   }
 }

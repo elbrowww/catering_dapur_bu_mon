@@ -5,21 +5,17 @@ import 'session_manager.dart';
 class ApiService {
   static Dio get _dio => DioHelper.dio;
 
-  // ── Helper: parse response ─────────────────────────────────
   static dynamic _parse(Response response) {
     final data = response.data;
-
     if (response.statusCode! >= 400) {
       final msg = (data is Map)
           ? (data['error'] ?? data['message'] ?? 'Terjadi kesalahan.')
           : 'Terjadi kesalahan.';
       throw ApiException(msg.toString());
     }
-
     return data;
   }
 
-  // ── Helper: error message dari DioException ────────────────
   static String _getErrorMessage(DioException e) {
     if (e.response != null) {
       final data = e.response?.data;
@@ -29,7 +25,6 @@ class ApiService {
       }
       return 'Server error: ${e.response?.statusCode}';
     }
-
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
         return 'Koneksi timeout. Periksa koneksi internet.';
@@ -46,12 +41,13 @@ class ApiService {
   //  AUTH
   // ==========================================================
 
+  // Register — semua field wajib
   static Future<Map<String, dynamic>> register({
     required String nama,
     required String email,
-    required String password,
     required String noTelp,
     required String alamat,
+    required String password,
   }) async {
     try {
       final response = await _dio.post(
@@ -59,9 +55,9 @@ class ApiService {
         data: {
           'nama':     nama,
           'email':    email,
-          'password': password,
           'no_telp':  noTelp,
           'alamat':   alamat,
+          'password': password,
         },
       );
       final data = _parse(response);
@@ -72,14 +68,20 @@ class ApiService {
     }
   }
 
+  // Login — bisa pakai email ATAU no_telp
   static Future<Map<String, dynamic>> login({
-    required String email,
+    String? email,
+    String? noTelp,
     required String password,
   }) async {
     try {
       final response = await _dio.post(
         '/auth.php?action=login',
-        data: {'email': email, 'password': password},
+        data: {
+          if (email  != null && email.isNotEmpty)  'email':   email,
+          if (noTelp != null && noTelp.isNotEmpty) 'no_telp': noTelp,
+          'password': password,
+        },
       );
       final data = _parse(response);
       if (data['token'] != null) await SessionManager.saveSession(data);
@@ -92,9 +94,7 @@ class ApiService {
   static Future<void> logout() async {
     try {
       await _dio.post('/auth.php?action=logout');
-    } catch (_) {
-      // Tetap hapus session meski request gagal
-    }
+    } catch (_) {}
     await SessionManager.clearSession();
   }
 
@@ -107,7 +107,7 @@ class ApiService {
       final response = await _dio.get('/menu.php');
       if (response.statusCode == 200) {
         final data = response.data;
-        if (data is List)                  return data;
+        if (data is List)                        return data;
         if (data is Map && data['data'] is List) return data['data'];
       }
       return [];
@@ -245,8 +245,8 @@ class ApiService {
     try {
       final response = await _dio.get('/pesanan.php');
       final data = _parse(response);
-      if (data is List)                  return data;
-      if (data['data'] is List)          return data['data'];
+      if (data is List)         return data;
+      if (data['data'] is List) return data['data'];
       return [];
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));
@@ -333,12 +333,10 @@ class ApiService {
   //  PROFIL
   // ==========================================================
 
-  /// Ambil data profil user yang sedang login
   static Future<Map<String, dynamic>> getProfil() async {
     try {
       final response = await _dio.get('/profil.php');
       final data = _parse(response);
-      // Pastikan return selalu Map
       if (data is Map<String, dynamic>) return data;
       throw const ApiException('Format response profil tidak valid');
     } on DioException catch (e) {
@@ -346,7 +344,6 @@ class ApiService {
     }
   }
 
-  /// Update nama, no_telp, dan/atau alamat
   static Future<Map<String, dynamic>> editProfil({
     String? nama,
     String? noTelp,
@@ -358,9 +355,7 @@ class ApiService {
       if (noTelp != null && noTelp.isNotEmpty) body['no_telp'] = noTelp.trim();
       if (alamat != null && alamat.isNotEmpty) body['alamat']  = alamat.trim();
 
-      if (body.isEmpty) {
-        throw const ApiException('Tidak ada data yang diubah');
-      }
+      if (body.isEmpty) throw const ApiException('Tidak ada data yang diubah');
 
       final response = await _dio.put('/profil.php', data: body);
       return _parse(response);
