@@ -41,7 +41,6 @@ class ApiService {
   //  AUTH
   // ==========================================================
 
-  // Register — semua field wajib
   static Future<Map<String, dynamic>> register({
     required String nama,
     required String email,
@@ -54,21 +53,63 @@ class ApiService {
         '/auth.php?action=register',
         data: {
           'nama':     nama,
-          'email':    email,
-          'no_telp':  noTelp,
+          if (email.isNotEmpty)  'email':   email,
+          if (noTelp.isNotEmpty) 'no_telp': noTelp,
           'alamat':   alamat,
           'password': password,
         },
       );
-      final data = _parse(response);
-      if (data['token'] != null) await SessionManager.saveSession(data);
-      return data;
+      return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));
     }
   }
 
-  // Login — bisa pakai email ATAU no_telp
+  static Future<Map<String, dynamic>> verifyPhoneOtp({
+    required String phone,
+    required String otpCode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth.php?action=verify_phone_otp',
+        data: {'phone': phone, 'otp_code': otpCode},
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyEmailOtp({
+    required String email,
+    required String otpCode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth.php?action=verify_email_otp',
+        data: {'email': email, 'otp_code': otpCode},
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> resendOtp({
+    required String target,
+    required String type,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth.php?action=resend_otp',
+        data: {'target': target, 'type': type},
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
   static Future<Map<String, dynamic>> login({
     String? email,
     String? noTelp,
@@ -91,6 +132,50 @@ class ApiService {
     }
   }
 
+  // Kirim OTP sebelum register (tanpa simpan DB)
+  static Future<Map<String, dynamic>> sendOtpRegister({
+    required String noTelp,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth.php?action=send_otp_register',
+        data: {'no_telp': noTelp},
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  // Register sekaligus verifikasi OTP
+  static Future<Map<String, dynamic>> registerWithOtp({
+    required String nama,
+    required String email,
+    required String noTelp,
+    required String alamat,
+    required String password,
+    required String otpCode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth.php?action=register',
+        data: {
+          'nama':      nama,
+          'email':     email,
+          'no_telp':   noTelp,
+          'alamat':    alamat,
+          'password':  password,
+          'otp_code':  otpCode,
+        },
+      );
+      final data = _parse(response);
+      if (data['token'] != null) await SessionManager.saveSession(data);
+      return data;
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+  
   static Future<void> logout() async {
     try {
       await _dio.post('/auth.php?action=logout');

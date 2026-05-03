@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/auth/login.dart';
+import 'package:catering_dapur_bu_mon/features/auth/verifikasi_otp_register.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
 class Daftar extends StatefulWidget {
@@ -48,55 +49,37 @@ class _DaftarState extends State<Daftar> {
     final password   = _passwordController.text.trim();
     final konfirmasi = _konfirmasiController.text.trim();
 
-    // Semua field wajib diisi
-    if (nama.isEmpty) {
-      _showSnackbar('Nama lengkap harus diisi');
-      return;
-    }
-    if (email.isEmpty) {
-      _showSnackbar('Email harus diisi');
-      return;
-    }
+    if (nama.isEmpty)   { _showSnackbar('Nama lengkap harus diisi'); return; }
+    if (email.isEmpty)  { _showSnackbar('Email harus diisi'); return; }
     if (!email.contains('@') || !email.contains('.')) {
-      _showSnackbar('Format email tidak valid');
-      return;
+      _showSnackbar('Format email tidak valid'); return;
     }
-    if (noTelp.isEmpty) {
-      _showSnackbar('No Telepon harus diisi');
-      return;
-    }
-    if (alamat.isEmpty) {
-      _showSnackbar('Alamat harus diisi');
-      return;
-    }
-    if (password.isEmpty) {
-      _showSnackbar('Password harus diisi');
-      return;
-    }
-    if (password.length < 6) {
-      _showSnackbar('Password minimal 6 karakter');
-      return;
-    }
-    if (password != konfirmasi) {
-      _showSnackbar('Password dan konfirmasi password tidak sama');
-      return;
-    }
+    if (noTelp.isEmpty) { _showSnackbar('No Telepon harus diisi'); return; }
+    if (alamat.isEmpty) { _showSnackbar('Alamat harus diisi'); return; }
+    if (password.isEmpty) { _showSnackbar('Password harus diisi'); return; }
+    if (password.length < 6) { _showSnackbar('Password minimal 6 karakter'); return; }
+    if (password != konfirmasi) { _showSnackbar('Password tidak sama'); return; }
 
     setState(() => _isLoading = true);
 
     try {
-      await ApiService.register(
-        nama:     nama,
-        email:    email,
-        noTelp:   noTelp,
-        alamat:   alamat,
-        password: password,
-      );
+      final result = await ApiService.sendOtpRegister(noTelp: noTelp);
+      final phone  = result['phone'] as String?;
 
       if (mounted) {
         setState(() => _isLoading = false);
-        _showSnackbar('Registrasi berhasil! Silakan login.', isError: false);
-        _navigateToLogin();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VerifikasiOtpRegister(
+              nama:     nama,
+              email:    email,
+              phone:    phone ?? noTelp,
+              alamat:   alamat,
+              password: password,
+            ),
+          ),
+        );
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -262,7 +245,6 @@ class _DaftarState extends State<Daftar> {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // Panel putih bawah
                 Positioned(
                   left: 0,
                   top: sh * 0.372,
@@ -275,8 +257,6 @@ class _DaftarState extends State<Daftar> {
                     ),
                   ),
                 ),
-
-                // Logo
                 Positioned(
                   left: sw * 0.276,
                   top: sh * 0.080,
@@ -287,8 +267,6 @@ class _DaftarState extends State<Daftar> {
                     fit: BoxFit.cover,
                   ),
                 ),
-
-                // Tab Masuk / Daftar
                 Positioned(
                   left: sw * 0.087,
                   top: sh * 0.397,
@@ -311,7 +289,6 @@ class _DaftarState extends State<Daftar> {
                     ),
                     child: Row(
                       children: [
-                        // Tab Masuk (tidak aktif)
                         Expanded(
                           child: GestureDetector(
                             onTap: _navigateToLogin,
@@ -330,7 +307,6 @@ class _DaftarState extends State<Daftar> {
                             ),
                           ),
                         ),
-                        // Tab Daftar (aktif)
                         Expanded(
                           child: Container(
                             height: 45.54,
@@ -357,8 +333,6 @@ class _DaftarState extends State<Daftar> {
                     ),
                   ),
                 ),
-
-                // Area Form
                 Positioned(
                   left: sw * 0.087,
                   top: sh * 0.470,
@@ -369,7 +343,6 @@ class _DaftarState extends State<Daftar> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Nama Lengkap
                         _buildLabel('Nama Lengkap'),
                         const SizedBox(height: 5),
                         _buildTextField(
@@ -378,8 +351,6 @@ class _DaftarState extends State<Daftar> {
                           keyboardType: TextInputType.name,
                         ),
                         const SizedBox(height: 12),
-
-                        // Email
                         _buildLabel('Email'),
                         const SizedBox(height: 5),
                         _buildTextField(
@@ -388,18 +359,14 @@ class _DaftarState extends State<Daftar> {
                           keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 12),
-
-                        // No Telepon
                         _buildLabel('No Telepon'),
                         const SizedBox(height: 5),
                         _buildTextField(
                           controller: _noTelpController,
-                          hint: 'No Telepon',
+                          hint: 'No Telepon (08xx / 628xx)',
                           keyboardType: TextInputType.phone,
                         ),
                         const SizedBox(height: 12),
-
-                        // Alamat
                         _buildLabel('Alamat'),
                         const SizedBox(height: 5),
                         _buildTextArea(
@@ -407,8 +374,6 @@ class _DaftarState extends State<Daftar> {
                           hint: 'Alamat Lengkap',
                         ),
                         const SizedBox(height: 12),
-
-                        // Password
                         _buildLabel('Masukkan Password'),
                         const SizedBox(height: 5),
                         _buildTextField(
@@ -420,8 +385,6 @@ class _DaftarState extends State<Daftar> {
                               () => _obscurePassword = !_obscurePassword),
                         ),
                         const SizedBox(height: 12),
-
-                        // Konfirmasi Password
                         _buildLabel('Masukkan Ulang Password'),
                         const SizedBox(height: 5),
                         _buildTextField(
@@ -433,8 +396,6 @@ class _DaftarState extends State<Daftar> {
                               () => _obscureKonfirmasi = !_obscureKonfirmasi),
                         ),
                         const SizedBox(height: 20),
-
-                        // Tombol Konfirmasi
                         Center(
                           child: GestureDetector(
                             onTap: _isLoading ? null : _handleRegister,
@@ -481,7 +442,7 @@ class _DaftarState extends State<Daftar> {
                                         ),
                                       )
                                     : Text(
-                                        'Konfirmasi',
+                                        'Lanjut',
                                         style: GoogleFonts.alexandria(
                                           color: Colors.white,
                                           fontSize: 18,
