@@ -3,14 +3,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/admin/shared/header_admin.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
+// ── Konstanta warna & shadow ────────────────────────────────────
 const _gradientColors = [
   Color(0xFFD05122),
   Color(0xFFEE8B2E),
   Color(0xFFFBA839),
 ];
-const _gradientStops = [0.17, 0.47, 0.60];
-const _borderOrange = Color(0xFFDB6626);
-const _cardShadow = [
+const _gradientStops  = [0.17, 0.47, 0.60];
+const _borderOrange   = Color(0xFFDB6626);
+const _cardShadow     = [
   BoxShadow(
       color: Color(0x3F000000),
       spreadRadius: 0,
@@ -28,55 +29,49 @@ const _listShadow = [
 const _filterLabels = ['Semua', 'Pending', 'Proses', 'Selesai', 'Batal'];
 const _filterValues = ['', 'pending', 'diproses', 'selesai', 'batal'];
 
+// ── Base URL untuk gambar (tanpa trailing /api/)
+const _imageBaseUrl = 'http://192.168.1.9/dapur_bu_mon/';
+
+// ── Helpers URL gambar ──────────────────────────────────────────
+String _buildImageUrl(String? raw) {
+  if (raw == null || raw.isEmpty) return '';
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  // Hapus leading slash jika ada
+  final path = raw.startsWith('/') ? raw.substring(1) : raw;
+  return '$_imageBaseUrl$path';
+}
+
 // ── Status helpers ──────────────────────────────────────────────
 Color _statusColor(String? status) {
   switch (status) {
-    case 'pending':
-      return const Color(0xFFF39C12);
-    case 'diterima':
-      return const Color(0xFF3498DB);
-    case 'diproses':
-      return const Color(0xFFEE8B2E);
-    case 'selesai':
-      return const Color(0xFF0FBC5F);
-    case 'batal':
-      return const Color(0xFFE74C3C);
-    default:
-      return Colors.grey;
+    case 'pending':  return const Color(0xFFF39C12);
+    case 'diterima': return const Color(0xFF3498DB);
+    case 'diproses': return const Color(0xFFEE8B2E);
+    case 'selesai':  return const Color(0xFF0FBC5F);
+    case 'batal':    return const Color(0xFFE74C3C);
+    default:         return Colors.grey;
   }
 }
 
 String _statusLabel(String? status) {
   switch (status) {
-    case 'pending':
-      return 'Pending';
-    case 'diterima':
-      return 'Diterima';
-    case 'diproses':
-      return 'Proses';
-    case 'selesai':
-      return 'Selesai';
-    case 'batal':
-      return 'Batal';
-    default:
-      return status ?? '-';
+    case 'pending':  return 'Pending';
+    case 'diterima': return 'Diterima';
+    case 'diproses': return 'Proses';
+    case 'selesai':  return 'Selesai';
+    case 'batal':    return 'Batal';
+    default:         return status ?? '-';
   }
 }
 
 IconData _statusIcon(String? status) {
   switch (status) {
-    case 'pending':
-      return Icons.hourglass_empty_rounded;
-    case 'diterima':
-      return Icons.thumb_up_rounded;
-    case 'diproses':
-      return Icons.local_fire_department_rounded;
-    case 'selesai':
-      return Icons.check_circle_rounded;
-    case 'batal':
-      return Icons.cancel_rounded;
-    default:
-      return Icons.help_outline;
+    case 'pending':  return Icons.hourglass_empty_rounded;
+    case 'diterima': return Icons.thumb_up_rounded;
+    case 'diproses': return Icons.local_fire_department_rounded;
+    case 'selesai':  return Icons.check_circle_rounded;
+    case 'batal':    return Icons.cancel_rounded;
+    default:         return Icons.help_outline;
   }
 }
 
@@ -113,8 +108,8 @@ class PesananAdminPage extends StatefulWidget {
 }
 
 class _PesananAdminPageState extends State<PesananAdminPage> {
-  int _selectedFilter = 0;
-  bool _isLoading = true;
+  int    _selectedFilter = 0;
+  bool   _isLoading      = true;
   List<Map<String, dynamic>> _allPesanan = [];
   String? _error;
 
@@ -125,10 +120,7 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
   }
 
   Future<void> _loadPesanan() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() { _isLoading = true; _error = null; });
     try {
       final data = await ApiService.getPesanan();
       setState(() => _allPesanan = data.cast<Map<String, dynamic>>());
@@ -146,16 +138,15 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
   }
 
   Map<String, int> get _stats => {
-        'Total Pesanan': _allPesanan.length,
-        'Pending': _allPesanan.where((p) => p['status'] == 'pending').length,
-        'Batal': _allPesanan.where((p) => p['status'] == 'batal').length,
-        'Selesai': _allPesanan.where((p) => p['status'] == 'selesai').length,
-      };
+    'Total Pesanan': _allPesanan.length,
+    'Pending': _allPesanan.where((p) => p['status'] == 'pending').length,
+    'Batal':   _allPesanan.where((p) => p['status'] == 'batal').length,
+    'Selesai': _allPesanan.where((p) => p['status'] == 'selesai').length,
+  };
 
   Future<void> _updateStatus(int idPesanan, String status) async {
     try {
-      await ApiService.updateStatusPesanan(
-          idPesanan: idPesanan, status: status);
+      await ApiService.updateStatusPesanan(idPesanan: idPesanan, status: status);
       await _loadPesanan();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -163,8 +154,7 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
               style: GoogleFonts.alexandria(color: Colors.white)),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     } catch (e) {
@@ -174,8 +164,7 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
               style: GoogleFonts.alexandria(color: Colors.white)),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     }
@@ -208,16 +197,12 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
                 onRefresh: _loadPesanan,
                 color: const Color(0xFFD05122),
                 child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                            color: Color(0xFFD05122)))
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFFD05122)))
                     : _error != null
-                        ? _ErrorView(
-                            error: _error!, onRetry: _loadPesanan)
+                        ? _ErrorView(error: _error!, onRetry: _loadPesanan)
                         : SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 18, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -225,37 +210,31 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
                                 const SizedBox(height: 20),
                                 Text('Daftar Pesanan',
                                     style: GoogleFonts.alexandria(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold)),
+                                        fontSize: 20, fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 10),
                                 _FilterRow(
                                   selected: _selectedFilter,
-                                  onSelected: (i) =>
-                                      setState(() => _selectedFilter = i),
+                                  onSelected: (i) => setState(() => _selectedFilter = i),
                                 ),
                                 const SizedBox(height: 12),
                                 if (_filtered.isEmpty)
                                   Center(
                                     child: Padding(
-                                      padding:
-                                          const EdgeInsets.only(top: 40),
+                                      padding: const EdgeInsets.only(top: 40),
                                       child: Column(
                                         children: [
                                           Icon(Icons.receipt_long_outlined,
-                                              size: 48,
-                                              color: Colors.grey[300]),
+                                              size: 48, color: Colors.grey[300]),
                                           const SizedBox(height: 8),
                                           Text('Tidak ada pesanan',
-                                              style: GoogleFonts.alexandria(
-                                                  color: Colors.grey)),
+                                              style: GoogleFonts.alexandria(color: Colors.grey)),
                                         ],
                                       ),
                                     ),
                                   )
                                 else
                                   ..._filtered.map((p) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.only(bottom: 12),
                                         child: _OrderCard(
                                           pesanan: p,
                                           onDetail: () => _showDetail(p),
@@ -274,7 +253,7 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
   }
 }
 
-// ── Error View ─────────────────────────────────────────────────
+// ── Error View ──────────────────────────────────────────────────
 class _ErrorView extends StatelessWidget {
   final String error;
   final VoidCallback onRetry;
@@ -289,19 +268,16 @@ class _ErrorView extends StatelessWidget {
           Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 12),
           Text(error,
-              style:
-                  GoogleFonts.alexandria(color: Colors.grey, fontSize: 14),
+              style: GoogleFonts.alexandria(color: Colors.grey, fontSize: 14),
               textAlign: TextAlign.center),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD05122),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Coba Lagi',
-                style: GoogleFonts.alexandria(color: Colors.white)),
+            child: Text('Coba Lagi', style: GoogleFonts.alexandria(color: Colors.white)),
           ),
         ],
       ),
@@ -309,7 +285,7 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-// ── Stats Card ─────────────────────────────────────────────────
+// ── Stats Card ──────────────────────────────────────────────────
 class _StatsCard extends StatelessWidget {
   final Map<String, int> stats;
   const _StatsCard({required this.stats});
@@ -322,8 +298,7 @@ class _StatsCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
         boxShadow: _cardShadow,
-        gradient: const LinearGradient(
-            colors: _gradientColors, stops: _gradientStops),
+        gradient: const LinearGradient(colors: _gradientColors, stops: _gradientStops),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,8 +308,7 @@ class _StatsCard extends StatelessWidget {
               const Icon(Icons.receipt_long, color: Colors.black, size: 24),
               const SizedBox(width: 8),
               Text('Pesanan',
-                  style: GoogleFonts.alexandria(
-                      fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: GoogleFonts.alexandria(fontSize: 20, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 14),
@@ -346,8 +320,7 @@ class _StatsCard extends StatelessWidget {
             mainAxisSpacing: 12,
             childAspectRatio: 140 / 100,
             children: stats.entries
-                .map((e) =>
-                    _MiniStatCard(label: e.key, value: '${e.value}'))
+                .map((e) => _MiniStatCard(label: e.key, value: '${e.value}'))
                 .toList(),
           ),
         ],
@@ -372,19 +345,17 @@ class _MiniStatCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label,
-              style: GoogleFonts.alexandria(
-                  fontSize: 14, fontWeight: FontWeight.w500)),
+              style: GoogleFonts.alexandria(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
           Text(value,
-              style: GoogleFonts.alexandria(
-                  fontSize: 35, fontWeight: FontWeight.bold)),
+              style: GoogleFonts.alexandria(fontSize: 35, fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 }
 
-// ── Filter Row ─────────────────────────────────────────────────
+// ── Filter Row ──────────────────────────────────────────────────
 class _FilterRow extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelected;
@@ -403,21 +374,16 @@ class _FilterRow extends StatelessWidget {
               onTap: () => onSelected(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: i == selected
-                      ? const Color(0xFFEE8B2E)
-                      : Colors.transparent,
+                  color: i == selected ? const Color(0xFFEE8B2E) : Colors.transparent,
                   border: Border.all(width: 1.5, color: _borderOrange),
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: Text(_filterLabels[i],
                     style: GoogleFonts.lora(
                         fontSize: 12,
-                        fontWeight: i == selected
-                            ? FontWeight.bold
-                            : FontWeight.w500)),
+                        fontWeight: i == selected ? FontWeight.bold : FontWeight.w500)),
               ),
             ),
           ),
@@ -427,40 +393,31 @@ class _FilterRow extends StatelessWidget {
   }
 }
 
-// ── Order Card (BARU) ──────────────────────────────────────────
+// ── Order Card ──────────────────────────────────────────────────
 class _OrderCard extends StatelessWidget {
   final Map<String, dynamic> pesanan;
   final VoidCallback onDetail;
   const _OrderCard({required this.pesanan, required this.onDetail});
 
-  // Progress bar: pending=1, diterima=2, diproses=3, selesai=4, batal=0
   int get _progressStep {
     switch (pesanan['status']) {
-      case 'pending':
-        return 1;
-      case 'diterima':
-        return 2;
-      case 'diproses':
-        return 3;
-      case 'selesai':
-        return 4;
-      case 'batal':
-        return 0;
-      default:
-        return 0;
+      case 'pending':  return 1;
+      case 'diterima': return 2;
+      case 'diproses': return 3;
+      case 'selesai':  return 4;
+      default:         return 0;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final status = pesanan['status'] as String?;
-    final nama =
-        pesanan['customer_name'] ?? 'Customer #${pesanan['id_customer']}';
+    final status    = pesanan['status'] as String?;
+    final nama      = pesanan['customer_name'] ?? 'Customer #${pesanan['id_customer']}';
     final itemCount = pesanan['item_count'];
-    final isBatal = status == 'batal';
+    final isBatal   = status == 'batal';
     final isSelesai = status == 'selesai';
-    final color = _statusColor(status);
-    final step = _progressStep;
+    final color     = _statusColor(status);
+    final step      = _progressStep;
 
     return Container(
       decoration: BoxDecoration(
@@ -470,13 +427,11 @@ class _OrderCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // ── Top bar warna status ──
           Container(
             height: 4,
             decoration: BoxDecoration(
               color: color,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
           ),
           Padding(
@@ -484,12 +439,10 @@ class _OrderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Row 1: ID + Nama + Badge status
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(6),
@@ -508,10 +461,8 @@ class _OrderCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis),
                     ),
                     const SizedBox(width: 8),
-                    // Badge status dengan icon
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(20),
@@ -531,33 +482,23 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
-                // Row 2: Tanggal + Item count
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded,
-                        size: 13, color: Colors.grey),
+                    const Icon(Icons.calendar_today_rounded, size: 13, color: Colors.grey),
                     const SizedBox(width: 4),
                     Text(_formattedDate(pesanan['tgl_pesan']),
-                        style: GoogleFonts.alexandria(
-                            fontSize: 12, color: Colors.grey[600])),
+                        style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[600])),
                     if (itemCount != null) ...[
                       const SizedBox(width: 12),
-                      const Icon(Icons.shopping_bag_outlined,
-                          size: 13, color: Colors.grey),
+                      const Icon(Icons.shopping_bag_outlined, size: 13, color: Colors.grey),
                       const SizedBox(width: 4),
                       Text('$itemCount item',
-                          style: GoogleFonts.alexandria(
-                              fontSize: 12, color: Colors.grey[600])),
+                          style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[600])),
                     ],
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
-                // Row 3: Total + Tombol detail
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -565,27 +506,23 @@ class _OrderCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Total',
-                            style: GoogleFonts.alexandria(
-                                fontSize: 11, color: Colors.grey)),
+                            style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey)),
                         Text(_formattedPrice(pesanan['total_harga']),
                             style: GoogleFonts.alexandria(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold)),
+                                fontSize: 17, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     GestureDetector(
                       onTap: onDetail,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 7),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                         decoration: BoxDecoration(
                           color: const Color(0xFFD05122),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.visibility_rounded,
-                                size: 14, color: Colors.white),
+                            const Icon(Icons.visibility_rounded, size: 14, color: Colors.white),
                             const SizedBox(width: 5),
                             Text('Detail',
                                 style: GoogleFonts.alexandria(
@@ -598,8 +535,6 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
-                // Progress bar (sembunyikan kalau batal)
                 if (!isBatal) ...[
                   const SizedBox(height: 12),
                   _ProgressBar(step: step, isSelesai: isSelesai),
@@ -613,7 +548,7 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-// ── Progress Bar ───────────────────────────────────────────────
+// ── Progress Bar ────────────────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
   final int step;
   final bool isSelesai;
@@ -628,7 +563,6 @@ class _ProgressBar extends StatelessWidget {
         Row(
           children: List.generate(4, (i) {
             final active = i < step;
-            final current = i == step - 1;
             return Expanded(
               child: Row(
                 children: [
@@ -638,9 +572,7 @@ class _ProgressBar extends StatelessWidget {
                       height: 4,
                       decoration: BoxDecoration(
                         color: active
-                            ? (isSelesai
-                                ? const Color(0xFF0FBC5F)
-                                : const Color(0xFFD05122))
+                            ? (isSelesai ? const Color(0xFF0FBC5F) : const Color(0xFFD05122))
                             : const Color(0xFFEEEEEE),
                         borderRadius: BorderRadius.circular(2),
                       ),
@@ -662,12 +594,9 @@ class _ProgressBar extends StatelessWidget {
                 style: GoogleFonts.alexandria(
                   fontSize: 9,
                   color: active
-                      ? (isSelesai
-                          ? const Color(0xFF0FBC5F)
-                          : const Color(0xFFD05122))
+                      ? (isSelesai ? const Color(0xFF0FBC5F) : const Color(0xFFD05122))
                       : Colors.grey[400],
-                  fontWeight:
-                      i == step - 1 ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: i == step - 1 ? FontWeight.bold : FontWeight.normal,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -679,12 +608,11 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-// ── Detail Dialog (POPUP BARU) ─────────────────────────────────
+// ── Detail Dialog ───────────────────────────────────────────────
 class _DetailDialog extends StatefulWidget {
   final Map<String, dynamic> pesanan;
   final ValueChanged<String> onUpdateStatus;
-  const _DetailDialog(
-      {required this.pesanan, required this.onUpdateStatus});
+  const _DetailDialog({required this.pesanan, required this.onUpdateStatus});
 
   @override
   State<_DetailDialog> createState() => _DetailDialogState();
@@ -702,8 +630,12 @@ class _DetailDialogState extends State<_DetailDialog> {
 
   Future<void> _loadDetail() async {
     try {
-      final d =
-          await ApiService.getDetailPesanan(widget.pesanan['id_pesanan']);
+      final d = await ApiService.getDetailPesanan(widget.pesanan['id_pesanan']);
+      debugPrint('=== DETAIL PESANAN KEYS ===');
+      debugPrint(d.keys.toString());
+      debugPrint('bukti_bayar: ${d['bukti_bayar']}');
+      debugPrint('bukti_transfer: ${d['bukti_transfer']}');
+      debugPrint('foto_bukti: ${d['foto_bukti']}');
       setState(() {
         _detail = d;
         _loadingDetail = false;
@@ -716,8 +648,27 @@ class _DetailDialogState extends State<_DetailDialog> {
     }
   }
 
+  // Cari field bukti bayar dari berbagai kemungkinan nama field
+  String get _buktiBayarUrl {
+    if (_detail == null) return '';
+    // Coba semua kemungkinan nama field
+    final raw = _detail!['bukti_bayar'] ??
+        _detail!['bukti_transfer'] ??
+        _detail!['foto_bukti'] ??
+        _detail!['payment_proof'] ??
+        _detail!['foto_transfer'] ??
+        '';
+    return _buildImageUrl(raw?.toString());
+  }
+
+  bool get _isTransfer =>
+      (_detail?['metode_bayar'] ?? widget.pesanan['metode_bayar'] ?? '')
+          .toString()
+          .toLowerCase()
+          .contains('transfer');
+
   static const _nextStatus = {
-    'pending': ['diterima', 'batal'],
+    'pending':  ['diterima', 'batal'],
     'diterima': ['diproses', 'batal'],
     'diproses': ['selesai', 'batal'],
   };
@@ -725,47 +676,40 @@ class _DetailDialogState extends State<_DetailDialog> {
   static const _btnLabel = {
     'diterima': 'Terima Pesanan',
     'diproses': 'Mulai Proses',
-    'selesai': 'Tandai Selesai',
-    'batal': 'Batalkan',
+    'selesai':  'Tandai Selesai',
+    'batal':    'Batalkan',
   };
 
-  // Timeline steps
   static const _timelineSteps = [
-    {'key': 'pending', 'label': 'Pending'},
+    {'key': 'pending',  'label': 'Pending'},
     {'key': 'diterima', 'label': 'Diterima'},
     {'key': 'diproses', 'label': 'Diproses'},
-    {'key': 'selesai', 'label': 'Selesai'},
+    {'key': 'selesai',  'label': 'Selesai'},
   ];
 
   int _currentStepIndex(String? status) {
     switch (status) {
-      case 'pending':
-        return 0;
-      case 'diterima':
-        return 1;
-      case 'diproses':
-        return 2;
-      case 'selesai':
-        return 3;
-      default:
-        return -1;
+      case 'pending':  return 0;
+      case 'diterima': return 1;
+      case 'diproses': return 2;
+      case 'selesai':  return 3;
+      default:         return -1;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final status = widget.pesanan['status'] as String?;
-    final actions = _nextStatus[status] ?? [];
-    final nama = widget.pesanan['customer_name'] ??
+    final status      = widget.pesanan['status'] as String?;
+    final actions     = _nextStatus[status] ?? [];
+    final nama        = widget.pesanan['customer_name'] ??
         'Customer #${widget.pesanan['id_customer']}';
-    final isBatal = status == 'batal';
-    final isSelesai = status == 'selesai';
+    final isBatal     = status == 'batal';
+    final isSelesai   = status == 'selesai';
     final currentStep = _currentStepIndex(status);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -775,8 +719,7 @@ class _DetailDialogState extends State<_DetailDialog> {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                  colors: _gradientColors, stops: _gradientStops),
+              gradient: LinearGradient(colors: _gradientColors, stops: _gradientStops),
             ),
             child: Row(
               children: [
@@ -786,8 +729,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                     children: [
                       Text('Detail Pesanan',
                           style: GoogleFonts.alexandria(
-                              fontSize: 12,
-                              color: Colors.white70)),
+                              fontSize: 12, color: Colors.white70)),
                       Text('#${widget.pesanan['id_pesanan']} · $nama',
                           style: GoogleFonts.alexandria(
                               fontSize: 15,
@@ -798,8 +740,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded,
-                      color: Colors.white, size: 20),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -815,8 +756,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                 ? const SizedBox(
                     height: 120,
                     child: Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFFD05122)),
+                      child: CircularProgressIndicator(color: Color(0xFFD05122)),
                     ),
                   )
                 : SingleChildScrollView(
@@ -826,7 +766,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                       children: [
                         // Timeline status
                         if (!isBatal) ...[
-                          _SectionLabel(label: 'Status Pesanan'),
+                          const _SectionLabel(label: 'Status Pesanan'),
                           const SizedBox(height: 10),
                           _TimelineWidget(
                             steps: _timelineSteps,
@@ -836,8 +776,8 @@ class _DetailDialogState extends State<_DetailDialog> {
                           const SizedBox(height: 16),
                         ],
 
-                        // Info singkat dalam chips
-                        _SectionLabel(label: 'Info Pesanan'),
+                        // Info grid
+                        const _SectionLabel(label: 'Info Pesanan'),
                         const SizedBox(height: 10),
                         _InfoGrid(items: [
                           _InfoItem(
@@ -849,8 +789,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                             icon: Icons.calendar_today_rounded,
                             label: 'Tanggal',
                             value: _formattedDate(
-                                _detail?['tgl_pesan'] ??
-                                    widget.pesanan['tgl_pesan']),
+                                _detail?['tgl_pesan'] ?? widget.pesanan['tgl_pesan']),
                           ),
                           _InfoItem(
                             icon: Icons.info_outline_rounded,
@@ -865,7 +804,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                           ),
                         ]),
 
-                        // Catatan (kalau ada)
+                        // Catatan
                         if ((_detail?['catatan'] ?? '').toString().isNotEmpty) ...[
                           const SizedBox(height: 14),
                           Container(
@@ -874,8 +813,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                               color: const Color(0xFFFFF8E1),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                  color: const Color(0xFFFFCC02),
-                                  width: 1),
+                                  color: const Color(0xFFFFCC02), width: 1),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -887,8 +825,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                                   child: Text(
                                     _detail!['catatan'].toString(),
                                     style: GoogleFonts.alexandria(
-                                        fontSize: 12,
-                                        color: const Color(0xFF7D5A00)),
+                                        fontSize: 12, color: const Color(0xFF7D5A00)),
                                   ),
                                 ),
                               ],
@@ -896,14 +833,21 @@ class _DetailDialogState extends State<_DetailDialog> {
                           ),
                         ],
 
+                        // ── BUKTI TRANSFER ──────────────────────────────
+                        if (_isTransfer) ...[
+                          const SizedBox(height: 16),
+                          const _SectionLabel(label: 'Bukti Transfer'),
+                          const SizedBox(height: 10),
+                          _BuktiTransferWidget(url: _buktiBayarUrl),
+                        ],
+
                         // Daftar item
                         const SizedBox(height: 16),
-                        _SectionLabel(label: 'Item Pesanan'),
+                        const _SectionLabel(label: 'Item Pesanan'),
                         const SizedBox(height: 10),
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(
-                                color: Colors.grey.shade200),
+                            border: Border.all(color: Colors.grey.shade200),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Column(
@@ -914,13 +858,9 @@ class _DetailDialogState extends State<_DetailDialog> {
                                   .map((e) => _ItemRow(
                                         item: e.value,
                                         isLast: e.key ==
-                                            ((_detail?['items']
-                                                        as List<dynamic>?)
-                                                    ?.length ??
-                                                0) -
-                                                1,
+                                            ((_detail?['items'] as List<dynamic>?)?.length ?? 0) - 1,
                                       )),
-                              // Total
+                              // Total row
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 10),
@@ -929,21 +869,16 @@ class _DetailDialogState extends State<_DetailDialog> {
                                   borderRadius: const BorderRadius.vertical(
                                       bottom: Radius.circular(10)),
                                   border: Border(
-                                    top: BorderSide(
-                                        color: Colors.grey.shade200),
-                                  ),
+                                      top: BorderSide(color: Colors.grey.shade200)),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text('Total',
                                         style: GoogleFonts.alexandria(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold)),
+                                            fontSize: 13, fontWeight: FontWeight.bold)),
                                     Text(
-                                      _formattedPrice(
-                                          _detail?['total_harga'] ?? 0),
+                                      _formattedPrice(_detail?['total_harga'] ?? 0),
                                       style: GoogleFonts.alexandria(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
@@ -964,11 +899,8 @@ class _DetailDialogState extends State<_DetailDialog> {
           if (actions.isNotEmpty)
             Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                    top: BorderSide(color: Colors.grey.shade200)),
-              ),
+              decoration:
+                  BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.grey.shade200))),
               child: Row(
                 children: actions.map((s) {
                   final isBatalBtn = s == 'batal';
@@ -987,13 +919,11 @@ class _DetailDialogState extends State<_DetailDialog> {
                           foregroundColor:
                               isBatalBtn ? Colors.red : Colors.white,
                           elevation: 0,
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: isBatalBtn
-                              ? const BorderSide(
-                                  color: Colors.red, width: 1)
+                              ? const BorderSide(color: Colors.red, width: 1)
                               : BorderSide.none,
                         ),
                         child: Text(
@@ -1045,8 +975,7 @@ class _DetailDialogState extends State<_DetailDialog> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.cancel_rounded,
-                        color: Colors.red, size: 18),
+                    const Icon(Icons.cancel_rounded, color: Colors.red, size: 18),
                     const SizedBox(width: 8),
                     Text('Pesanan telah dibatalkan',
                         style: GoogleFonts.alexandria(
@@ -1063,10 +992,10 @@ class _DetailDialogState extends State<_DetailDialog> {
   }
 }
 
-// ── Section Label ──────────────────────────────────────────────
+// ── Section Label ───────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String label;
-  const _SectionLabel({required this.label});
+  const _SectionLabel({required this.label, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -1079,7 +1008,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── Info Grid ──────────────────────────────────────────────────
+// ── Info Grid ───────────────────────────────────────────────────
 class _InfoItem {
   final IconData icon;
   final String label;
@@ -1107,8 +1036,7 @@ class _InfoGrid extends StatelessWidget {
       childAspectRatio: 2.5,
       children: items
           .map((item) => Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8F8F8),
                   borderRadius: BorderRadius.circular(10),
@@ -1131,8 +1059,7 @@ class _InfoGrid extends StatelessWidget {
                               style: GoogleFonts.alexandria(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: item.valueColor ??
-                                      Colors.black87),
+                                  color: item.valueColor ?? Colors.black87),
                               overflow: TextOverflow.ellipsis),
                         ],
                       ),
@@ -1145,25 +1072,23 @@ class _InfoGrid extends StatelessWidget {
   }
 }
 
-// ── Timeline Widget ────────────────────────────────────────────
+// ── Timeline Widget ─────────────────────────────────────────────
 class _TimelineWidget extends StatelessWidget {
   final List<Map<String, String?>> steps;
   final int currentStep;
   final bool isBatal;
   const _TimelineWidget(
-      {required this.steps,
-      required this.currentStep,
-      required this.isBatal});
+      {required this.steps, required this.currentStep, required this.isBatal});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: steps.asMap().entries.map((e) {
-        final i = e.key;
-        final step = e.value;
-        final isDone = i < currentStep;
+        final i        = e.key;
+        final step     = e.value;
+        final isDone   = i < currentStep;
         final isActive = i == currentStep;
-        final isLast = i == steps.length - 1;
+        final isLast   = i == steps.length - 1;
 
         return Expanded(
           child: Row(
@@ -1171,10 +1096,8 @@ class _TimelineWidget extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    // Dot
                     Container(
-                      width: 24,
-                      height: 24,
+                      width: 24, height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDone
@@ -1183,8 +1106,7 @@ class _TimelineWidget extends StatelessWidget {
                                 ? const Color(0xFFD05122)
                                 : Colors.grey.shade200,
                         border: isActive
-                            ? Border.all(
-                                color: const Color(0xFFD05122), width: 2)
+                            ? Border.all(color: const Color(0xFFD05122), width: 2)
                             : null,
                       ),
                       child: Icon(
@@ -1194,9 +1116,7 @@ class _TimelineWidget extends StatelessWidget {
                                 ? Icons.radio_button_checked_rounded
                                 : Icons.radio_button_unchecked_rounded,
                         size: 14,
-                        color: isDone || isActive
-                            ? Colors.white
-                            : Colors.grey.shade400,
+                        color: isDone || isActive ? Colors.white : Colors.grey.shade400,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1204,9 +1124,7 @@ class _TimelineWidget extends StatelessWidget {
                       step['label'] ?? '',
                       style: GoogleFonts.alexandria(
                         fontSize: 9,
-                        fontWeight: isActive
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                         color: isDone
                             ? const Color(0xFF0FBC5F)
                             : isActive
@@ -1218,15 +1136,12 @@ class _TimelineWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              // Connector line
               if (!isLast)
                 Expanded(
                   child: Container(
                     height: 2,
                     margin: const EdgeInsets.only(bottom: 18),
-                    color: i < currentStep
-                        ? const Color(0xFF0FBC5F)
-                        : Colors.grey.shade200,
+                    color: i < currentStep ? const Color(0xFF0FBC5F) : Colors.grey.shade200,
                   ),
                 ),
             ],
@@ -1237,7 +1152,7 @@ class _TimelineWidget extends StatelessWidget {
   }
 }
 
-// ── Item Row ───────────────────────────────────────────────────
+// ── Item Row ────────────────────────────────────────────────────
 class _ItemRow extends StatelessWidget {
   final dynamic item;
   final bool isLast;
@@ -1248,15 +1163,12 @@ class _ItemRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 28, height: 28,
             decoration: BoxDecoration(
               color: const Color(0xFFFFF0E8),
               borderRadius: BorderRadius.circular(6),
@@ -1276,9 +1188,181 @@ class _ItemRow extends StatelessWidget {
           ),
           Text(
             _formattedPrice(item['harga_satuan'] ?? 0),
-            style: GoogleFonts.alexandria(
-                fontSize: 12,
-                color: Colors.grey[600]),
+            style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bukti Transfer Widget ───────────────────────────────────────
+class _BuktiTransferWidget extends StatelessWidget {
+  final String url;
+  const _BuktiTransferWidget({required this.url});
+
+  void _showFullscreen(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(12),
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (_, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
+                      height: 300,
+                      color: Colors.black54,
+                      child: const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 200,
+                    color: Colors.black54,
+                    child: const Center(
+                      child: Icon(Icons.broken_image_outlined,
+                          color: Colors.white54, size: 48),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8, right: 8,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.close_rounded,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Kosong — belum ada file atau belum transfer
+    if (url.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.image_not_supported_outlined,
+                color: Colors.grey[400], size: 32),
+            const SizedBox(height: 8),
+            Text('Bukti transfer belum diunggah',
+                style: GoogleFonts.alexandria(
+                    fontSize: 12, color: Colors.grey[500])),
+          ],
+        ),
+      );
+    }
+
+    // Ada URL — tampilkan gambar
+    return GestureDetector(
+      onTap: () => _showFullscreen(context),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              url,
+              width: double.infinity,
+              height: 200,
+              fit: BoxFit.cover,
+              loadingBuilder: (_, child, progress) {
+                if (progress == null) return child;
+                return Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFD05122)),
+                  ),
+                );
+              },
+              errorBuilder: (_, __, ___) => Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.broken_image_outlined,
+                        color: Colors.grey[400], size: 28),
+                    const SizedBox(height: 6),
+                    Text('Gagal memuat gambar',
+                        style: GoogleFonts.alexandria(
+                            fontSize: 12, color: Colors.grey[500])),
+                    const SizedBox(height: 4),
+                    // Tampilkan URL mentah agar mudah debug
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(url,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 9, color: Colors.grey[400]),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Badge "Tap untuk perbesar"
+          Positioned(
+            bottom: 8, right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.zoom_in_rounded,
+                      color: Colors.white, size: 13),
+                  const SizedBox(width: 4),
+                  Text('Tap untuk perbesar',
+                      style: GoogleFonts.alexandria(
+                          fontSize: 10, color: Colors.white)),
+                ],
+              ),
+            ),
           ),
         ],
       ),

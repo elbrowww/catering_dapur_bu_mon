@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart'; // ✅ untuk kIsWeb & Uint8List
 import 'dio_helper.dart';
 import 'session_manager.dart';
 
@@ -307,28 +308,47 @@ class ApiService {
   }
 
   // ==========================================================
-  //  CHECKOUT  ← method yang diperbaiki
+  //  CHECKOUT  ✅ FIXED: support Web (Uint8List) & Mobile (File)
   // ==========================================================
 
   static Future<Map<String, dynamic>> checkout({
-    required String namaPembeli,   // ← tambahan
-    required String alamat,        // ← tambahan
+    required String namaPembeli,
+    required String alamat,
     required String metodeBayar,
-    String catatan    = '',
-    File?  buktiBayar,             // ← tambahan (wajib bila Transfer Bank)
+    String catatan         = '',
+    File?  buktiBayar,             // Mobile: dart:io File
+    Uint8List? buktiBayarBytes,    // ✅ Web: raw bytes
+    String?    buktiBayarName,     // ✅ nama file dari XFile.name
   }) async {
     try {
-      // Gunakan multipart agar bisa membawa file sekaligus field teks
+      MultipartFile? multipartFile;
+
+      if (kIsWeb) {
+        // ✅ Web: buat MultipartFile dari bytes
+        if (buktiBayarBytes != null) {
+          final filename = buktiBayarName ??
+              'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          multipartFile = MultipartFile.fromBytes(
+            buktiBayarBytes,
+            filename: filename,
+          );
+        }
+      } else {
+        // Mobile: buat MultipartFile dari path File
+        if (buktiBayar != null) {
+          multipartFile = await MultipartFile.fromFile(
+            buktiBayar.path,
+            filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
+        }
+      }
+
       final formData = FormData.fromMap({
         'nama_pembeli': namaPembeli,
         'alamat':       alamat,
         'metode_bayar': metodeBayar,
         'catatan':      catatan,
-        if (buktiBayar != null)
-          'bukti_bayar': await MultipartFile.fromFile(
-            buktiBayar.path,
-            filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          ),
+        if (multipartFile != null) 'bukti_bayar': multipartFile,
       });
 
       final response = await _dio.post('/pesanan.php', data: formData);

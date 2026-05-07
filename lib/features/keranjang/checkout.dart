@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,7 +22,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   String _selectedMetodeBayar = 'Transfer Bank';
   bool   _isLoading           = false;
-  File?  _buktiBayar;
+
+  XFile?     _buktiBayar;
+  Uint8List? _buktiBayarBytes;
 
   static const _namaBank     = 'BCA';
   static const _noRekening   = '1234567890';
@@ -33,8 +36,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
     _loadUserData();
-    // FIX: Selalu load ulang keranjang dari server saat buka halaman checkout
-    // agar _ctrl.items sinkron dengan DB, bukan hanya local state
     _ctrl.loadKeranjang();
   }
 
@@ -54,7 +55,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       imageQuality: 80,
     );
     if (picked != null) {
-      setState(() => _buktiBayar = File(picked.path));
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _buktiBayar      = picked;
+        _buktiBayarBytes = bytes;
+      });
     }
   }
 
@@ -74,8 +79,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       _showSnack('Harap upload bukti transfer terlebih dahulu');
       return;
     }
-
-    // FIX: Pastikan keranjang di DB tidak kosong sebelum checkout
     if (_ctrl.items.isEmpty) {
       _showSnack('Keranjang kosong, tambahkan item terlebih dahulu');
       return;
@@ -85,11 +88,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     try {
       final response = await ApiService.checkout(
-        namaPembeli: nama,
-        alamat:      alamat,
-        metodeBayar: _selectedMetodeBayar,
-        catatan:     _catatanController.text.trim(),
-        buktiBayar:  _buktiBayar,
+        namaPembeli:     nama,
+        alamat:          alamat,
+        metodeBayar:     _selectedMetodeBayar,
+        catatan:         _catatanController.text.trim(),
+        buktiBayar:      kIsWeb ? null : (_buktiBayar != null ? File(_buktiBayar!.path) : null),
+        buktiBayarBytes: _buktiBayarBytes,
+        buktiBayarName:  _buktiBayar?.name,
       );
 
       if (mounted) {
@@ -131,8 +136,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             const SizedBox(height: 12),
             Text(
               'Pesanan Berhasil!',
-              style: GoogleFonts.alexandria(
-                  fontWeight: FontWeight.bold, fontSize: 20),
+              style: GoogleFonts.alexandria(fontWeight: FontWeight.bold, fontSize: 20),
             ),
           ],
         ),
@@ -150,8 +154,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD05122),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: Text('Kembali ke Menu',
                 style: GoogleFonts.alexandria(color: Colors.white)),
@@ -328,7 +331,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               onChanged: (value) {
                                 setState(() {
                                   _selectedMetodeBayar = value!;
-                                  if (value == 'Cash') _buktiBayar = null;
+                                  if (value == 'Cash') {
+                                    _buktiBayar      = null;
+                                    _buktiBayarBytes = null;
+                                  }
                                 });
                               },
                             ),
@@ -548,13 +554,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   width: 1.5,
                 ),
               ),
-              child: _buktiBayar != null
+              child: _buktiBayar != null && _buktiBayarBytes != null
                   ? Stack(
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(7),
-                          child: Image.file(
-                            _buktiBayar!,
+                          child: Image.memory(
+                            _buktiBayarBytes!,
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
