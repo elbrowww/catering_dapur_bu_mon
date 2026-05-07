@@ -23,31 +23,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool   _isLoading           = false;
   File?  _buktiBayar;
 
-  // ── Dummy rekening (ganti nanti setelah mitra kirim data) ──────────────────
-  static const _namaBank    = 'BCA';
-  static const _noRekening  = '1234567890';
+  static const _namaBank     = 'BCA';
+  static const _noRekening   = '1234567890';
   static const _namaRekening = 'Dapur Bu Mon';
-  // ──────────────────────────────────────────────────────────────────────────
 
-  final List<String> _metodeBayarList = [
-    'Transfer Bank',
-    'Cash',
-  ];
+  final List<String> _metodeBayarList = ['Transfer Bank', 'Cash'];
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    // FIX: Selalu load ulang keranjang dari server saat buka halaman checkout
+    // agar _ctrl.items sinkron dengan DB, bukan hanya local state
+    _ctrl.loadKeranjang();
   }
 
   Future<void> _loadUserData() async {
-    // Isi dari session manager Anda bila sudah ada
+    try {
+      final profil = await ApiService.getProfil();
+      if (mounted) {
+        _namaController.text   = profil['nama']   ?? '';
+        _alamatController.text = profil['alamat'] ?? '';
+      }
+    } catch (_) {}
   }
 
-  // ── Upload bukti dari galeri ───────────────────────────────────────────────
   Future<void> _pickBuktiBayar() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
+    final picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 80,
     );
@@ -56,13 +58,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
-  // ── Proses checkout ────────────────────────────────────────────────────────
   Future<void> _prosesCheckout() async {
-    if (_namaController.text.isEmpty) {
+    final nama   = _namaController.text.trim();
+    final alamat = _alamatController.text.trim();
+
+    if (nama.isEmpty) {
       _showSnack('Nama pembeli wajib diisi');
       return;
     }
-    if (_alamatController.text.isEmpty) {
+    if (alamat.isEmpty) {
       _showSnack('Alamat pengiriman wajib diisi');
       return;
     }
@@ -71,14 +75,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
+    // FIX: Pastikan keranjang di DB tidak kosong sebelum checkout
+    if (_ctrl.items.isEmpty) {
+      _showSnack('Keranjang kosong, tambahkan item terlebih dahulu');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       final response = await ApiService.checkout(
+        namaPembeli: nama,
+        alamat:      alamat,
         metodeBayar: _selectedMetodeBayar,
-        catatan: _catatanController.text,
-        // Kirim file bukti bila ada — sesuaikan parameter di ApiService Anda
-        // buktiBayar: _buktiBayar,
+        catatan:     _catatanController.text.trim(),
+        buktiBayar:  _buktiBayar,
       );
 
       if (mounted) {
@@ -86,8 +97,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
           await _ctrl.kosongkan();
           _showSuccessDialog();
         } else {
-          _showSnack('Checkout gagal: ${response['message'] ?? 'Coba lagi'}',
-              isError: true);
+          _showSnack(
+            'Checkout gagal: ${response['message'] ?? response['error'] ?? 'Coba lagi'}',
+            isError: true,
+          );
         }
       }
     } catch (e) {
@@ -97,7 +110,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
-  // ── Helper snackbar ────────────────────────────────────────────────────────
   void _showSnack(String msg, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -107,7 +119,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // ── Dialog sukses ──────────────────────────────────────────────────────────
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -118,9 +129,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 60),
             const SizedBox(height: 12),
-            Text('Pesanan Berhasil!',
-                style: GoogleFonts.alexandria(
-                    fontWeight: FontWeight.bold, fontSize: 20)),
+            Text(
+              'Pesanan Berhasil!',
+              style: GoogleFonts.alexandria(
+                  fontWeight: FontWeight.bold, fontSize: 20),
+            ),
           ],
         ),
         content: Text(
@@ -156,7 +169,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
-  // ── BUILD ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final items = _ctrl.items;
@@ -182,7 +194,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Daftar Pesanan ───────────────────────────────────────────
                 _buildCard(
                   title: 'Daftar Pesanan',
                   child: Column(
@@ -218,21 +229,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(item['nama'],
-                                          style: GoogleFonts.alexandria(
-                                              fontSize: 14)),
+                                          style: GoogleFonts.alexandria(fontSize: 14)),
                                       const SizedBox(height: 4),
                                       Text(
                                         '${_ctrl.formatRupiah(item['harga'])} x ${item['jumlah']}',
                                         style: GoogleFonts.alexandria(
-                                            fontSize: 12,
-                                            color: Colors.grey[600]),
+                                            fontSize: 12, color: Colors.grey[600]),
                                       ),
                                     ],
                                   ),
                                 ),
                                 Text(
-                                  _ctrl.formatRupiah(
-                                      item['harga'] * item['jumlah']),
+                                  _ctrl.formatRupiah(item['harga'] * item['jumlah']),
                                   style: GoogleFonts.alexandria(
                                     color: const Color(0xFFDC6727),
                                     fontSize: 14,
@@ -252,7 +260,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                 const SizedBox(height: 16),
 
-                // ── Informasi Pembeli ────────────────────────────────────────
                 _buildCard(
                   title: 'Informasi Pembeli',
                   child: Padding(
@@ -278,7 +285,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                 const SizedBox(height: 16),
 
-                // ── Catatan ──────────────────────────────────────────────────
                 _buildCard(
                   title: 'Catatan (Opsional)',
                   child: Padding(
@@ -293,12 +299,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                 const SizedBox(height: 16),
 
-                // ── Metode Pembayaran ────────────────────────────────────────
                 _buildCard(
                   title: 'Metode Pembayaran',
                   child: Column(
                     children: [
-                      // Radio buttons
                       ..._metodeBayarList.map((metode) {
                         return Column(
                           children: [
@@ -315,8 +319,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(metode,
-                                      style: GoogleFonts.alexandria()),
+                                  Text(metode, style: GoogleFonts.alexandria()),
                                 ],
                               ),
                               value: metode,
@@ -325,7 +328,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               onChanged: (value) {
                                 setState(() {
                                   _selectedMetodeBayar = value!;
-                                  // Reset bukti kalau ganti ke Cash
                                   if (value == 'Cash') _buktiBayar = null;
                                 });
                               },
@@ -336,7 +338,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         );
                       }),
 
-                      // ── Info Rekening + Upload (hanya Transfer Bank) ──────
                       if (_selectedMetodeBayar == 'Transfer Bank') ...[
                         const Divider(height: 0, thickness: 1),
                         _buildTransferSection(),
@@ -348,7 +349,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
 
-          // ── Bottom Bar ───────────────────────────────────────────────────
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Container(
@@ -365,11 +365,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
               child: Column(
                 children: [
-                  // Total
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(9),
@@ -387,8 +385,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       children: [
                         Text('Total',
                             style: GoogleFonts.alexandria(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold)),
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                         Text(_ctrl.formatRupiah(total),
                             style: GoogleFonts.alexandria(
                               color: const Color(0xFFDC6727),
@@ -400,7 +397,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Tombol Pesan Sekarang
                   GestureDetector(
                     onTap: _isLoading ? null : _prosesCheckout,
                     child: Container(
@@ -443,7 +439,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                   const SizedBox(height: 8),
 
-                  // Tombol Kembali
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -486,14 +481,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // ── Widget: Info Rekening + Upload Bukti ───────────────────────────────────
   Widget _buildTransferSection() {
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Info rekening
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -527,8 +520,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 const SizedBox(height: 8),
                 Text(
                   '* Harap transfer sesuai total tagihan dan upload bukti transfer di bawah.',
-                  style: GoogleFonts.alexandria(
-                      fontSize: 11, color: Colors.grey[600]),
+                  style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -536,7 +528,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
           const SizedBox(height: 12),
 
-          // Upload bukti
           Text('Bukti Transfer',
               style: GoogleFonts.alexandria(
                   fontSize: 14, fontWeight: FontWeight.w600)),
@@ -555,7 +546,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ? const Color(0xFFD05122)
                       : Colors.grey.shade300,
                   width: 1.5,
-                  style: BorderStyle.solid,
                 ),
               ),
               child: _buktiBayar != null
@@ -570,7 +560,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             fit: BoxFit.cover,
                           ),
                         ),
-                        // Tombol ganti foto
                         Positioned(
                           top: 8, right: 8,
                           child: GestureDetector(
@@ -606,8 +595,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         const SizedBox(height: 6),
                         Text('Tap untuk upload bukti transfer',
                             style: GoogleFonts.alexandria(
-                                fontSize: 13,
-                                color: const Color(0xFFD05122))),
+                                fontSize: 13, color: const Color(0xFFD05122))),
                         const SizedBox(height: 2),
                         Text('Format: JPG, PNG',
                             style: GoogleFonts.alexandria(
@@ -621,7 +609,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // ── Helper row info rekening ───────────────────────────────────────────────
   Widget _buildRekeningRow(String label, String value) {
     return Row(
       children: [
@@ -632,8 +619,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   fontSize: 12, color: Colors.grey[700])),
         ),
         Text(': ',
-            style: GoogleFonts.alexandria(
-                fontSize: 12, color: Colors.grey[700])),
+            style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[700])),
         Text(value,
             style: GoogleFonts.alexandria(
                 fontSize: 12, fontWeight: FontWeight.bold)),
@@ -641,7 +627,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // ── Helper card wrapper ────────────────────────────────────────────────────
   Widget _buildCard({required String title, required Widget child}) {
     return Container(
       width: double.infinity,
@@ -673,7 +658,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // ── Helper TextField ───────────────────────────────────────────────────────
   Widget _buildTextField({
     TextEditingController? controller,
     String? label,

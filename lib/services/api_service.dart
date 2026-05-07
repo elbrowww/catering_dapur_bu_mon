@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'dio_helper.dart';
 import 'session_manager.dart';
@@ -132,7 +133,6 @@ class ApiService {
     }
   }
 
-  // Kirim OTP sebelum register (tanpa simpan DB)
   static Future<Map<String, dynamic>> sendOtpRegister({
     required String noTelp,
   }) async {
@@ -147,7 +147,6 @@ class ApiService {
     }
   }
 
-  // Register sekaligus verifikasi OTP
   static Future<Map<String, dynamic>> registerWithOtp({
     required String nama,
     required String email,
@@ -175,7 +174,7 @@ class ApiService {
       throw ApiException(_getErrorMessage(e));
     }
   }
-  
+
   static Future<void> logout() async {
     try {
       await _dio.post('/auth.php?action=logout');
@@ -307,15 +306,32 @@ class ApiService {
     }
   }
 
+  // ==========================================================
+  //  CHECKOUT  ← method yang diperbaiki
+  // ==========================================================
+
   static Future<Map<String, dynamic>> checkout({
+    required String namaPembeli,   // ← tambahan
+    required String alamat,        // ← tambahan
     required String metodeBayar,
-    String catatan = '',
+    String catatan    = '',
+    File?  buktiBayar,             // ← tambahan (wajib bila Transfer Bank)
   }) async {
     try {
-      final response = await _dio.post(
-        '/pesanan.php',
-        data: {'metode_bayar': metodeBayar, 'catatan': catatan},
-      );
+      // Gunakan multipart agar bisa membawa file sekaligus field teks
+      final formData = FormData.fromMap({
+        'nama_pembeli': namaPembeli,
+        'alamat':       alamat,
+        'metode_bayar': metodeBayar,
+        'catatan':      catatan,
+        if (buktiBayar != null)
+          'bukti_bayar': await MultipartFile.fromFile(
+            buktiBayar.path,
+            filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ),
+      });
+
+      final response = await _dio.post('/pesanan.php', data: formData);
       return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));

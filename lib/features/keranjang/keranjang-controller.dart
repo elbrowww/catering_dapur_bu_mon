@@ -1,7 +1,7 @@
 // ============================================================
 // KERANJANG CONTROLLER — Singleton shared state with API
-// Terintegrasi dengan database via ApiService
 // ============================================================
+import 'dart:io';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
 class KeranjangController {
@@ -18,9 +18,7 @@ class KeranjangController {
   void addListener(void Function() fn) => _listeners.add(fn);
   void removeListener(void Function() fn) => _listeners.remove(fn);
   void _notify() {
-    for (final fn in _listeners) {
-      fn();
-    }
+    for (final fn in _listeners) fn();
   }
 
   // ============================================================
@@ -29,27 +27,22 @@ class KeranjangController {
   Future<void> loadKeranjang() async {
     _isLoading = true;
     _notify();
-    
+
     try {
       final response = await ApiService.getKeranjang();
-      
-      if (response['status'] == 'success' && response['data'] != null) {
-        _items.clear();
-        
-        for (var item in response['data']) {
-          _items.add({
-            'id_item': item['id_item'],
-            'id_menu': item['id_menu'],
-            'nama': item['nama_menu'] ?? item['nama'],
-            'harga': (item['harga'] as num).toInt(),
-            'jumlah': item['jumlah'],
-            'imageUrl': item['foto'] ?? '',
-          });
-        }
-      }
+      final rawItems = response['items'] as List<dynamic>? ?? [];
+
+      _items = rawItems.map((item) => {
+        'id_item':  item['id_item'],
+        'id_menu':  item['id_menu'],
+        'nama':     item['nama'] ?? '',
+        'harga':    double.parse(item['harga_satuan'].toString()).toInt(),
+        'jumlah':   item['jumlah'],
+        'imageUrl': item['foto'] ?? '',
+      }).toList().cast<Map<String, dynamic>>();
+
     } catch (e) {
       print('Error loading keranjang: $e');
-      // Jika gagal load, tetap pakai data lokal
     } finally {
       _isLoading = false;
       _notify();
@@ -64,52 +57,34 @@ class KeranjangController {
     required int harga,
     required String imageUrl,
     required int jumlah,
-    int? idMenu,  // ID menu dari database
+    int? idMenu,
   }) async {
+    // Tolak jika idMenu tidak valid — jangan pakai fallback lokal
+    final int resolvedIdMenu = idMenu ?? 0;
+    if (resolvedIdMenu <= 0) {
+      print('Error: idMenu tidak valid ($resolvedIdMenu)');
+      return false;
+    }
+
     _isLoading = true;
     _notify();
-    
+
     try {
-      // Panggil API untuk tambah ke keranjang
       final response = await ApiService.tambahKeKeranjang(
-        idMenu: idMenu ?? _getIdMenuFromNama(nama),
+        idMenu: resolvedIdMenu,
         jumlah: jumlah,
       );
-      
-      if (response['status'] == 'success') {
-        // Update lokal state
-        final idx = _items.indexWhere((e) => e['nama'] == nama);
-        if (idx >= 0) {
-          _items[idx]['jumlah'] += jumlah;
-        } else {
-          _items.add({
-            'id_item': response['id_item'],
-            'id_menu': idMenu,
-            'nama': nama,
-            'harga': harga,
-            'jumlah': jumlah,
-            'imageUrl': imageUrl,
-          });
-        }
-        _notify();
+
+      if (response['status'] == 'success' || response['message'] != null) {
+        // Reload dari server agar id_item sinkron
+        await loadKeranjang();
         return true;
       }
       return false;
     } catch (e) {
+      // FIX: Hapus fallback lokal — error harus terlihat, bukan disembunyikan
+      // Item lokal tanpa id_item menyebabkan checkout selalu "Keranjang kosong"
       print('Error adding to cart: $e');
-      // Fallback: tambah ke lokal dulu
-      final idx = _items.indexWhere((e) => e['nama'] == nama);
-      if (idx >= 0) {
-        _items[idx]['jumlah'] += jumlah;
-      } else {
-        _items.add({
-          'nama': nama,
-          'harga': harga,
-          'jumlah': jumlah,
-          'imageUrl': imageUrl,
-        });
-      }
-      _notify();
       return false;
     } finally {
       _isLoading = false;
@@ -117,47 +92,22 @@ class KeranjangController {
     }
   }
 
-  // Helper: cari id_menu dari nama (fallback)
-  int _getIdMenuFromNama(String nama) {
-    // Ini hanya fallback, idealnya id_menu dikirim dari halaman menu
-    final menuMap = {
-      'Ayam Panggang': 1,
-      'Ayam Lodho': 2,
-      'Tumpeng': 3,
-      'Paket Nasi Kotak': 4,
-      'Putu Ayu': 5,
-      'Klepon': 6,
-      'Angsle': 7,
-      'Ronde': 8,
-      'Ongol-Ongol': 9,
-    };
-    return menuMap[nama] ?? 0;
-  }
-
   // ============================================================
   // TAMBAH SATU (via API)
   // ============================================================
   Future<void> tambahSatu(int index) async {
     if (index >= _items.length) return;
-    
     final item = _items[index];
     final int baru = (item['jumlah'] as int) + 1;
-    
     _isLoading = true;
     _notify();
-    
     try {
       if (item.containsKey('id_item')) {
-        await ApiService.ubahJumlahItem(
-          idItem: item['id_item'],
-          jumlah: baru,
-        );
+        await ApiService.ubahJumlahItem(idItem: item['id_item'], jumlah: baru);
       }
-      
       item['jumlah'] = baru;
     } catch (e) {
       print('Error updating quantity: $e');
-      // Tetap update lokal meskipun API error
       item['jumlah'] = baru;
     } finally {
       _isLoading = false;
@@ -170,22 +120,15 @@ class KeranjangController {
   // ============================================================
   Future<void> kurangSatu(int index) async {
     if (index >= _items.length) return;
-    
     final item = _items[index];
     final int sekarang = item['jumlah'] as int;
-    
     if (sekarang > 1) {
       final int baru = sekarang - 1;
-      
       _isLoading = true;
       _notify();
-      
       try {
         if (item.containsKey('id_item')) {
-          await ApiService.ubahJumlahItem(
-            idItem: item['id_item'],
-            jumlah: baru,
-          );
+          await ApiService.ubahJumlahItem(idItem: item['id_item'], jumlah: baru);
         }
         item['jumlah'] = baru;
       } catch (e) {
@@ -196,7 +139,6 @@ class KeranjangController {
         _notify();
       }
     } else {
-      // Hapus item
       await hapusItem(index);
     }
   }
@@ -206,12 +148,9 @@ class KeranjangController {
   // ============================================================
   Future<void> hapusItem(int index) async {
     if (index >= _items.length) return;
-    
     final item = _items[index];
-    
     _isLoading = true;
     _notify();
-    
     try {
       if (item.containsKey('id_item')) {
         await ApiService.hapusDariKeranjang(item['id_item']);
@@ -232,18 +171,8 @@ class KeranjangController {
   Future<void> kosongkan() async {
     _isLoading = true;
     _notify();
-    
     try {
-      // Hapus satu per satu (atau buat endpoint kosongkan semua)
-      for (var item in _items) {
-        if (item.containsKey('id_item')) {
-          try {
-            await ApiService.hapusDariKeranjang(item['id_item']);
-          } catch (e) {
-            print('Error deleting item: $e');
-          }
-        }
-      }
+      await ApiService.hapusDariKeranjang(0); // DELETE tanpa id_item = clear all
       _items.clear();
     } catch (e) {
       print('Error clearing cart: $e');
@@ -258,23 +187,28 @@ class KeranjangController {
   // CHECKOUT (via API)
   // ============================================================
   Future<Map<String, dynamic>> checkout({
+    required String namaPembeli,
+    required String alamat,
     required String metodeBayar,
-    String catatan = '',
+    String catatan    = '',
+    File?  buktiBayar,
   }) async {
     _isLoading = true;
     _notify();
-    
+
     try {
       final response = await ApiService.checkout(
+        namaPembeli: namaPembeli,
+        alamat:      alamat,
         metodeBayar: metodeBayar,
-        catatan: catatan,
+        catatan:     catatan,
+        buktiBayar:  buktiBayar,
       );
-      
+
       if (response['status'] == 'success') {
-        // Kosongkan keranjang setelah sukses checkout
         _items.clear();
       }
-      
+
       return response;
     } catch (e) {
       print('Error checkout: $e');
@@ -289,7 +223,10 @@ class KeranjangController {
   // GETTERS
   // ============================================================
   int get total {
-    return _items.fold(0, (sum, e) => sum + (e['harga'] as int) * (e['jumlah'] as int));
+    return _items.fold(
+      0,
+      (sum, e) => sum + (e['harga'] as int) * (e['jumlah'] as int),
+    );
   }
 
   String formatRupiah(int value) {
