@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/admin/shared/header_admin.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
+import 'package:catering_dapur_bu_mon/services/dio_helper.dart';
 
 // ── Konstanta warna & shadow ────────────────────────────────────
 const _gradientColors = [
@@ -29,16 +30,21 @@ const _listShadow = [
 const _filterLabels = ['Semua', 'Pending', 'Proses', 'Selesai', 'Batal'];
 const _filterValues = ['', 'pending', 'diproses', 'selesai', 'batal'];
 
-// ── Base URL untuk gambar (tanpa trailing /api/)
-const _imageBaseUrl = 'http://192.168.1.9/dapur_bu_mon/';
+// ── Base URL gambar diambil dari DioHelper agar tidak hardcode IP
+//    File PHP disimpan relatif dari folder /api/, misal:
+//    'uploads/bukti_transfer/bukti_30_xxx.png'
+//    → http://192.168.1.8/dapur_bu_mon/api/uploads/bukti_transfer/bukti_30_xxx.png
 
 // ── Helpers URL gambar ──────────────────────────────────────────
+// baseUrl diambil dari DioHelper agar tidak perlu hardcode IP
 String _buildImageUrl(String? raw) {
   if (raw == null || raw.isEmpty) return '';
   if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-  // Hapus leading slash jika ada
+  final base = DioHelper.baseUrl.endsWith('/')
+      ? DioHelper.baseUrl
+      : '${DioHelper.baseUrl}/';
   final path = raw.startsWith('/') ? raw.substring(1) : raw;
-  return '$_imageBaseUrl$path';
+  return '$base$path';
 }
 
 // ── Status helpers ──────────────────────────────────────────────
@@ -648,24 +654,27 @@ class _DetailDialogState extends State<_DetailDialog> {
     }
   }
 
-  // Cari field bukti bayar dari berbagai kemungkinan nama field
+  // Field dari PHP: pb.bukti_transfer (tabel pembayaran)
   String get _buktiBayarUrl {
     if (_detail == null) return '';
-    // Coba semua kemungkinan nama field
-    final raw = _detail!['bukti_bayar'] ??
-        _detail!['bukti_transfer'] ??
-        _detail!['foto_bukti'] ??
-        _detail!['payment_proof'] ??
-        _detail!['foto_transfer'] ??
+    final raw = _detail!['bukti_transfer'] ?? // ← nama field di DB & query PHP
+        _detail!['bukti_bayar']           ??
+        _detail!['foto_bukti']            ??
+        _detail!['payment_proof']         ??
+        _detail!['foto_transfer']         ??
         '';
     return _buildImageUrl(raw?.toString());
   }
 
-  bool get _isTransfer =>
-      (_detail?['metode_bayar'] ?? widget.pesanan['metode_bayar'] ?? '')
-          .toString()
-          .toLowerCase()
-          .contains('transfer');
+  // PHP menyimpan metode sebagai 'transfer' atau 'cod'
+  // Query owner: pb.metode AS metode_bayar
+  bool get _isTransfer {
+    final metode = (_detail?['metode_bayar'] ?? 
+                    widget.pesanan['metode_bayar'] ?? '')
+        .toString()
+        .toLowerCase();
+    return metode == 'transfer' || metode.contains('transfer');
+  }
 
   static const _nextStatus = {
     'pending':  ['diterima', 'batal'],
@@ -1033,7 +1042,7 @@ class _InfoGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 8,
       mainAxisSpacing: 8,
-      childAspectRatio: 2.5,
+      childAspectRatio: 2.2,
       children: items
           .map((item) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
