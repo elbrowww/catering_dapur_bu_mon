@@ -30,13 +30,7 @@ const _listShadow = [
 const _filterLabels = ['Semua', 'Pending', 'Proses', 'Selesai', 'Batal'];
 const _filterValues = ['', 'pending', 'diproses', 'selesai', 'batal'];
 
-// ── Base URL gambar diambil dari DioHelper agar tidak hardcode IP
-//    File PHP disimpan relatif dari folder /api/, misal:
-//    'uploads/bukti_transfer/bukti_30_xxx.png'
-//    → http://192.168.1.8/dapur_bu_mon/api/uploads/bukti_transfer/bukti_30_xxx.png
-
 // ── Helpers URL gambar ──────────────────────────────────────────
-// baseUrl diambil dari DioHelper agar tidak perlu hardcode IP
 String _buildImageUrl(String? raw) {
   if (raw == null || raw.isEmpty) return '';
   if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
@@ -44,7 +38,9 @@ String _buildImageUrl(String? raw) {
       ? DioHelper.baseUrl
       : '${DioHelper.baseUrl}/';
   final path = raw.startsWith('/') ? raw.substring(1) : raw;
-  return '$base$path';
+  final url = '$base$path';
+  debugPrint('=== _buildImageUrl: $url ===');
+  return url;
 }
 
 // ── Status helpers ──────────────────────────────────────────────
@@ -637,16 +633,17 @@ class _DetailDialogState extends State<_DetailDialog> {
   Future<void> _loadDetail() async {
     try {
       final d = await ApiService.getDetailPesanan(widget.pesanan['id_pesanan']);
-      debugPrint('=== DETAIL PESANAN KEYS ===');
-      debugPrint(d.keys.toString());
-      debugPrint('bukti_bayar: ${d['bukti_bayar']}');
-      debugPrint('bukti_transfer: ${d['bukti_transfer']}');
-      debugPrint('foto_bukti: ${d['foto_bukti']}');
+
+      // ── Debug: cetak semua key & value yang diterima dari API ──
+      debugPrint('=== DETAIL PESANAN ===');
+      d.forEach((k, v) => debugPrint('  $k: $v'));
+
       setState(() {
         _detail = d;
         _loadingDetail = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('=== getDetailPesanan ERROR: $e ===');
       setState(() {
         _detail = widget.pesanan;
         _loadingDetail = false;
@@ -654,25 +651,39 @@ class _DetailDialogState extends State<_DetailDialog> {
     }
   }
 
-  // Field dari PHP: pb.bukti_transfer (tabel pembayaran)
+  /// Resolves URL gambar bukti transfer.
+  /// PHP mengirim field "bukti_transfer" dari tabel pembayaran (pb.bukti_transfer).
+  /// Fallback ke beberapa nama alternatif untuk jaga-jaga.
   String get _buktiBayarUrl {
     if (_detail == null) return '';
-    final raw = _detail!['bukti_transfer'] ?? // ← nama field di DB & query PHP
-        _detail!['bukti_bayar']           ??
-        _detail!['foto_bukti']            ??
-        _detail!['payment_proof']         ??
-        _detail!['foto_transfer']         ??
-        '';
-    return _buildImageUrl(raw?.toString());
+    final raw = (_detail!['bukti_transfer'] ??
+                 _detail!['bukti_bayar']    ??
+                 _detail!['foto_bukti']     ??
+                 _detail!['payment_proof']  ??
+                 _detail!['foto_transfer']  ??
+                 '')
+        .toString()
+        .trim();
+    debugPrint('=== bukti_transfer raw: "$raw" ===');
+    return _buildImageUrl(raw.isEmpty ? null : raw);
   }
 
-  // PHP menyimpan metode sebagai 'transfer' atau 'cod'
-  // Query owner: pb.metode AS metode_bayar
+  /// Cek apakah metode pembayaran adalah transfer.
+  /// Sumber field (prioritas tinggi ke rendah):
+  ///   1. pb.metode AS metode_bayar  (dari JOIN tabel pembayaran — PHP baru)
+  ///   2. p.metode_bayar             (dari tabel pesanan langsung)
+  ///   3. metode                     (alias lain)
+  ///   4. widget.pesanan fallback    (data list, bukan detail)
   bool get _isTransfer {
-    final metode = (_detail?['metode_bayar'] ?? 
-                    widget.pesanan['metode_bayar'] ?? '')
+    final metode = (_detail?['metode_bayar']         ??
+                    _detail?['metode']               ??
+                    widget.pesanan['metode_bayar']   ??
+                    widget.pesanan['metode']         ??
+                    '')
         .toString()
-        .toLowerCase();
+        .toLowerCase()
+        .trim();
+    debugPrint('=== metode_bayar resolved: "$metode" ===');
     return metode == 'transfer' || metode.contains('transfer');
   }
 
@@ -792,7 +803,8 @@ class _DetailDialogState extends State<_DetailDialog> {
                           _InfoItem(
                             icon: Icons.payment_rounded,
                             label: 'Metode Bayar',
-                            value: _detail?['metode_bayar'] ?? '-',
+                            // Tampilkan label yang lebih ramah
+                            value: _resolveMetodeLabel(),
                           ),
                           _InfoItem(
                             icon: Icons.calendar_today_rounded,
@@ -908,8 +920,9 @@ class _DetailDialogState extends State<_DetailDialog> {
           if (actions.isNotEmpty)
             Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-              decoration:
-                  BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.grey.shade200))),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200))),
               child: Row(
                 children: actions.map((s) {
                   final isBatalBtn = s == 'batal';
@@ -998,6 +1011,23 @@ class _DetailDialogState extends State<_DetailDialog> {
         ],
       ),
     );
+  }
+
+  /// Label ramah untuk metode bayar di InfoGrid
+  String _resolveMetodeLabel() {
+    final raw = (_detail?['metode_bayar'] ??
+                 _detail?['metode']       ??
+                 widget.pesanan['metode_bayar'] ??
+                 '')
+        .toString()
+        .toLowerCase()
+        .trim();
+    switch (raw) {
+      case 'transfer': return 'Transfer Bank';
+      case 'cod':      return 'COD / Cash';
+      case 'ewallet':  return 'E-Wallet';
+      default:         return raw.isEmpty ? '-' : raw;
+    }
   }
 }
 
@@ -1150,7 +1180,9 @@ class _TimelineWidget extends StatelessWidget {
                   child: Container(
                     height: 2,
                     margin: const EdgeInsets.only(bottom: 18),
-                    color: i < currentStep ? const Color(0xFF0FBC5F) : Colors.grey.shade200,
+                    color: i < currentStep
+                        ? const Color(0xFF0FBC5F)
+                        : Colors.grey.shade200,
                   ),
                 ),
             ],
@@ -1227,6 +1259,7 @@ class _BuktiTransferWidget extends StatelessWidget {
                 child: Image.network(
                   url,
                   fit: BoxFit.contain,
+                  headers: const {'Connection': 'keep-alive'},
                   loadingBuilder: (_, child, progress) {
                     if (progress == null) return child;
                     return Container(
@@ -1306,6 +1339,7 @@ class _BuktiTransferWidget extends StatelessWidget {
               width: double.infinity,
               height: 200,
               fit: BoxFit.cover,
+              headers: const {'Connection': 'keep-alive'},
               loadingBuilder: (_, child, progress) {
                 if (progress == null) return child;
                 return Container(
@@ -1320,7 +1354,7 @@ class _BuktiTransferWidget extends StatelessWidget {
                 );
               },
               errorBuilder: (_, __, ___) => Container(
-                height: 100,
+                height: 120,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(10),
@@ -1336,7 +1370,6 @@ class _BuktiTransferWidget extends StatelessWidget {
                         style: GoogleFonts.alexandria(
                             fontSize: 12, color: Colors.grey[500])),
                     const SizedBox(height: 4),
-                    // Tampilkan URL mentah agar mudah debug
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(url,
