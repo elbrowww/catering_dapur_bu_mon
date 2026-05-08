@@ -183,6 +183,27 @@ class ApiService {
     await SessionManager.clearSession();
   }
 
+  /// Ganti password user yang sedang login.
+  /// [passwordLama] — password saat ini untuk verifikasi di server.
+  /// [passwordBaru] — password baru (minimal 6 karakter, validasi juga di Flutter).
+  static Future<Map<String, dynamic>> changePassword({
+    required String passwordLama,
+    required String passwordBaru,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/auth.php?action=change_password',
+        data: {
+          'password_lama': passwordLama,
+          'password_baru': passwordBaru,
+        },
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
   // ==========================================================
   //  MENU
   // ==========================================================
