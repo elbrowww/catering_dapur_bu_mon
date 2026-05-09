@@ -6,7 +6,6 @@ import 'package:catering_dapur_bu_mon/services/api_service.dart';
 import 'package:catering_dapur_bu_mon/models/menu_model.dart';
 import 'package:catering_dapur_bu_mon/models/ulasan_model.dart';
 import 'package:catering_dapur_bu_mon/features/menu/detail-menu.dart';
-
 // ── Beranda Page ───────────────────────────────────────────────
 class BerandaPage extends StatefulWidget {
   const BerandaPage({super.key});
@@ -763,7 +762,69 @@ class _BerandaPageState extends State<BerandaPage> {
 }
 
 // ── Tracking Card ──────────────────────────────────────────────
-class _TrackingCard extends StatelessWidget {
+class _TrackingCard extends StatefulWidget {
+  @override
+  State<_TrackingCard> createState() => _TrackingCardState();
+}
+
+class _TrackingCardState extends State<_TrackingCard> {
+  Map<String, dynamic>? _pesanan;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPesananAktif();
+  }
+
+  Future<void> _loadPesananAktif() async {
+    try {
+      final list = await ApiService.getPesanan();
+      final aktif = list.cast<Map<String, dynamic>>().firstWhere(
+        (p) => !['selesai', 'batal'].contains(p['status']),
+        orElse: () => {},
+      );
+      setState(() {
+        _pesanan   = aktif.isEmpty ? null : aktif;
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String _statusLabel(String? s) {
+    switch (s) {
+      case 'pending':  return 'Menunggu';
+      case 'diterima': return 'Diterima';
+      case 'diproses': return 'Di Proses';
+      default:         return s ?? '-';
+    }
+  }
+
+ // Di _TrackingCardState, ganti method _jadwalLabel:
+String _jadwalLabel(Map<String, dynamic> p) {
+  final tgl  = p['tgl_antar']?.toString()  ?? '';   // ← GANTI dari tgl_pengiriman
+  final jam  = p['jam_antar']?.toString()  ?? '';   // ← GANTI dari waktu_pengiriman
+  final tipe = p['tipe_pengiriman']?.toString() ?? 'ambil';
+
+  if (tgl.isEmpty) return 'Jadwal belum diatur';
+
+  try {
+    final dt   = DateTime.parse(tgl);
+    final days = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+    final hari = days[dt.weekday - 1];
+    final tglFmt = '$hari, ${dt.day.toString().padLeft(2,'0')}/'
+                   '${dt.month.toString().padLeft(2,'0')}/${dt.year}';
+    final jamFmt = jam.length >= 5 ? ' • ${jam.substring(0, 5)}' : '';
+    final icon  = tipe == 'antar' ? '🚗' : '🏪';
+    final label = tipe == 'antar' ? 'Diantar' : 'Ambil';
+    return '$icon $label  $tglFmt$jamFmt';
+  } catch (_) {
+    return tgl;
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -792,176 +853,211 @@ class _TrackingCard extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            right: -30,
-            top: -30,
+            right: -30, top: -30,
             child: Container(
-              width: 130,
-              height: 130,
+              width: 130, height: 130,
               decoration: const BoxDecoration(
                   shape: BoxShape.circle, color: Colors.white10),
             ),
           ),
           Positioned(
-            right: 20,
-            top: 10,
+            right: 20, top: 10,
             child: Container(
-              width: 70,
-              height: 70,
+              width: 70, height: 70,
               decoration: const BoxDecoration(
                   shape: BoxShape.circle, color: Colors.white10),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.local_shipping_rounded,
-                            color: Colors.white, size: 16),
-                        const SizedBox(width: 6),
-                        Text('Tracking Pesanan',
-                            style: GoogleFonts.alexandria(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            )),
-                      ],
+            child: _isLoading
+                ? const SizedBox(
+                    height: 80,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white38, width: 1),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                                color: Color(0xFFFFF176),
-                                shape: BoxShape.circle),
-                          ),
-                          const SizedBox(width: 5),
-                          Text('Di Proses',
-                              style: GoogleFonts.alexandria(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              )),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        color: Colors.white24,
-                        border:
-                            Border.all(color: Colors.white38, width: 1.5),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(13),
-                        child: Image.network(
-                          'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2Faadbd449f069aaa6819892687e7e3677080fc101Timer.png?alt=media&token=f24e784b-7f4c-459a-9a45-6d39bbd655f2',
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
-                              Icons.fastfood,
-                              color: Colors.white,
-                              size: 36),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Ayam Panggang',
-                              style: GoogleFonts.alexandria(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              )),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.white24,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text('Status: Di Proses',
-                                style: GoogleFonts.alexandria(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                )),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time_rounded,
-                            color: Colors.white70, size: 14),
-                        const SizedBox(width: 4),
-                        Text('Estimasi selesai: ',
-                            style: GoogleFonts.alexandria(
-                                color: Colors.white70, fontSize: 11)),
-                        Text('2 Jam',
-                            style: GoogleFonts.alexandria(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            )),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text('Lihat Detail',
-                            style: GoogleFonts.alexandria(
-                              color: const Color(0xFFD05122),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            )),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  )
+                : _pesanan == null
+                    ? _buildKosong()
+                    : _buildAktif(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildKosong() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.local_shipping_rounded,
+                color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text('Tracking Pesanan',
+                style: GoogleFonts.alexandria(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Icon(Icons.receipt_long_outlined,
+            color: Colors.white54, size: 36),
+        const SizedBox(height: 8),
+        Text('Belum ada pesanan aktif',
+            style: GoogleFonts.alexandria(
+                color: Colors.white70, fontSize: 13)),
+      ],
+    );
+  }
+
+  Widget _buildAktif() {
+    final p      = _pesanan!;
+    final status = p['status'] as String?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.local_shipping_rounded,
+                    color: Colors.white, size: 16),
+                const SizedBox(width: 6),
+                Text('Tracking Pesanan',
+                    style: GoogleFonts.alexandria(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white38, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6, height: 6,
+                    decoration: const BoxDecoration(
+                        color: Color(0xFFFFF176),
+                        shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(_statusLabel(status),
+                      style: GoogleFonts.alexandria(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Info pesanan
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 60, height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white24,
+                border: Border.all(color: Colors.white38, width: 1.5),
+              ),
+              child: const Icon(Icons.fastfood_rounded,
+                  color: Colors.white, size: 30),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${p['item_count'] ?? '?'} item pesanan',
+                    style: GoogleFonts.alexandria(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Status: ${_statusLabel(status)}',
+                      style: GoogleFonts.alexandria(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Jadwal + tombol detail
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  const Icon(Icons.event_rounded,
+                      color: Colors.white70, size: 14),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      _jadwalLabel(p),
+                      style: GoogleFonts.alexandria(
+                          color: Colors.white, fontSize: 11),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                // TODO: navigasi ke halaman aktivitas/pesanan customer
+                // contoh: Navigator.push(context, MaterialPageRoute(builder: (_) => const AktivitasPage()));
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('Lihat Detail',
+                    style: GoogleFonts.alexandria(
+                      color: const Color(0xFFD05122),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    )),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

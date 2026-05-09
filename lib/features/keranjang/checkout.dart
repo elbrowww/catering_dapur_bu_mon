@@ -20,8 +20,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _alamatController  = TextEditingController();
   final _catatanController = TextEditingController();
 
-  String _selectedMetodeBayar = 'Transfer Bank';
-  bool   _isLoading           = false;
+  String     _selectedMetodeBayar = 'Transfer Bank';
+  String     _tipePengiriman      = 'ambil';
+  DateTime?  _tglAntar;       // ← nama seragam
+  TimeOfDay? _jamAntar;       // ← nama seragam
+  bool       _isLoading       = false;
 
   XFile?     _buktiBayar;
   Uint8List? _buktiBayarBytes;
@@ -63,36 +66,78 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
+  Future<void> _pilihTanggal() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: Color(0xFFD05122)),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _tglAntar = picked);
+  }
+
+  Future<void> _pilihWaktu() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 17, minute: 0),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: Color(0xFFD05122)),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _jamAntar = picked);
+  }
+
   Future<void> _prosesCheckout() async {
     final nama   = _namaController.text.trim();
     final alamat = _alamatController.text.trim();
 
-    if (nama.isEmpty) {
-      _showSnack('Nama pembeli wajib diisi');
-      return;
-    }
-    if (alamat.isEmpty) {
-      _showSnack('Alamat pengiriman wajib diisi');
-      return;
-    }
+    if (nama.isEmpty) { _showSnack('Nama pembeli wajib diisi'); return; }
+    if (alamat.isEmpty) { _showSnack('Alamat pengiriman wajib diisi'); return; }
     if (_selectedMetodeBayar == 'Transfer Bank' && _buktiBayar == null) {
       _showSnack('Harap upload bukti transfer terlebih dahulu');
       return;
     }
     if (_ctrl.items.isEmpty) {
-      _showSnack('Keranjang kosong, tambahkan item terlebih dahulu');
+      _showSnack('Keranjang kosong');
+      return;
+    }
+    if (_tglAntar == null) {
+      _showSnack('Pilih tanggal pengiriman/pengambilan');
+      return;
+    }
+    if (_jamAntar == null) {
+      _showSnack('Pilih jam pengiriman/pengambilan');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
+      // Format seragam dengan DB: YYYY-MM-DD dan HH:MM:SS
+      final tglStr = '${_tglAntar!.year}-'
+          '${_tglAntar!.month.toString().padLeft(2, '0')}-'
+          '${_tglAntar!.day.toString().padLeft(2, '0')}';
+      final jamStr = '${_jamAntar!.hour.toString().padLeft(2, '0')}:'
+          '${_jamAntar!.minute.toString().padLeft(2, '0')}:00';
+
       final response = await ApiService.checkout(
-        namaPembeli:     nama,
-        alamat:          alamat,
-        metodeBayar:     _selectedMetodeBayar,
-        catatan:         _catatanController.text.trim(),
-        buktiBayar:      kIsWeb ? null : (_buktiBayar != null ? File(_buktiBayar!.path) : null),
+        namaPembeli:    nama,
+        alamat:         alamat,
+        metodeBayar:    _selectedMetodeBayar,
+        catatan:        _catatanController.text.trim(),
+        tglAntar:       tglStr,         // ← nama seragam
+        jamAntar:       jamStr,         // ← nama seragam
+        tipePengiriman: _tipePengiriman,
+        buktiBayar:     kIsWeb ? null : (_buktiBayar != null ? File(_buktiBayar!.path) : null),
         buktiBayarBytes: _buktiBayarBytes,
         buktiBayarName:  _buktiBayar?.name,
       );
@@ -134,10 +179,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 60),
             const SizedBox(height: 12),
-            Text(
-              'Pesanan Berhasil!',
-              style: GoogleFonts.alexandria(fontWeight: FontWeight.bold, fontSize: 20),
-            ),
+            Text('Pesanan Berhasil!',
+                style: GoogleFonts.alexandria(
+                    fontWeight: FontWeight.bold, fontSize: 20)),
           ],
         ),
         content: Text(
@@ -154,7 +198,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD05122),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: Text('Kembali ke Menu',
                 style: GoogleFonts.alexandria(color: Colors.white)),
@@ -197,6 +242,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+
+                // ── Daftar Pesanan ──
                 _buildCard(
                   title: 'Daftar Pesanan',
                   child: Column(
@@ -232,18 +279,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(item['nama'],
-                                          style: GoogleFonts.alexandria(fontSize: 14)),
+                                          style: GoogleFonts.alexandria(
+                                              fontSize: 14)),
                                       const SizedBox(height: 4),
                                       Text(
                                         '${_ctrl.formatRupiah(item['harga'])} x ${item['jumlah']}',
                                         style: GoogleFonts.alexandria(
-                                            fontSize: 12, color: Colors.grey[600]),
+                                            fontSize: 12,
+                                            color: Colors.grey[600]),
                                       ),
                                     ],
                                   ),
                                 ),
                                 Text(
-                                  _ctrl.formatRupiah(item['harga'] * item['jumlah']),
+                                  _ctrl.formatRupiah(
+                                      item['harga'] * item['jumlah']),
                                   style: GoogleFonts.alexandria(
                                     color: const Color(0xFFDC6727),
                                     fontSize: 14,
@@ -260,9 +310,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     }).toList(),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
+                // ── Informasi Pembeli ──
                 _buildCard(
                   title: 'Informasi Pembeli',
                   child: Padding(
@@ -285,9 +335,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
+                // ── Catatan ──
                 _buildCard(
                   title: 'Catatan (Opsional)',
                   child: Padding(
@@ -299,9 +349,62 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
 
+                // ── Jadwal ──
+                _buildCard(
+                  title: 'Jadwal Pengiriman / Pengambilan',
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Toggle Ambil / Antar
+                        Row(
+                          children: [
+                            Expanded(child: _buildTipeBtn('ambil', 'Ambil Sendiri',
+                                Icons.store_rounded)),
+                            const SizedBox(width: 10),
+                            Expanded(child: _buildTipeBtn('antar', 'Diantar',
+                                Icons.delivery_dining_rounded)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Pilih Tanggal
+                        GestureDetector(
+                          onTap: _pilihTanggal,
+                          child: _buildPickerRow(
+                            icon: Icons.calendar_today_rounded,
+                            isSelected: _tglAntar != null,
+                            label: _tglAntar != null
+                                ? '${_tglAntar!.day.toString().padLeft(2, '0')}/'
+                                  '${_tglAntar!.month.toString().padLeft(2, '0')}/'
+                                  '${_tglAntar!.year}'
+                                : 'Pilih tanggal ${_tipePengiriman == 'antar' ? 'pengiriman' : 'pengambilan'}',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Pilih Jam
+                        GestureDetector(
+                          onTap: _pilihWaktu,
+                          child: _buildPickerRow(
+                            icon: Icons.access_time_rounded,
+                            isSelected: _jamAntar != null,
+                            label: _jamAntar != null
+                                ? '${_jamAntar!.hour.toString().padLeft(2, '0')}:'
+                                  '${_jamAntar!.minute.toString().padLeft(2, '0')}'
+                                : 'Pilih jam ${_tipePengiriman == 'antar' ? 'pengiriman' : 'pengambilan'}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Metode Pembayaran ──
                 _buildCard(
                   title: 'Metode Pembayaran',
                   child: Column(
@@ -343,7 +446,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           ],
                         );
                       }),
-
                       if (_selectedMetodeBayar == 'Transfer Bank') ...[
                         const Divider(height: 0, thickness: 1),
                         _buildTransferSection(),
@@ -355,6 +457,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
 
+          // ── Bottom Bar ──
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: Container(
@@ -373,7 +476,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(9),
@@ -402,7 +506,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
                   GestureDetector(
                     onTap: _isLoading ? null : _prosesCheckout,
                     child: Container(
@@ -410,20 +513,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       height: 50,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x3F000000),
-                            spreadRadius: 0,
-                            offset: Offset(0, 4),
-                            blurRadius: 4,
-                          )
-                        ],
                         gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFD05122),
-                            Color(0xFFEE8B2E),
-                            Color(0xFFFBA839),
-                          ],
+                          colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
                           stops: [0.17, 0.47, 0.60],
                         ),
                       ),
@@ -432,8 +523,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             ? const SizedBox(
                                 width: 24, height: 24,
                                 child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2),
-                              )
+                                    color: Colors.white, strokeWidth: 2))
                             : Text('Pesan Sekarang',
                                 style: GoogleFonts.alexandria(
                                     color: Colors.black,
@@ -442,9 +532,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -452,20 +540,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       height: 43,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x3F000000),
-                            spreadRadius: 0,
-                            offset: Offset(0, 4),
-                            blurRadius: 4,
-                          )
-                        ],
                         gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFAC3715),
-                            Color(0xFFD05122),
-                            Color(0xFFAC3715),
-                          ],
+                          colors: [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFAC3715)],
                           stops: [0.17, 0.43, 0.61],
                         ),
                       ),
@@ -487,6 +563,65 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  // ── Helper Widgets ──────────────────────────────────────────
+
+  Widget _buildTipeBtn(String tipe, String label, IconData icon) {
+    final isSelected = _tipePengiriman == tipe;
+    return GestureDetector(
+      onTap: () => setState(() => _tipePengiriman = tipe),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFD05122) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFD05122)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                size: 16,
+                color: isSelected ? Colors.white : const Color(0xFFD05122)),
+            const SizedBox(width: 6),
+            Text(label,
+                style: GoogleFonts.alexandria(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : const Color(0xFFD05122))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickerRow({
+    required IconData icon,
+    required bool isSelected,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+      decoration: BoxDecoration(
+        border: Border.all(
+            color: isSelected ? const Color(0xFFD05122) : Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon,
+              size: 18,
+              color: isSelected ? const Color(0xFFD05122) : Colors.grey),
+          const SizedBox(width: 10),
+          Text(label,
+              style: GoogleFonts.alexandria(
+                  fontSize: 13,
+                  color: isSelected ? Colors.black87 : Colors.grey[400])),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTransferSection() {
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -499,7 +634,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3ED),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFD05122), width: 1),
+              border: Border.all(color: const Color(0xFFD05122)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -511,10 +646,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     const SizedBox(width: 6),
                     Text('Informasi Rekening',
                         style: GoogleFonts.alexandria(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFD05122),
-                        )),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFD05122))),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -526,19 +660,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 const SizedBox(height: 8),
                 Text(
                   '* Harap transfer sesuai total tagihan dan upload bukti transfer di bawah.',
-                  style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600]),
+                  style: GoogleFonts.alexandria(
+                      fontSize: 11, color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 12),
-
           Text('Bukti Transfer',
               style: GoogleFonts.alexandria(
                   fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-
           GestureDetector(
             onTap: _pickBuktiBayar,
             child: Container(
@@ -601,7 +733,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         const SizedBox(height: 6),
                         Text('Tap untuk upload bukti transfer',
                             style: GoogleFonts.alexandria(
-                                fontSize: 13, color: const Color(0xFFD05122))),
+                                fontSize: 13,
+                                color: const Color(0xFFD05122))),
                         const SizedBox(height: 2),
                         Text('Format: JPG, PNG',
                             style: GoogleFonts.alexandria(
@@ -625,7 +758,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   fontSize: 12, color: Colors.grey[700])),
         ),
         Text(': ',
-            style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[700])),
+            style: GoogleFonts.alexandria(
+                fontSize: 12, color: Colors.grey[700])),
         Text(value,
             style: GoogleFonts.alexandria(
                 fontSize: 12, fontWeight: FontWeight.bold)),

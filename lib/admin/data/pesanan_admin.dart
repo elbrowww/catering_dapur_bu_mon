@@ -101,6 +101,23 @@ String _formattedDate(dynamic tgl) {
   }
 }
 
+String _formatTglAntar(dynamic tgl) {
+  if (tgl == null || tgl.toString().isEmpty) return 'Belum dijadwalkan';
+  try {
+    final dt = DateTime.parse(tgl.toString());
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  } catch (_) {
+    return tgl.toString();
+  }
+}
+
+String _formatJamAntar(dynamic jam) {
+  if (jam == null || jam.toString().isEmpty) return '';
+  final s = jam.toString();
+  return s.length >= 5 ? s.substring(0, 5) : s;
+}
+
 // ── Page ────────────────────────────────────────────────────────
 class PesananAdminPage extends StatefulWidget {
   const PesananAdminPage({super.key});
@@ -500,6 +517,30 @@ class _OrderCard extends StatelessWidget {
                     ],
                   ],
                 ),
+                if ((pesanan['tgl_antar'] ?? '').toString().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    const Icon(Icons.local_shipping_rounded,
+                        size: 13, color: Color(0xFFD05122)),
+                    const SizedBox(width: 4),
+                    Text('Antar: ',
+                        style: GoogleFonts.alexandria(
+                            fontSize: 12, color: Colors.grey[600])),
+                    Flexible(
+                      child: Text(
+                        _formatTglAntar(pesanan['tgl_antar']) +
+                        ((pesanan['jam_antar'] ?? '').toString().isNotEmpty
+                            ? ' pukul ${_formatJamAntar(pesanan['jam_antar'])}'
+                            : ''),
+                        style: GoogleFonts.alexandria(
+                            fontSize: 12,
+                            color: const Color(0xFFD05122),
+                            fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ]),
+                ],
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -624,6 +665,12 @@ class _DetailDialogState extends State<_DetailDialog> {
   bool _loadingDetail = true;
   Map<String, dynamic>? _detail;
 
+  // ── State edit jadwal ──
+  bool       _isEditingJadwal = false;
+  DateTime?  _tglAntarEdit;
+  TimeOfDay? _jamAntarEdit;
+  bool       _isSavingJadwal  = false;
+
   @override
   void initState() {
     super.initState();
@@ -669,11 +716,7 @@ class _DetailDialogState extends State<_DetailDialog> {
   }
 
   /// Cek apakah metode pembayaran adalah transfer.
-  /// Sumber field (prioritas tinggi ke rendah):
-  ///   1. pb.metode AS metode_bayar  (dari JOIN tabel pembayaran — PHP baru)
-  ///   2. p.metode_bayar             (dari tabel pesanan langsung)
-  ///   3. metode                     (alias lain)
-  ///   4. widget.pesanan fallback    (data list, bukan detail)
+
   bool get _isTransfer {
     final metode = (_detail?['metode_bayar']         ??
                     _detail?['metode']               ??
@@ -803,7 +846,6 @@ class _DetailDialogState extends State<_DetailDialog> {
                           _InfoItem(
                             icon: Icons.payment_rounded,
                             label: 'Metode Bayar',
-                            // Tampilkan label yang lebih ramah
                             value: _resolveMetodeLabel(),
                           ),
                           _InfoItem(
@@ -823,7 +865,28 @@ class _DetailDialogState extends State<_DetailDialog> {
                             label: 'Customer',
                             value: _detail?['customer_name'] ?? nama,
                           ),
+                          _InfoItem(
+                            icon: Icons.event_available_rounded,
+                            label: 'Tgl Antar',
+                            value: _formatTglAntar(
+                                _detail?['tgl_antar'] ?? widget.pesanan['tgl_antar']),
+                            valueColor: (_detail?['tgl_antar'] ?? '').toString().isNotEmpty
+                                ? const Color(0xFFD05122) : null,
+                          ),
+                          _InfoItem(
+                            icon: Icons.access_time_rounded,
+                            label: 'Jam Antar',
+                            value: _formatJamAntar(
+                                _detail?['jam_antar'] ?? widget.pesanan['jam_antar'])
+                                .isNotEmpty
+                              ? _formatJamAntar(_detail?['jam_antar'] ?? widget.pesanan['jam_antar'])
+                              : '-',
+                          ),
                         ]),
+
+                        // ── Edit jadwal antar ──
+                        const SizedBox(height: 12),
+                        _buildEditJadwal(),
 
                         // Catatan
                         if ((_detail?['catatan'] ?? '').toString().isNotEmpty) ...[
@@ -1028,6 +1091,236 @@ class _DetailDialogState extends State<_DetailDialog> {
       case 'ewallet':  return 'E-Wallet';
       default:         return raw.isEmpty ? '-' : raw;
     }
+  }
+
+  // ── Widget edit jadwal antar ────────────────────────────────────
+  Widget _buildEditJadwal() {
+    if (!_isEditingJadwal) {
+      return GestureDetector(
+        onTap: () {
+          final tglRaw = (_detail?['tgl_antar'] ?? '').toString();
+          final jamRaw = (_detail?['jam_antar'] ?? '').toString();
+          if (tglRaw.isNotEmpty) {
+            try { _tglAntarEdit = DateTime.parse(tglRaw); } catch (_) {}
+          }
+          if (jamRaw.length >= 5) {
+            final parts = jamRaw.split(':');
+            _jamAntarEdit = TimeOfDay(
+              hour:   int.tryParse(parts[0]) ?? 0,
+              minute: int.tryParse(parts[1]) ?? 0,
+            );
+          }
+          setState(() => _isEditingJadwal = true);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8F5),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+                color: const Color(0xFFD05122).withOpacity(0.3)),
+          ),
+          child: Row(children: [
+            const Icon(Icons.edit_calendar_rounded,
+                size: 16, color: Color(0xFFD05122)),
+            const SizedBox(width: 8),
+            Text('Ubah Jadwal Antar',
+                style: GoogleFonts.alexandria(
+                    color: const Color(0xFFD05122),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      );
+    }
+
+    // Form edit
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8F5),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: const Color(0xFFD05122).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Ubah Jadwal Antar',
+              style: GoogleFonts.alexandria(
+                  fontSize: 13, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final now = DateTime.now();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _tglAntarEdit ?? now,
+                    firstDate: now,
+                    lastDate: now.add(const Duration(days: 60)),
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(
+                            primary: Color(0xFFD05122),
+                            onPrimary: Colors.white),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (picked != null) setState(() => _tglAntarEdit = picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.calendar_today_rounded,
+                        color: Color(0xFFD05122), size: 15),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        _tglAntarEdit == null ? 'Pilih tgl' :
+                          '${_tglAntarEdit!.day.toString().padLeft(2, '0')}/'
+                          '${_tglAntarEdit!.month.toString().padLeft(2, '0')}/'
+                          '${_tglAntarEdit!.year}',
+                        style: GoogleFonts.alexandria(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _jamAntarEdit ??
+                        const TimeOfDay(hour: 10, minute: 0),
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(
+                            primary: Color(0xFFD05122),
+                            onPrimary: Colors.white),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (picked != null) setState(() => _jamAntarEdit = picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.access_time_rounded,
+                        color: Color(0xFFD05122), size: 15),
+                    const SizedBox(width: 6),
+                    Text(
+                      _jamAntarEdit == null
+                          ? 'Pilih jam'
+                          : _jamAntarEdit!.format(context),
+                      style: GoogleFonts.alexandria(fontSize: 12),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: _isSavingJadwal ? null : () async {
+                  setState(() => _isSavingJadwal = true);
+                  try {
+                    final tglStr = _tglAntarEdit == null ? null :
+                      '${_tglAntarEdit!.year}-'
+                      '${_tglAntarEdit!.month.toString().padLeft(2, '0')}-'
+                      '${_tglAntarEdit!.day.toString().padLeft(2, '0')}';
+                    final jamStr = _jamAntarEdit == null ? null :
+                      '${_jamAntarEdit!.hour.toString().padLeft(2, '0')}:'
+                      '${_jamAntarEdit!.minute.toString().padLeft(2, '0')}:00';
+
+                    await ApiService.updateJadwalAntar(
+                      idPesanan: widget.pesanan['id_pesanan'],
+                      tglAntar: tglStr,
+                      jamAntar: jamStr,
+                    );
+                    setState(() {
+                      _detail?['tgl_antar'] = tglStr;
+                      _detail?['jam_antar'] = jamStr;
+                      _isEditingJadwal = false;
+                      _isSavingJadwal  = false;
+                    });
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Jadwal berhasil diperbarui',
+                            style: GoogleFonts.alexandria(color: Colors.white)),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ));
+                    }
+                  } catch (e) {
+                    setState(() => _isSavingJadwal = false);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Gagal: $e',
+                            style: GoogleFonts.alexandria(color: Colors.white)),
+                        backgroundColor: Colors.red,
+                      ));
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD05122),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                child: _isSavingJadwal
+                    ? const SizedBox(width: 16, height: 16,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text('Simpan',
+                        style: GoogleFonts.alexandria(
+                            fontSize: 13, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => setState(() => _isEditingJadwal = false),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey.shade400),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text('Batal',
+                    style: GoogleFonts.alexandria(
+                        fontSize: 13, color: Colors.grey[600])),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
   }
 }
 

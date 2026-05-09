@@ -332,52 +332,72 @@ class ApiService {
   //  CHECKOUT  ✅ FIXED: support Web (Uint8List) & Mobile (File)
   // ==========================================================
 
-  static Future<Map<String, dynamic>> checkout({
-    required String namaPembeli,
-    required String alamat,
-    required String metodeBayar,
-    String catatan         = '',
-    File?  buktiBayar,             // Mobile: dart:io File
-    Uint8List? buktiBayarBytes,    // ✅ Web: raw bytes
-    String?    buktiBayarName,     // ✅ nama file dari XFile.name
-  }) async {
-    try {
-      MultipartFile? multipartFile;
-
-      if (kIsWeb) {
-        // ✅ Web: buat MultipartFile dari bytes
-        if (buktiBayarBytes != null) {
-          final filename = buktiBayarName ??
-              'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg';
-          multipartFile = MultipartFile.fromBytes(
-            buktiBayarBytes,
-            filename: filename,
-          );
-        }
-      } else {
-        // Mobile: buat MultipartFile dari path File
-        if (buktiBayar != null) {
-          multipartFile = await MultipartFile.fromFile(
-            buktiBayar.path,
-            filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          );
-        }
+static Future<Map<String, dynamic>> checkout({
+  required String namaPembeli,
+  required String alamat,
+  required String metodeBayar,
+  String  catatan         = '',
+  String? tglAntar,           // ← nama seragam dengan DB
+  String? jamAntar,           // ← nama seragam dengan DB
+  String  tipePengiriman  = 'ambil',
+  File?   buktiBayar,
+  Uint8List? buktiBayarBytes,
+  String?    buktiBayarName,
+}) async {
+  try {
+    MultipartFile? multipartFile;
+    if (kIsWeb) {
+      if (buktiBayarBytes != null) {
+        final filename = buktiBayarName ??
+            'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        multipartFile = MultipartFile.fromBytes(buktiBayarBytes, filename: filename);
       }
-
-      final formData = FormData.fromMap({
-        'nama_pembeli': namaPembeli,
-        'alamat':       alamat,
-        'metode_bayar': metodeBayar,
-        'catatan':      catatan,
-        if (multipartFile != null) 'bukti_bayar': multipartFile,
-      });
-
-      final response = await _dio.post('/pesanan.php', data: formData);
-      return _parse(response);
-    } on DioException catch (e) {
-      throw ApiException(_getErrorMessage(e));
+    } else {
+      if (buktiBayar != null) {
+        multipartFile = await MultipartFile.fromFile(
+          buktiBayar.path,
+          filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
+      }
     }
+
+    final formData = FormData.fromMap({
+      'nama_pembeli':    namaPembeli,
+      'alamat':          alamat,
+      'metode_bayar':    metodeBayar,
+      'catatan':         catatan,
+      'tipe_pengiriman': tipePengiriman,
+      if (tglAntar != null) 'tgl_antar': tglAntar,
+      if (jamAntar != null) 'jam_antar': jamAntar,
+      if (multipartFile != null) 'bukti_bayar': multipartFile,
+    });
+
+    final response = await _dio.post('/pesanan.php', data: formData);
+    return _parse(response);
+  } on DioException catch (e) {
+    throw ApiException(_getErrorMessage(e));
   }
+}
+
+// ── Method baru: update jadwal (untuk admin) ──
+static Future<Map<String, dynamic>> updateJadwalAntar({
+  required int idPesanan,
+  String? tglAntar,
+  String? jamAntar,
+}) async {
+  try {
+    final response = await _dio.put(
+      '/pesanan.php?id_pesanan=$idPesanan',
+      data: {
+        'tgl_antar': tglAntar,
+        'jam_antar': jamAntar,
+      },
+    );
+    return _parse(response);
+  } on DioException catch (e) {
+    throw ApiException(_getErrorMessage(e));
+  }
+}
 
   // ==========================================================
   //  PESANAN
