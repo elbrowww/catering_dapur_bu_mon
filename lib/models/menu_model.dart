@@ -9,6 +9,13 @@ class MenuModel {
   final String kategori;
   final int tersedia;
   final int stok;
+  
+  // 🔥 Field baru untuk pre-order
+  final int minPreorderDays;
+  final int allowPreorder;
+  final String statusOrder;
+  final bool isAvailableToday;
+  final bool canPreorder;
 
   MenuModel({
     required this.idMenu,
@@ -19,28 +26,86 @@ class MenuModel {
     required this.kategori,
     required this.tersedia,
     required this.stok,
+    this.minPreorderDays = 1,
+    this.allowPreorder = 1,
+    this.statusOrder = 'tersedia',
+    this.isAvailableToday = false,
+    this.canPreorder = true,
   });
 
   factory MenuModel.fromJson(Map<String, dynamic> json) {
-    double parseHarga(dynamic value) {
-      if (value == null) return 0.0;
-      if (value is String) return double.tryParse(value) ?? 0.0;
-      if (value is int) return value.toDouble();
-      if (value is double) return value;
-      return 0.0;
-    }
-
-    return MenuModel(
-      idMenu: json['id_menu'] ?? 0,
-      nama: json['nama'] ?? '',
-      deskripsi: json['deskripsi'] ?? '',
-      harga: parseHarga(json['harga']),
-      foto: json['foto'] ?? '',
-      kategori: json['kategori'] ?? 'Lainnya',
-      tersedia: json['tersedia'] ?? 1,
-      stok: int.tryParse(json['stok'].toString()) ?? 0,
-    );
+  double parseHarga(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    return 0.0;
   }
+
+  int parseStok(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  int parseIntValue(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
+  bool parseBool(dynamic value, {bool defaultValue = false}) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      final lower = value.toLowerCase();
+      return lower == '1' || lower == 'true';
+    }
+    return defaultValue;
+  }
+
+  final stokValue = parseStok(json['stok']);
+  
+  // 🔥 Parse dengan aman untuk field yang mungkin berupa String
+  final minDays = parseIntValue(
+    json['min_preorder_days'] ?? json['preorder_min_days'],
+    defaultValue: stokValue > 0 ? 0 : 1,
+  );
+  
+  final allowPreorderValue = parseBool(
+    json['allow_preorder'],
+    defaultValue: true,
+  ) ? 1 : 0;
+  
+  final statusFromApi = json['status_order']?.toString() ?? (stokValue > 0 ? 'tersedia' : 'preorder');
+  final isAvailableFromApi = parseBool(
+    json['is_available_today'],
+    defaultValue: stokValue > 0,
+  );
+  final canPreorderFromApi = parseBool(
+    json['can_preorder'],
+    defaultValue: allowPreorderValue == 1,
+  );
+
+  return MenuModel(
+    idMenu: parseIntValue(json['id_menu']),
+    nama: json['nama'] ?? '',
+    deskripsi: json['deskripsi'] ?? '',
+    harga: parseHarga(json['harga']),
+    foto: json['foto'] ?? '',
+    kategori: json['kategori']?.toString() ?? 'Lainnya',
+    tersedia: parseIntValue(json['tersedia'], defaultValue: 1),
+    stok: stokValue,
+    minPreorderDays: minDays,
+    allowPreorder: allowPreorderValue,
+    statusOrder: statusFromApi,
+    isAvailableToday: isAvailableFromApi,
+    canPreorder: canPreorderFromApi,
+  );
+}
 
   String get formattedHarga {
     final numberFormat = NumberFormat.currency(
@@ -58,8 +123,106 @@ class MenuModel {
 
   /// Label stok untuk ditampilkan
   String get labelStok {
-    if (stok == 0) return 'Stok Habis';
+    if (stok == 0) return 'Pre-order';
+    if (stok <= 5) return 'Stok: $stok (Segera Habis)';
     return 'Stok: $stok';
+  }
+
+  /// 🔥 Getter untuk menentukan apakah menu bisa dipesan HARI INI
+  bool get isAvailableForToday {
+    return stok > 0 && !isHabis && isAvailableToday;
+  }
+  
+  /// 🔥 Getter untuk pre-order (bisa pesan untuk besok atau setelahnya)
+  bool get canPreOrder {
+    return canPreorder && allowPreorder == 1;
+  }
+
+  /// 🔥 Mendapatkan pesan status untuk ditampilkan ke user
+  String get statusMessage {
+    if (isAvailableForToday) {
+      return '✅ Tersedia • Bisa pesan hari ini atau pre-order';
+    } else if (canPreOrder) {
+      if (minPreorderDays == 1) {
+        return '⏰ Pre-order • Minimal H-1 (besok atau setelahnya)';
+      } else {
+        return '⏰ Pre-order • Minimal H-$minPreorderDays';
+      }
+    } else {
+      return '❌ Tidak tersedia untuk sementara';
+    }
+  }
+
+  /// 🔥 Mendapatkan warna status
+  int get statusColor {
+    if (isAvailableForToday) return 0xFF4CAF50; // Hijau
+    if (canPreOrder) return 0xFFFFA726; // Orange
+    return 0xFFE53935; // Merah
+  }
+
+  /// 🔥 Label status pendek untuk badge
+  String get shortStatusLabel {
+    if (isAvailableForToday) return 'Tersedia';
+    if (canPreOrder) return 'Pre-order';
+    return 'Habis';
+  }
+
+  /// 🔥 Validasi apakah bisa pesan pada tanggal tertentu
+  bool canOrderOnDate(DateTime selectedDate) {
+    final today = DateTime.now();
+    final orderDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final todayDate = DateTime(today.year, today.month, today.day);
+    
+    final daysDiff = orderDate.difference(todayDate).inDays;
+    
+    // Menu tersedia (stok > 0)
+    if (isAvailableForToday) {
+      return daysDiff >= 0; // Bisa hari ini atau setelahnya
+    }
+    // Menu pre-order (stok = 0)
+    else if (canPreOrder) {
+      return daysDiff >= minPreorderDays; // Minimal H-minPreorderDays
+    }
+    
+    return false;
+  }
+
+  /// 🔥 Mendapatkan minimal tanggal yang bisa dipilih
+  DateTime get minOrderDate {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    if (isAvailableForToday) {
+      return today;
+    } else if (canPreOrder) {
+      return today.add(Duration(days: minPreorderDays));
+    }
+    return today.add(const Duration(days: 365)); // Tidak bisa order
+  }
+
+  /// 🔥 Mendapatkan format pesan error jika tidak bisa order
+  String getOrderErrorMessage(DateTime selectedDate) {
+    final today = DateTime.now();
+    final daysDiff = DateTime(selectedDate.year, selectedDate.month, selectedDate.day)
+        .difference(DateTime(today.year, today.month, today.day))
+        .inDays;
+    
+    if (isAvailableForToday) {
+      if (daysDiff < 0) {
+        return 'Tidak bisa memesan untuk tanggal yang sudah lewat';
+      }
+      return '';
+    } else if (canPreOrder) {
+      if (daysDiff < minPreorderDays) {
+        if (minPreorderDays == 1) {
+          return 'Menu ini hanya tersedia untuk pre-order minimal H-1 (besok atau setelahnya)';
+        } else {
+          return 'Menu ini hanya tersedia untuk pre-order minimal H-$minPreorderDays';
+        }
+      }
+      return '';
+    }
+    return 'Menu tidak tersedia untuk dipesan';
   }
 
   /// Warna badge stok
@@ -68,5 +231,38 @@ class MenuModel {
     if (stok == 0) return 0xFFE53935;
     if (stok <= 5) return 0xFFFFA726;
     return 0xFF4CAF50;
+  }
+
+  /// 🔥 Copy with method untuk update sebagian field
+  MenuModel copyWith({
+    int? idMenu,
+    String? nama,
+    String? deskripsi,
+    double? harga,
+    String? foto,
+    String? kategori,
+    int? tersedia,
+    int? stok,
+    int? minPreorderDays,
+    int? allowPreorder,
+    String? statusOrder,
+    bool? isAvailableToday,
+    bool? canPreorder,
+  }) {
+    return MenuModel(
+      idMenu: idMenu ?? this.idMenu,
+      nama: nama ?? this.nama,
+      deskripsi: deskripsi ?? this.deskripsi,
+      harga: harga ?? this.harga,
+      foto: foto ?? this.foto,
+      kategori: kategori ?? this.kategori,
+      tersedia: tersedia ?? this.tersedia,
+      stok: stok ?? this.stok,
+      minPreorderDays: minPreorderDays ?? this.minPreorderDays,
+      allowPreorder: allowPreorder ?? this.allowPreorder,
+      statusOrder: statusOrder ?? this.statusOrder,
+      isAvailableToday: isAvailableToday ?? this.isAvailableToday,
+      canPreorder: canPreorder ?? this.canPreorder,
+    );
   }
 }

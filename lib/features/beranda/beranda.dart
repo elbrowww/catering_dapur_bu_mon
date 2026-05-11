@@ -51,8 +51,10 @@ class _BerandaPageState extends State<BerandaPage> {
     try {
       final raw = await ApiService.getMenu();
       setState(() {
+        // 🔥 HANYA TAMPILKAN MENU DENGAN STOK > 0 (menu tersedia, bukan pre-order)
         _semuaMenu = raw
             .map((e) => MenuModel.fromJson(e as Map<String, dynamic>))
+            .where((menu) => menu.stok > 0)  // 🔥 Filter: hanya menu dengan stok > 0
             .toList();
         _isLoadingMenu = false;
       });
@@ -137,10 +139,30 @@ class _BerandaPageState extends State<BerandaPage> {
         .toList();
   }
 
+  // 🔥 Getter untuk menu yang tersedia (stok > 0) - untuk bagian "Menu Terlaris"
+  List<MenuModel> get _menuTersedia {
+    return _semuaMenu.where((m) => m.stok > 0).toList();
+  }
+
   void _keDetailMenu(MenuModel menu) {
-    if (menu.isHabis) return;
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => DetailMenuPage(menu: menu)));
+    // 🔥 Cek apakah menu bisa dipesan (hanya untuk menu tersedia di beranda)
+    if (!menu.isAvailableForToday) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Menu tidak tersedia untuk dipesan saat ini',
+            style: GoogleFonts.alexandria(),
+          ),
+          backgroundColor: const Color(0xFFD05122),
+        ),
+      );
+      return;
+    }
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => DetailMenuPage(menu: menu)),
+    );
   }
 
   // ── Buka popup semua ulasan sebagai bottom sheet ──
@@ -244,26 +266,18 @@ class _BerandaPageState extends State<BerandaPage> {
               ? const Center(
                   child: CircularProgressIndicator(
                       color: Color(0xFFD05122)))
-              : _semuaMenu.isEmpty
+              : _menuTersedia.isEmpty
                   ? const SizedBox()
                   : ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 26),
-                      itemCount: _semuaMenu
-                          .where((m) => m.stok > 0)
-                          .take(4)
-                          .length,
+                      padding: const EdgeInsets.symmetric(horizontal: 26),
+                      itemCount: _menuTersedia.take(4).length,
                       itemBuilder: (_, i) {
-                        final tersedia = _semuaMenu
-                            .where((m) => m.stok > 0)
-                            .toList();
                         return Padding(
                           padding: const EdgeInsets.only(right: 16),
                           child: GestureDetector(
-                            onTap: () => _keDetailMenu(tersedia[i]),
-                            child: _MenuTerlarisCard(
-                                menu: tersedia[i]),
+                            onTap: () => _keDetailMenu(_menuTersedia[i]),
+                            child: _MenuTerlarisCard(menu: _menuTersedia[i]),
                           ),
                         );
                       },
@@ -356,8 +370,7 @@ class _BerandaPageState extends State<BerandaPage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
@@ -365,10 +378,8 @@ class _BerandaPageState extends State<BerandaPage> {
             ),
             itemCount: _menuTerfilter.length,
             itemBuilder: (_, i) => GestureDetector(
-              onTap: _menuTerfilter[i].isHabis
-                  ? null
-                  : () => _keDetailMenu(_menuTerfilter[i]),
-              child: _MenuTersediaCard(menu: _menuTerfilter[i]),
+              onTap: () => _keDetailMenu(_menuTerfilter[i]),
+              child: _MenuCard(menu: _menuTerfilter[i]),
             ),
           ),
         const SizedBox(height: 24),
@@ -387,7 +398,6 @@ class _BerandaPageState extends State<BerandaPage> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
               ),
-              // ── DIUBAH: panggil _lihatSemuaUlasan() bukan Navigator.push ──
               GestureDetector(
                 onTap: _lihatSemuaUlasan,
                 child: Opacity(
@@ -459,8 +469,7 @@ class _BerandaPageState extends State<BerandaPage> {
           colors: [Color(0xFFEE8B2E), Color(0xFFD05122), Color(0xFFAC3715)],
           stops: [0.17, 0.44, 0.79],
         ),
-        borderRadius:
-            BorderRadius.only(bottomLeft: Radius.circular(30)),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
               color: Color(0x3F000000),
@@ -696,7 +705,7 @@ class _BerandaPageState extends State<BerandaPage> {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  SEMUA ULASAN — BOTTOM SHEET (menggantikan SemuaUlasanPage)
+//  SEMUA ULASAN — BOTTOM SHEET
 // ══════════════════════════════════════════════════════════════
 class _SemuaUlasanSheet extends StatefulWidget {
   const _SemuaUlasanSheet();
@@ -759,7 +768,6 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
           ),
           child: Column(
             children: [
-              // ── Handle bar ──
               const SizedBox(height: 12),
               Container(
                 width: 40,
@@ -770,8 +778,6 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // ── Header ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -803,8 +809,6 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
               ),
               const SizedBox(height: 4),
               Divider(color: Colors.grey.shade200, thickness: 1),
-
-              // ── Konten ──
               Expanded(
                 child: _isLoading
                     ? const Center(
@@ -813,8 +817,7 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
                     : _error != null
                         ? Center(
                             child: Column(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.wifi_off_rounded,
                                     color: Colors.grey.shade400,
@@ -828,15 +831,11 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
                                 GestureDetector(
                                   onTap: _fetch,
                                   child: Container(
-                                    padding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 8),
                                     decoration: BoxDecoration(
-                                      borderRadius:
-                                          BorderRadius.circular(20),
-                                      gradient:
-                                          const LinearGradient(colors: [
+                                      borderRadius: BorderRadius.circular(20),
+                                      gradient: const LinearGradient(colors: [
                                         Color(0xFFD05122),
                                         Color(0xFFEE8B2E)
                                       ]),
@@ -845,8 +844,7 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
                                         style: GoogleFonts.alexandria(
                                             color: Colors.white,
                                             fontSize: 13,
-                                            fontWeight:
-                                                FontWeight.bold)),
+                                            fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                               ],
@@ -915,8 +913,7 @@ class _TrackingCardState extends State<_TrackingCard> {
   }
 
   int _resolveItemCount(Map<String, dynamic> p) {
-    final fromField =
-        int.tryParse(p['item_count']?.toString() ?? '');
+    final fromField = int.tryParse(p['item_count']?.toString() ?? '');
     if (fromField != null) return fromField;
     final items = p['items'];
     if (items is List) return items.length;
@@ -925,14 +922,10 @@ class _TrackingCardState extends State<_TrackingCard> {
 
   String _statusLabel(String? s) {
     switch (s) {
-      case 'pending':
-        return 'Menunggu';
-      case 'diterima':
-        return 'Diterima';
-      case 'diproses':
-        return 'Di Proses';
-      default:
-        return s ?? '-';
+      case 'pending': return 'Menunggu';
+      case 'diterima': return 'Diterima';
+      case 'diproses': return 'Di Proses';
+      default: return s ?? '-';
     }
   }
 
@@ -945,11 +938,8 @@ class _TrackingCardState extends State<_TrackingCard> {
       final dt = DateTime.parse(tgl);
       const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
       final hari = days[dt.weekday - 1];
-      final tglFmt =
-          '$hari, ${dt.day.toString().padLeft(2, '0')}/'
-          '${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-      final jamFmt =
-          jam.length >= 5 ? ' • ${jam.substring(0, 5)}' : '';
+      final tglFmt = '$hari, ${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+      final jamFmt = jam.length >= 5 ? ' • ${jam.substring(0, 5)}' : '';
       final icon = tipe == 'antar' ? '🚗' : '🏪';
       final label = tipe == 'antar' ? 'Diantar' : 'Ambil';
       return '$icon $label  $tglFmt$jamFmt';
@@ -967,51 +957,19 @@ class _TrackingCardState extends State<_TrackingCard> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFAC3715),
-            Color(0xFFD05122),
-            Color(0xFFEE8B2E),
-            Color(0xFFFBA839)
-          ],
+          colors: [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
           stops: [0.0, 0.35, 0.7, 1.0],
         ),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0xFFD05122),
-              blurRadius: 18,
-              offset: Offset(0, 8))
-        ],
+        boxShadow: const [BoxShadow(color: Color(0xFFD05122), blurRadius: 18, offset: Offset(0, 8))],
       ),
       child: Stack(children: [
-        Positioned(
-            right: -30,
-            top: -30,
-            child: Container(
-                width: 130,
-                height: 130,
-                decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white10))),
-        Positioned(
-            right: 20,
-            top: 10,
-            child: Container(
-                width: 70,
-                height: 70,
-                decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white10))),
+        Positioned(right: -30, top: -30, child: Container(width: 130, height: 130, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white10))),
+        Positioned(right: 20, top: 10, child: Container(width: 70, height: 70, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white10))),
         Padding(
           padding: const EdgeInsets.all(18),
           child: _isLoading
-              ? const SizedBox(
-                  height: 80,
-                  child: Center(
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2)))
-              : _pesanan == null
-                  ? _buildKosong()
-                  : _buildAktif(),
+              ? const SizedBox(height: 80, child: Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+              : _pesanan == null ? _buildKosong() : _buildAktif(),
         ),
       ]),
     );
@@ -1019,22 +977,14 @@ class _TrackingCardState extends State<_TrackingCard> {
 
   Widget _buildKosong() => Column(children: [
         Row(children: [
-          const Icon(Icons.local_shipping_rounded,
-              color: Colors.white, size: 16),
+          const Icon(Icons.local_shipping_rounded, color: Colors.white, size: 16),
           const SizedBox(width: 6),
-          Text('Tracking Pesanan',
-              style: GoogleFonts.alexandria(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+          Text('Tracking Pesanan', style: GoogleFonts.alexandria(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
         ]),
         const SizedBox(height: 16),
-        const Icon(Icons.receipt_long_outlined,
-            color: Colors.white54, size: 36),
+        const Icon(Icons.receipt_long_outlined, color: Colors.white54, size: 36),
         const SizedBox(height: 8),
-        Text('Belum ada pesanan aktif',
-            style: GoogleFonts.alexandria(
-                color: Colors.white70, fontSize: 13)),
+        Text('Belum ada pesanan aktif', style: GoogleFonts.alexandria(color: Colors.white70, fontSize: 13)),
       ]);
 
   Widget _buildAktif() {
@@ -1042,131 +992,47 @@ class _TrackingCardState extends State<_TrackingCard> {
     final status = p['status'] as String?;
     final itemCount = _resolveItemCount(p);
 
-    return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-            Row(children: [
-              const Icon(Icons.local_shipping_rounded,
-                  color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Text('Tracking Pesanan',
-                  style: GoogleFonts.alexandria(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-            ]),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(20),
-                border:
-                    Border.all(color: Colors.white38, width: 1),
-              ),
-              child: Row(children: [
-                Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                        color: Color(0xFFFFF176),
-                        shape: BoxShape.circle)),
-                const SizedBox(width: 5),
-                Text(_statusLabel(status),
-                    style: GoogleFonts.alexandria(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold)),
-              ]),
-            ),
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Row(children: [
+          const Icon(Icons.local_shipping_rounded, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          Text('Tracking Pesanan', style: GoogleFonts.alexandria(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+        ]),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white38, width: 1)),
+          child: Row(children: [
+            Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFFFFF176), shape: BoxShape.circle)),
+            const SizedBox(width: 5),
+            Text(_statusLabel(status), style: GoogleFonts.alexandria(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
           ]),
-          const SizedBox(height: 14),
-
-          Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.white24,
-                border: Border.all(
-                    color: Colors.white38, width: 1.5),
-              ),
-              child: const Icon(Icons.fastfood_rounded,
-                  color: Colors.white, size: 30),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-                child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-              Text(
-                itemCount > 0
-                    ? '$itemCount item pesanan'
-                    : 'Pesanan aktif',
-                style: GoogleFonts.alexandria(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(10)),
-                child: Text(
-                    'Status: ${_statusLabel(status)}',
-                    style: GoogleFonts.alexandria(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600)),
-              ),
-            ])),
-          ]),
-          const SizedBox(height: 14),
-
-          Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-              children: [
-            Expanded(
-                child: Row(children: [
-              const Icon(Icons.event_rounded,
-                  color: Colors.white70, size: 14),
-              const SizedBox(width: 4),
-              Expanded(
-                  child: Text(_jadwalLabel(p),
-                      style: GoogleFonts.alexandria(
-                          color: Colors.white, fontSize: 11),
-                      overflow: TextOverflow.ellipsis)),
-            ])),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => widget.onLihatDetail?.call(
-                  p['id_pesanan'] as int?),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text('Lihat Detail',
-                    style: GoogleFonts.alexandria(
-                        color: const Color(0xFFD05122),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ]),
-        ]);
+        ),
+      ]),
+      const SizedBox(height: 14),
+      Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Container(width: 60, height: 60, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.white24, border: Border.all(color: Colors.white38, width: 1.5)), child: const Icon(Icons.fastfood_rounded, color: Colors.white, size: 30)),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(itemCount > 0 ? '$itemCount item pesanan' : 'Pesanan aktif', style: GoogleFonts.alexandria(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)), child: Text('Status: ${_statusLabel(status)}', style: GoogleFonts.alexandria(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+        ])),
+      ]),
+      const SizedBox(height: 14),
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Expanded(child: Row(children: [
+          const Icon(Icons.event_rounded, color: Colors.white70, size: 14),
+          const SizedBox(width: 4),
+          Expanded(child: Text(_jadwalLabel(p), style: GoogleFonts.alexandria(color: Colors.white, fontSize: 11), overflow: TextOverflow.ellipsis)),
+        ])),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => widget.onLihatDetail?.call(p['id_pesanan'] as int?),
+          child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)), child: Text('Lihat Detail', style: GoogleFonts.alexandria(color: const Color(0xFFD05122), fontSize: 11, fontWeight: FontWeight.bold))),
+        ),
+      ]),
+    ]);
   }
 }
 
@@ -1181,73 +1047,43 @@ class _MenuTerlarisCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 300,
-      child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: menu.foto.isNotEmpty
-              ? Image.network(menu.foto,
-                  width: 300,
-                  height: 160,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder())
+              ? Image.network(menu.foto, width: 300, height: 160, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
               : _placeholder(),
         ),
         const SizedBox(height: 6),
         Row(children: [
           Flexible(
-              child: Opacity(
-            opacity: 0.8,
-            child: Text(menu.nama,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.alexandria(
-                    color: const Color(0xFF1A1818),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500)),
-          )),
+            child: Opacity(
+              opacity: 0.8,
+              child: Text(menu.nama, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.alexandria(color: const Color(0xFF1A1818), fontSize: 12, fontWeight: FontWeight.w500)),
+            ),
+          ),
           const SizedBox(width: 8),
           const Icon(Icons.star, size: 12, color: Color(0xFFF79F36)),
           const SizedBox(width: 2),
-          Opacity(
-            opacity: 0.8,
-            child: Text('5',
-                style: GoogleFonts.alexandria(
-                    color: const Color(0xFF1A1818),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500)),
-          ),
+          Opacity(opacity: 0.8, child: Text('5', style: GoogleFonts.alexandria(color: const Color(0xFF1A1818), fontSize: 12, fontWeight: FontWeight.w500))),
           if (menu.kategori.isNotEmpty) ...[
             const SizedBox(width: 8),
-            Opacity(
-              opacity: 0.6,
-              child: Text(menu.kategori,
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-            ),
+            Opacity(opacity: 0.6, child: Text(menu.kategori, style: GoogleFonts.alexandria(color: const Color(0xFF1A1818), fontSize: 12, fontWeight: FontWeight.w500))),
           ],
         ]),
       ]),
     );
   }
 
-  Widget _placeholder() => Container(
-      width: 300,
-      height: 160,
-      color: const Color(0xFFF79F36),
-      child: const Icon(Icons.fastfood,
-          color: Colors.white, size: 60));
+  Widget _placeholder() => Container(width: 300, height: 160, color: const Color(0xFFF79F36), child: const Icon(Icons.fastfood, color: Colors.white, size: 60));
 }
 
 // ══════════════════════════════════════════════════════════════
-//  MENU TERSEDIA CARD
+//  MENU CARD (Untuk menu tersedia saja)
 // ══════════════════════════════════════════════════════════════
-class _MenuTersediaCard extends StatelessWidget {
+class _MenuCard extends StatelessWidget {
   final MenuModel menu;
-  const _MenuTersediaCard({required this.menu});
+  const _MenuCard({required this.menu});
 
   @override
   Widget build(BuildContext context) {
@@ -1256,82 +1092,39 @@ class _MenuTersediaCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-                color: Color(0x1A000000),
-                blurRadius: 6,
-                offset: Offset(0, 2))
-          ],
+          boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))],
         ),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           ClipRRect(
-            borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12)),
+            borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
             child: menu.foto.isNotEmpty
-                ? Image.network(menu.foto,
-                    width: double.infinity,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder())
+                ? Image.network(menu.foto, width: double.infinity, height: 80, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
                 : _placeholder(),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 5, 6, 6),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-              Text(menu.nama,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(menu.nama, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.alexandria(color: const Color(0xFF1A1818), fontSize: 10, fontWeight: FontWeight.w600)),
               const SizedBox(height: 2),
-              Text(menu.formattedHarga,
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFFD05122),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700)),
+              Text(menu.formattedHarga, style: GoogleFonts.alexandria(color: const Color(0xFFD05122), fontSize: 9, fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: Color(menu.warnaStok).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: Color(menu.warnaStok), width: 0.8),
+                  border: Border.all(color: Color(menu.warnaStok), width: 0.8),
                 ),
-                child: Text(menu.labelStok,
-                    style: GoogleFonts.alexandria(
-                        color: Color(menu.warnaStok),
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold)),
+                child: Text(menu.labelStok, style: GoogleFonts.alexandria(color: Color(menu.warnaStok), fontSize: 8, fontWeight: FontWeight.bold)),
               ),
             ]),
           ),
         ]),
       ),
-      if (menu.isHabis)
-        Positioned.fill(
-            child: Container(
-          decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(12)),
-        )),
     ]);
   }
 
-  Widget _placeholder() => Container(
-      width: double.infinity,
-      height: 80,
-      color: const Color(0xFFF79F36),
-      child:
-          const Icon(Icons.fastfood, color: Colors.white, size: 30));
+  Widget _placeholder() => Container(width: double.infinity, height: 80, color: const Color(0xFFF79F36), child: const Icon(Icons.fastfood, color: Colors.white, size: 30));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1349,68 +1142,34 @@ class _UlasanCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFE6E4E4),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x3F000000),
-              spreadRadius: 3,
-              blurRadius: 4,
-              offset: Offset(0, 2))
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x3F000000), spreadRadius: 3, blurRadius: 4, offset: Offset(0, 2))],
       ),
-      child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           width: 48,
           height: 43,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Image.network(
               'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F316b1609f20a8554436bf178b307cada634003f6user%201.png?alt=media&token=7e8f650d-fedf-4394-bbc4-445243b57769',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(Icons.person,
-                  color: Color(0xFFD05122), size: 26),
+              errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Color(0xFFD05122), size: 26),
             ),
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-          Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-            Text(ulasan.namaCustomer,
-                style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold)),
-            Opacity(
-                opacity: 0.5,
-                child: Text(ulasan.tanggal,
-                    style: GoogleFonts.alexandria(
-                        color: const Color(0xFF1A1818),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600))),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text(ulasan.namaCustomer, style: GoogleFonts.alexandria(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold)),
+              Opacity(opacity: 0.5, child: Text(ulasan.tanggal, style: GoogleFonts.alexandria(color: const Color(0xFF1A1818), fontSize: 11, fontWeight: FontWeight.w600))),
+            ]),
+            Row(children: List.generate(5, (i) => Icon(i < ulasan.rating ? Icons.star : Icons.star_border, color: const Color(0xFFF79F36), size: 14))),
+            const SizedBox(height: 4),
+            Text(ulasan.komentar, style: GoogleFonts.alexandria(color: Colors.black, fontSize: 12)),
           ]),
-          Row(
-              children: List.generate(
-                  5,
-                  (i) => Icon(
-                      i < ulasan.rating
-                          ? Icons.star
-                          : Icons.star_border,
-                      color: const Color(0xFFF79F36),
-                      size: 14))),
-          const SizedBox(height: 4),
-          Text(ulasan.komentar,
-              style: GoogleFonts.alexandria(
-                  color: Colors.black, fontSize: 12)),
-        ])),
+        ),
       ]),
     );
   }

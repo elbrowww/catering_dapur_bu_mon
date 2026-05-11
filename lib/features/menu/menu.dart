@@ -16,6 +16,9 @@ class _MenuPageState extends State<MenuPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   
+  // Tambahan filter untuk pre-order
+  String _jenisFilter = 'Semua'; // 'Semua', 'Tersedia', 'Pre-order'
+  
   // State untuk data dari API
   List<MenuModel> _semuaMenu = [];
   bool _isLoading = true;
@@ -54,11 +57,14 @@ class _MenuPageState extends State<MenuPage> {
           menuList.add(MenuModel.fromJson(item));
         }
         
+        // 🔥 PERUBAHAN PENTING: Tampilkan SEMUA menu (termasuk yang stok habis)
         setState(() {
-          _semuaMenu = menuList.where((m) => m.isTersedia).toList();
+          _semuaMenu = menuList; // Hapus filter .where((m) => m.isTersedia)
         });
         
         print('✅ Total menu loaded: ${_semuaMenu.length}');
+        print('   - Tersedia: ${_semuaMenu.where((m) => m.stok > 0 && !m.isHabis).length}');
+        print('   - Pre-order: ${_semuaMenu.where((m) => m.stok <= 0 || m.isHabis).length}');
         
         // Generate kategori unik dari data
         final kategoriSet = <String>{};
@@ -90,13 +96,31 @@ class _MenuPageState extends State<MenuPage> {
     await _fetchMenu();
   }
 
+  // Getter untuk menu yang sudah difilter
   List<MenuModel> get _menuTerfilter {
     return _semuaMenu.where((item) {
+      // Filter kategori
       final cocokKategori = _kategoriAktif == 'Semua' || 
           item.kategori == _kategoriAktif;
+      
+      // Filter search
       final cocokSearch = _searchQuery.isEmpty ||
           item.nama.toLowerCase().contains(_searchQuery.toLowerCase());
-      return cocokKategori && cocokSearch;
+      
+      // 🔥 Filter jenis (Tersedia / Pre-order)
+      bool cocokJenis = true;
+      switch (_jenisFilter) {
+        case 'Tersedia':
+          cocokJenis = item.isAvailableForToday;
+          break;
+        case 'Pre-order':
+          cocokJenis = !item.isAvailableForToday;
+          break;
+        default:
+          cocokJenis = true;
+      }
+      
+      return cocokKategori && cocokSearch && cocokJenis;
     }).toList();
   }
 
@@ -235,6 +259,20 @@ class _MenuPageState extends State<MenuPage> {
             ),
           ),
 
+          // 🔥 NEW: Filter Chip untuk Tersedia/Pre-order
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              children: [
+                _buildJenisFilterChip('Semua', 'Semua'),
+                const SizedBox(width: 8),
+                _buildJenisFilterChip('Tersedia', 'Tersedia'),
+                const SizedBox(width: 8),
+                _buildJenisFilterChip('Pre-order', 'Pre-order'),
+              ],
+            ),
+          ),
+
           // ── Filter Kategori ────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -344,9 +382,38 @@ class _MenuPageState extends State<MenuPage> {
       ),
     );
   }
+
+  // 🔥 Widget untuk filter chip jenis menu
+  Widget _buildJenisFilterChip(String label, String value) {
+    final isSelected = _jenisFilter == value;
+    return FilterChip(
+      label: Text(
+        label,
+        style: GoogleFonts.alexandria(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Colors.white : Colors.black87,
+        ),
+      ),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _jenisFilter = value;
+        });
+      },
+      backgroundColor: Colors.grey.shade200,
+      selectedColor: const Color(0xFFD05122),
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: isSelected ? const Color(0xFFD05122) : Colors.grey.shade400,
+          width: 1,
+        ),
+      ),
+    );
+  }
 }
 
-// ── Menu Card ──────────────────────────────────────────────────
+// ── Menu Card (Diperbarui dengan status badge) ──────────────────
 class _MenuCard extends StatelessWidget {
   final MenuModel item;
   const _MenuCard({required this.item});
@@ -375,33 +442,80 @@ class _MenuCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 118,
-              height: 118,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF79F36),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: item.foto.isNotEmpty
-                    ? Image.network(
-                        item.foto,
-                        width: 106,
-                        height: 106,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.fastfood,
-                          color: Colors.white,
-                          size: 48,
+            // 🔥 Tambahan badge status di atas gambar
+            Stack(
+              children: [
+                Container(
+                  width: 118,
+                  height: 118,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF79F36),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: item.foto.isNotEmpty
+                        ? Image.network(
+                            item.foto,
+                            width: 106,
+                            height: 106,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.fastfood,
+                              color: Colors.white,
+                              size: 48,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.fastfood,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                  ),
+                ),
+                // 🔥 Badge status (Tersedia / Pre-order)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: item.isAvailableForToday 
+                          ? Colors.green 
+                          : Colors.orange,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
                         ),
-                      )
-                    : const Icon(
-                        Icons.fastfood,
+                      ],
+                    ),
+                    child: Text(
+                      item.isAvailableForToday ? 'Tersedia' : 'Pre-order',
+                      style: GoogleFonts.alexandria(
                         color: Colors.white,
-                        size: 48,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
                       ),
-              ),
+                    ),
+                  ),
+                ),
+                // 🔥 Overlay gelap jika stok habis (opsional)
+                if (!item.isAvailableForToday)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             Padding(
@@ -427,6 +541,19 @@ class _MenuCard extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
+            // 🔥 Tambahan informasi pre-order
+            if (!item.isAvailableForToday)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '⏰ Pre-order H-1',
+                  style: GoogleFonts.alexandria(
+                    color: Colors.orange.shade700,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

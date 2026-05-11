@@ -300,6 +300,25 @@ class ApiService {
     }
   }
 
+  // Tambahkan method ini di ApiService untuk validasi pre-order
+static Future<Map<String, dynamic>> validatePreorder({
+  required int idMenu,
+  required String tanggalAntar,
+}) async {
+  try {
+    final response = await _dio.post(
+      '/validate_preorder.php',
+      data: {
+        'id_menu': idMenu,
+        'tanggal_antar': tanggalAntar,
+      },
+    );
+    return _parse(response);
+  } on DioException catch (e) {
+    throw ApiException(_getErrorMessage(e));
+  }
+}
+
   static Future<Map<String, dynamic>> hapusDariKeranjang(int idItem) async {
     try {
       final response = await _dio.delete('/keranjang.php?id_item=$idItem');
