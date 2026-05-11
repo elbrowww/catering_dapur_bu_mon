@@ -11,7 +11,6 @@ import 'package:catering_dapur_bu_mon/features/menu/detail-menu.dart';
 //  BERANDA PAGE
 // ══════════════════════════════════════════════════════════════
 class BerandaPage extends StatefulWidget {
-  // [FIX 1] Tambah parameter onLihatDetail
   final void Function(int? idPesanan)? onLihatDetail;
   const BerandaPage({super.key, this.onLihatDetail});
 
@@ -144,6 +143,16 @@ class _BerandaPageState extends State<BerandaPage> {
         MaterialPageRoute(builder: (_) => DetailMenuPage(menu: menu)));
   }
 
+  // ── Buka popup semua ulasan sebagai bottom sheet ──
+  void _lihatSemuaUlasan() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _SemuaUlasanSheet(),
+    );
+  }
+
   Future<void> _kirimUlasan() async {
     final komentar = _ulasanController.text.trim();
     if (komentar.isEmpty) {
@@ -215,7 +224,6 @@ class _BerandaPageState extends State<BerandaPage> {
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 26),
-          // [FIX 2] Teruskan callback onLihatDetail ke _TrackingCard
           child: _TrackingCard(onLihatDetail: widget.onLihatDetail),
         ),
         const SizedBox(height: 24),
@@ -379,11 +387,9 @@ class _BerandaPageState extends State<BerandaPage> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
               ),
+              // ── DIUBAH: panggil _lihatSemuaUlasan() bukan Navigator.push ──
               GestureDetector(
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const SemuaUlasanPage())),
+                onTap: _lihatSemuaUlasan,
                 child: Opacity(
                   opacity: 0.5,
                   child: Text('Lihat semua',
@@ -462,8 +468,7 @@ class _BerandaPageState extends State<BerandaPage> {
               offset: Offset(0, 4))
         ],
       ),
-      padding:
-          EdgeInsets.fromLTRB(26, 20 + statusBarH, 26, 16),
+      padding: EdgeInsets.fromLTRB(26, 20 + statusBarH, 26, 16),
       child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -691,10 +696,191 @@ class _BerandaPageState extends State<BerandaPage> {
 }
 
 // ══════════════════════════════════════════════════════════════
+//  SEMUA ULASAN — BOTTOM SHEET (menggantikan SemuaUlasanPage)
+// ══════════════════════════════════════════════════════════════
+class _SemuaUlasanSheet extends StatefulWidget {
+  const _SemuaUlasanSheet();
+
+  @override
+  State<_SemuaUlasanSheet> createState() => _SemuaUlasanSheetState();
+}
+
+class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
+  List<UlasanModel> _list = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final raw = await ApiService.getUlasan(limit: 100);
+      setState(() {
+        _list = raw
+            .map((e) => UlasanModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _isLoading = false;
+      });
+    } on ApiException catch (e) {
+      setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _error = 'Gagal memuat ulasan.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            children: [
+              // ── Handle bar ──
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Header ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Semua Ulasan',
+                      style: GoogleFonts.alexandria(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close,
+                            size: 18, color: Colors.black54),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Divider(color: Colors.grey.shade200, thickness: 1),
+
+              // ── Konten ──
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFFD05122)))
+                    : _error != null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.wifi_off_rounded,
+                                    color: Colors.grey.shade400,
+                                    size: 40),
+                                const SizedBox(height: 8),
+                                Text(_error!,
+                                    style: GoogleFonts.alexandria(
+                                        color: Colors.grey,
+                                        fontSize: 13)),
+                                const SizedBox(height: 12),
+                                GestureDetector(
+                                  onTap: _fetch,
+                                  child: Container(
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 8),
+                                    decoration: BoxDecoration(
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      gradient:
+                                          const LinearGradient(colors: [
+                                        Color(0xFFD05122),
+                                        Color(0xFFEE8B2E)
+                                      ]),
+                                    ),
+                                    child: Text('Coba Lagi',
+                                        style: GoogleFonts.alexandria(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight:
+                                                FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _list.isEmpty
+                            ? Center(
+                                child: Text('Belum ada ulasan.',
+                                    style: GoogleFonts.alexandria(
+                                        color: Colors.grey,
+                                        fontSize: 13)))
+                            : ListView.separated(
+                                controller: scrollController,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 8),
+                                itemCount: _list.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (_, i) =>
+                                    _UlasanCard(ulasan: _list[i]),
+                              ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
 //  TRACKING CARD
 // ══════════════════════════════════════════════════════════════
 class _TrackingCard extends StatefulWidget {
-  // [FIX 3] Tambah parameter onLihatDetail di _TrackingCard
   final void Function(int? idPesanan)? onLihatDetail;
   const _TrackingCard({this.onLihatDetail});
 
@@ -859,7 +1045,6 @@ class _TrackingCardState extends State<_TrackingCard> {
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
             Row(children: [
@@ -899,7 +1084,6 @@ class _TrackingCardState extends State<_TrackingCard> {
           ]),
           const SizedBox(height: 14),
 
-          // Info pesanan
           Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -948,7 +1132,6 @@ class _TrackingCardState extends State<_TrackingCard> {
           ]),
           const SizedBox(height: 14),
 
-          // Jadwal + tombol "Lihat Detail"
           Row(
               mainAxisAlignment:
                   MainAxisAlignment.spaceBetween,
@@ -965,8 +1148,6 @@ class _TrackingCardState extends State<_TrackingCard> {
                       overflow: TextOverflow.ellipsis)),
             ])),
             const SizedBox(width: 8),
-
-            // [FIX 4] Panggil callback, bukan Navigator.push
             GestureDetector(
               onTap: () => widget.onLihatDetail?.call(
                   p['id_pesanan'] as int?),
@@ -1231,124 +1412,6 @@ class _UlasanCard extends StatelessWidget {
                   color: Colors.black, fontSize: 12)),
         ])),
       ]),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  SEMUA ULASAN PAGE
-// ══════════════════════════════════════════════════════════════
-class SemuaUlasanPage extends StatefulWidget {
-  const SemuaUlasanPage({super.key});
-
-  @override
-  State<SemuaUlasanPage> createState() => _SemuaUlasanPageState();
-}
-
-class _SemuaUlasanPageState extends State<SemuaUlasanPage> {
-  List<UlasanModel> _list = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetch();
-  }
-
-  Future<void> _fetch() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final raw = await ApiService.getUlasan(limit: 100);
-      setState(() {
-        _list = raw
-            .map((e) =>
-                UlasanModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-        _isLoading = false;
-      });
-    } on ApiException catch (e) {
-      setState(() {
-        _error = e.message;
-        _isLoading = false;
-      });
-    } catch (_) {
-      setState(() {
-        _error = 'Gagal memuat ulasan.';
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFD05122),
-        foregroundColor: Colors.white,
-        title: Text('Semua Ulasan',
-            style: GoogleFonts.alexandria(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16)),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                  color: Color(0xFFD05122)))
-          : _error != null
-              ? Center(
-                  child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.wifi_off_rounded,
-                        color: Colors.grey.shade400, size: 40),
-                    const SizedBox(height: 8),
-                    Text(_error!,
-                        style: GoogleFonts.alexandria(
-                            color: Colors.grey, fontSize: 13)),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: _fetch,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(colors: [
-                            Color(0xFFD05122),
-                            Color(0xFFEE8B2E)
-                          ]),
-                        ),
-                        child: Text('Coba Lagi',
-                            style: GoogleFonts.alexandria(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ))
-              : _list.isEmpty
-                  ? Center(
-                      child: Text('Belum ada ulasan.',
-                          style: GoogleFonts.alexandria(
-                              color: Colors.grey, fontSize: 13)))
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 26, vertical: 16),
-                      itemCount: _list.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 8),
-                      itemBuilder: (_, i) =>
-                          _UlasanCard(ulasan: _list[i]),
-                    ),
     );
   }
 }

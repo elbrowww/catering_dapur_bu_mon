@@ -7,20 +7,20 @@ import 'package:catering_dapur_bu_mon/models/ulasan_model.dart';
 
 class _CustomerData {
   final String nama;
-  final String email;
+  final String noTelp;
   final String alamat;
 
   const _CustomerData({
     required this.nama,
-    required this.email,
+    required this.noTelp,
     required this.alamat,
   });
 
   factory _CustomerData.fromJson(Map<String, dynamic> json) {
     return _CustomerData(
-      nama: json['nama'] ?? '',
-      email: json['email'] ?? '',
-      alamat: json['alamat'] ?? '',
+      nama:   json['nama']    ?? '',
+      noTelp: json['no_telp'] ?? '',
+      alamat: json['alamat']  ?? '',
     );
   }
 }
@@ -116,7 +116,7 @@ class _DataCustomerPageState extends State<DataCustomerPage> {
     return _customers
         .where((c) =>
             c.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            c.email.contains(_searchQuery))
+            c.noTelp.contains(_searchQuery))
         .toList();
   }
 
@@ -606,9 +606,7 @@ class _CustomerCard extends StatelessWidget {
             radius: 25,
             backgroundColor: const Color(0xFFF79F36),
             child: Text(
-              customer.nama.isNotEmpty
-                  ? customer.nama[0].toUpperCase()
-                  : '?',
+              customer.nama.isNotEmpty ? customer.nama[0].toUpperCase() : '?',
               style: GoogleFonts.alexandria(
                 color: Colors.white,
                 fontSize: 20,
@@ -621,28 +619,56 @@ class _CustomerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(customer.nama,
-                    style: GoogleFonts.alexandria(
-                        color: Colors.black,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 2),
-                Text(customer.email,
-                    style: GoogleFonts.alexandria(
+                // Nama
+                Text(
+                  customer.nama,
+                  style: GoogleFonts.alexandria(
+                    color: Colors.black,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                // No. Telepon
+                Row(
+                  children: [
+                    const Icon(Icons.phone,
+                        size: 12, color: Color(0xFFC98C63)),
+                    const SizedBox(width: 4),
+                    Text(
+                      customer.noTelp.isNotEmpty ? customer.noTelp : '-',
+                      style: GoogleFonts.alexandria(
                         color: const Color(0xFFC98C63),
                         fontSize: 12,
-                        fontWeight: FontWeight.bold)),
-                Text(customer.alamat,
-                    style: GoogleFonts.alexandria(
-                        color: const Color(0xFFC98C63),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                // Alamat
+                Row(
+                  children: [
+                    const Icon(Icons.location_on,
+                        size: 12, color: Color(0xFFC98C63)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        customer.alamat.isNotEmpty ? customer.alamat : '-',
+                        style: GoogleFonts.alexandria(
+                          color: const Color(0xFFC98C63),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.black45),
+
         ],
       ),
     );
