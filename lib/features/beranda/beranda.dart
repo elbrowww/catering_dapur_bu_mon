@@ -6,13 +6,14 @@ import 'package:catering_dapur_bu_mon/services/api_service.dart';
 import 'package:catering_dapur_bu_mon/models/menu_model.dart';
 import 'package:catering_dapur_bu_mon/models/ulasan_model.dart';
 import 'package:catering_dapur_bu_mon/features/menu/detail-menu.dart';
-import 'package:catering_dapur_bu_mon/features/aktivitas/aktivitas.dart';
 
 // ══════════════════════════════════════════════════════════════
 //  BERANDA PAGE
 // ══════════════════════════════════════════════════════════════
 class BerandaPage extends StatefulWidget {
-  const BerandaPage({super.key});
+  // [FIX 1] Tambah parameter onLihatDetail
+  final void Function(int? idPesanan)? onLihatDetail;
+  const BerandaPage({super.key, this.onLihatDetail});
 
   @override
   State<BerandaPage> createState() => _BerandaPageState();
@@ -214,7 +215,8 @@ class _BerandaPageState extends State<BerandaPage> {
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: _TrackingCard(),
+          // [FIX 2] Teruskan callback onLihatDetail ke _TrackingCard
+          child: _TrackingCard(onLihatDetail: widget.onLihatDetail),
         ),
         const SizedBox(height: 24),
 
@@ -690,9 +692,12 @@ class _BerandaPageState extends State<BerandaPage> {
 
 // ══════════════════════════════════════════════════════════════
 //  TRACKING CARD
-//  FIX: "Lihat Detail" → AktivitasPage (customer), bukan admin
 // ══════════════════════════════════════════════════════════════
 class _TrackingCard extends StatefulWidget {
+  // [FIX 3] Tambah parameter onLihatDetail di _TrackingCard
+  final void Function(int? idPesanan)? onLihatDetail;
+  const _TrackingCard({this.onLihatDetail});
+
   @override
   State<_TrackingCard> createState() => _TrackingCardState();
 }
@@ -961,20 +966,10 @@ class _TrackingCardState extends State<_TrackingCard> {
             ])),
             const SizedBox(width: 8),
 
-            // ── "Lihat Detail" → AktivitasPage (customer) ──
-            // dengan bukaDetailId agar langsung expand item
+            // [FIX 4] Panggil callback, bukan Navigator.push
             GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AktivitasPage(
-                      bukaDetailId:
-                          p['id_pesanan'] as int?,
-                    ),
-                  ),
-                );
-              },
+              onTap: () => widget.onLihatDetail?.call(
+                  p['id_pesanan'] as int?),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 5),

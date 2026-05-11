@@ -2,30 +2,62 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
-
 class AktivitasPage extends StatefulWidget {
-  /// Jika tidak null, item dengan id ini langsung dibuka detailnya
-  final int? bukaDetailId;
-
-  const AktivitasPage({super.key, this.bukaDetailId});
+  const AktivitasPage({super.key});
 
   @override
-  State<AktivitasPage> createState() => _AktivitasPageState();
+  // [FIX] State dibuat PUBLIC agar bisa diakses via GlobalKey dari MainScreen
+  AktivitasPageState createState() => AktivitasPageState();
 }
 
-class _AktivitasPageState extends State<AktivitasPage> {
+// [FIX] Nama class State tanpa underscore = public
+class AktivitasPageState extends State<AktivitasPage> {
   String _filterAktif = 'Semua';
   List<Map<String, dynamic>> _semuaPesanan = [];
   bool _isLoading = true;
   String? _error;
 
-  /// id pesanan yang sedang ditampilkan detail-nya 
+  /// id pesanan yang sedang ditampilkan detail-nya
   int? _expandedId;
+
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _itemKeys = {};
 
   @override
   void initState() {
     super.initState();
     _loadPesanan();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// [FIX] Method PUBLIC — dipanggil dari MainScreen via GlobalKey
+  /// untuk expand item tertentu setelah pindah tab
+  void bukaDetail(int? idPesanan) {
+    if (idPesanan == null) return;
+
+    setState(() => _expandedId = idPesanan);
+
+    // Scroll ke item setelah frame selesai dirender
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToExpanded(idPesanan);
+    });
+  }
+
+  void _scrollToExpanded(int id) {
+    final key = _itemKeys[id];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      );
+    }
   }
 
   Future<void> _loadPesanan() async {
@@ -38,10 +70,6 @@ class _AktivitasPageState extends State<AktivitasPage> {
       setState(() {
         _semuaPesanan = raw.cast<Map<String, dynamic>>();
         _isLoading = false;
-        // Jika ada bukaDetailId, langsung expand item tersebut
-        if (widget.bukaDetailId != null) {
-          _expandedId = widget.bukaDetailId;
-        }
       });
     } catch (e) {
       setState(() {
@@ -96,18 +124,8 @@ class _AktivitasPageState extends State<AktivitasPage> {
       final dt = DateTime.parse(tgl.toString());
       const bulanNama = [
         '',
-        'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
       ];
       return '${dt.day} ${bulanNama[dt.month]} ${dt.year}';
     } catch (_) {
@@ -136,7 +154,6 @@ class _AktivitasPageState extends State<AktivitasPage> {
     return raw.isEmpty ? '-' : raw;
   }
 
-  /// Resolve item_count: coba field langsung, fallback ke panjang list items
   int _resolveItemCount(Map<String, dynamic> p) {
     final fromField = int.tryParse(p['item_count']?.toString() ?? '');
     if (fromField != null) return fromField;
@@ -160,10 +177,9 @@ class _AktivitasPageState extends State<AktivitasPage> {
       ),
       child: Column(
         children: [
-          // ── Header "Aktivitas" 
+          // ── Header "Aktivitas" ──────────────────────────────
           Padding(
-            padding:
-                EdgeInsets.fromLTRB(23, 14 + statusBarHeight, 23, 0),
+            padding: EdgeInsets.fromLTRB(23, 14 + statusBarHeight, 23, 0),
             child: Container(
               width: double.infinity,
               height: 50,
@@ -192,7 +208,7 @@ class _AktivitasPageState extends State<AktivitasPage> {
           ),
           const SizedBox(height: 14),
 
-          // ── Body putih 
+          // ── Body putih ──────────────────────────────────────
           Expanded(
             child: Container(
               width: double.infinity,
@@ -203,15 +219,13 @@ class _AktivitasPageState extends State<AktivitasPage> {
               ),
               child: Column(
                 children: [
-                  // ── Filter chips 
+                  // ── Filter chips ────────────────────────────
                   Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(34, 18, 34, 12),
+                    padding: const EdgeInsets.fromLTRB(34, 18, 34, 12),
                     child: Row(
                       children: ['Semua', 'Bulan ini', 'Bulan Lalu']
                           .map((f) => Padding(
-                                padding:
-                                    const EdgeInsets.only(right: 10),
+                                padding: const EdgeInsets.only(right: 10),
                                 child: _FilterChip(
                                   label: f,
                                   aktif: _filterAktif == f,
@@ -223,7 +237,7 @@ class _AktivitasPageState extends State<AktivitasPage> {
                     ),
                   ),
 
-                  // ── List 
+                  // ── List ────────────────────────────────────
                   Expanded(
                     child: _isLoading
                         ? const Center(
@@ -237,9 +251,9 @@ class _AktivitasPageState extends State<AktivitasPage> {
                                     onRefresh: _loadPesanan,
                                     color: const Color(0xFFD05122),
                                     child: ListView.builder(
-                                      padding:
-                                          const EdgeInsets.fromLTRB(
-                                              32, 0, 32, 100),
+                                      controller: _scrollController,
+                                      padding: const EdgeInsets.fromLTRB(
+                                          32, 0, 32, 100),
                                       itemCount:
                                           _perTanggal.keys.length,
                                       itemBuilder: (_, i) {
@@ -254,8 +268,7 @@ class _AktivitasPageState extends State<AktivitasPage> {
                                             Padding(
                                               padding:
                                                   const EdgeInsets.only(
-                                                      bottom: 6,
-                                                      top: 4),
+                                                      bottom: 6, top: 4),
                                               child: Opacity(
                                                 opacity: 0.5,
                                                 child: Text(
@@ -277,7 +290,16 @@ class _AktivitasPageState extends State<AktivitasPage> {
                                               final isExpanded =
                                                   _expandedId != null &&
                                                       _expandedId == id;
+
+                                              if (id != null) {
+                                                _itemKeys.putIfAbsent(
+                                                    id, () => GlobalKey());
+                                              }
+
                                               return Padding(
+                                                key: id != null
+                                                    ? _itemKeys[id]
+                                                    : null,
                                                 padding:
                                                     const EdgeInsets.only(
                                                         bottom: 10),
@@ -298,6 +320,16 @@ class _AktivitasPageState extends State<AktivitasPage> {
                                                               ? null
                                                               : id;
                                                     });
+                                                    if (!isExpanded &&
+                                                        id != null) {
+                                                      WidgetsBinding
+                                                          .instance
+                                                          .addPostFrameCallback(
+                                                              (_) {
+                                                        _scrollToExpanded(
+                                                            id);
+                                                      });
+                                                    }
                                                   },
                                                 ),
                                               );
@@ -375,7 +407,9 @@ class _AktivitasPageState extends State<AktivitasPage> {
   }
 }
 
-//  _AktivitasItem 
+// ════════════════════════════════════════════════════════════════
+//  _AktivitasItem
+// ════════════════════════════════════════════════════════════════
 class _AktivitasItem extends StatefulWidget {
   final Map<String, dynamic> pesanan;
   final String Function(dynamic) formatHarga;
@@ -436,7 +470,7 @@ class _AktivitasItemState extends State<_AktivitasItem> {
   }
 
   Future<void> _loadDetail() async {
-    if (_detail != null) return; // sudah di-cache
+    if (_detail != null) return;
     setState(() => _loadingDetail = true);
     try {
       final d = await ApiService.getDetailPesanan(
@@ -466,13 +500,7 @@ class _AktivitasItemState extends State<_AktivitasItem> {
     try {
       final dt = DateTime.parse(tgl.toString());
       const days = [
-        'Senin',
-        'Selasa',
-        'Rabu',
-        'Kamis',
-        'Jumat',
-        'Sabtu',
-        'Minggu'
+        'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
       ];
       final hari = days[dt.weekday - 1];
       final d = dt.day.toString().padLeft(2, '0');
@@ -521,7 +549,7 @@ class _AktivitasItemState extends State<_AktivitasItem> {
 
     return Column(
       children: [
-        // ── Baris utama (desain sama persis) ─────────────
+        // ── Baris utama ───────────────────────────────────────
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
@@ -544,7 +572,6 @@ class _AktivitasItemState extends State<_AktivitasItem> {
           ),
           child: Row(
             children: [
-              // Gambar placeholder
               Container(
                 width: 65,
                 height: 65,
@@ -557,7 +584,6 @@ class _AktivitasItemState extends State<_AktivitasItem> {
               ),
               const SizedBox(width: 12),
 
-              // Teks
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -635,7 +661,7 @@ class _AktivitasItemState extends State<_AktivitasItem> {
           ),
         ),
 
-        // ── Panel detail inline (expand ke bawah) ─────────
+        // ── Panel detail inline ───────────────────────────────
         if (widget.isExpanded)
           Container(
             width: double.infinity,
@@ -674,15 +700,13 @@ class _AktivitasItemState extends State<_AktivitasItem> {
     final isBatal = status == 'batal';
     final tglAntar = p['tgl_antar'];
     final jamAntar = p['jam_antar'];
-    final tipe =
-        (p['tipe_pengiriman'] ?? 'ambil').toString();
+    final tipe = (p['tipe_pengiriman'] ?? 'ambil').toString();
     final catatan = (p['catatan'] ?? '').toString();
     final items = (p['items'] as List<dynamic>?) ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Timeline status ───────────────────────────
         if (!isBatal) ...[
           _sectionLabel('Status Pesanan'),
           const SizedBox(height: 8),
@@ -690,10 +714,8 @@ class _AktivitasItemState extends State<_AktivitasItem> {
           const SizedBox(height: 14),
         ],
 
-        // ── Info rows ─────────────────────────────────
         _sectionLabel('Info Pesanan'),
         const SizedBox(height: 8),
-
         _infoRow(
           icon: Icons.calendar_today_rounded,
           label: 'Dipesan',
@@ -719,7 +741,6 @@ class _AktivitasItemState extends State<_AktivitasItem> {
           value: widget.metodeBayar,
         ),
 
-        // ── Catatan ───────────────────────────────────
         if (catatan.isNotEmpty) ...[
           const SizedBox(height: 10),
           Container(
@@ -749,7 +770,6 @@ class _AktivitasItemState extends State<_AktivitasItem> {
           ),
         ],
 
-        // ── Daftar item ───────────────────────────────
         if (items.isNotEmpty) ...[
           const SizedBox(height: 14),
           _sectionLabel('Item Pesanan'),
@@ -801,17 +821,13 @@ class _AktivitasItemState extends State<_AktivitasItem> {
                         ),
                       ),
                       Text(
-                        widget.formatHarga(
-                            item['harga_satuan'] ?? 0),
+                        widget.formatHarga(item['harga_satuan'] ?? 0),
                         style: GoogleFonts.alexandria(
-                            fontSize: 10,
-                            color: Colors.grey[600]),
+                            fontSize: 10, color: Colors.grey[600]),
                       ),
                     ]),
                   );
                 }),
-
-                // Total row
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 8),
@@ -832,10 +848,9 @@ class _AktivitasItemState extends State<_AktivitasItem> {
                             fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        widget.formatHarga(
-                            p['total_harga'] ??
-                                widget.pesanan['total_harga'] ??
-                                0),
+                        widget.formatHarga(p['total_harga'] ??
+                            widget.pesanan['total_harga'] ??
+                            0),
                         style: GoogleFonts.alexandria(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -899,13 +914,12 @@ class _AktivitasItemState extends State<_AktivitasItem> {
   }
 }
 
-//  _TimelineWidget — 4 step progress (Pending→Selesai)
-
+// ════════════════════════════════════════════════════════════════
+//  _TimelineWidget
+// ════════════════════════════════════════════════════════════════
 class _TimelineWidget extends StatelessWidget {
-  final int currentStep; // 0=pending,1=diterima,2=diproses,3=selesai
-
+  final int currentStep;
   const _TimelineWidget({required this.currentStep});
-
   static const _steps = ['Pending', 'Diterima', 'Proses', 'Selesai'];
 
   @override
@@ -978,16 +992,16 @@ class _TimelineWidget extends StatelessWidget {
   }
 }
 
-//  _FilterChip — sama persis dengan asli
+// ════════════════════════════════════════════════════════════════
+//  _FilterChip
+// ════════════════════════════════════════════════════════════════
 class _FilterChip extends StatelessWidget {
   final String label;
   final bool aktif;
   final VoidCallback onTap;
 
   const _FilterChip(
-      {required this.label,
-      required this.aktif,
-      required this.onTap});
+      {required this.label, required this.aktif, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -998,12 +1012,9 @@ class _FilterChip extends StatelessWidget {
         height: 25,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: aktif
-              ? const Color(0xFFEE8B2E)
-              : Colors.transparent,
+          color: aktif ? const Color(0xFFEE8B2E) : Colors.transparent,
           borderRadius: BorderRadius.circular(22),
-          border:
-              Border.all(width: 1.5, color: const Color(0xFFDB6626)),
+          border: Border.all(width: 1.5, color: const Color(0xFFDB6626)),
         ),
         child: Center(
           child: Text(
@@ -1011,8 +1022,7 @@ class _FilterChip extends StatelessWidget {
             style: GoogleFonts.lora(
               color: Colors.black,
               fontSize: 12,
-              fontWeight:
-                  aktif ? FontWeight.bold : FontWeight.w500,
+              fontWeight: aktif ? FontWeight.bold : FontWeight.w500,
             ),
           ),
         ),

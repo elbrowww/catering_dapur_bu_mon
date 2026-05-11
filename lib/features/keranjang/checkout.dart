@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
+import 'package:catering_dapur_bu_mon/main.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -22,8 +23,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   String     _selectedMetodeBayar = 'Transfer Bank';
   String     _tipePengiriman      = 'ambil';
-  DateTime?  _tglAntar;       // ← nama seragam
-  TimeOfDay? _jamAntar;       // ← nama seragam
+  DateTime?  _tglAntar;
+  TimeOfDay? _jamAntar;
   bool       _isLoading       = false;
 
   XFile?     _buktiBayar;
@@ -122,7 +123,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Format seragam dengan DB: YYYY-MM-DD dan HH:MM:SS
       final tglStr = '${_tglAntar!.year}-'
           '${_tglAntar!.month.toString().padLeft(2, '0')}-'
           '${_tglAntar!.day.toString().padLeft(2, '0')}';
@@ -134,8 +134,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         alamat:         alamat,
         metodeBayar:    _selectedMetodeBayar,
         catatan:        _catatanController.text.trim(),
-        tglAntar:       tglStr,         // ← nama seragam
-        jamAntar:       jamStr,         // ← nama seragam
+        tglAntar:       tglStr,
+        jamAntar:       jamStr,
         tipePengiriman: _tipePengiriman,
         buktiBayar:     kIsWeb ? null : (_buktiBayar != null ? File(_buktiBayar!.path) : null),
         buktiBayarBytes: _buktiBayarBytes,
@@ -169,45 +169,101 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  // ── HANYA BAGIAN INI YANG DIUBAH ──────────────────────────
   void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Column(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 60),
-            const SizedBox(height: 12),
-            Text('Pesanan Berhasil!',
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon centang dalam lingkaran gradasi
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+                    stops: [0.17, 0.55, 0.85],
+                  ),
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: Colors.white, size: 48),
+              ),
+              const SizedBox(height: 20),
+
+              Text(
+                '🎉 Pesanan Masuk!',
                 style: GoogleFonts.alexandria(
-                    fontWeight: FontWeight.bold, fontSize: 20)),
-          ],
-        ),
-        content: Text(
-          'Pesanan Anda telah diterima. Silakan cek halaman aktivitas untuk melihat status pesanan.',
-          style: GoogleFonts.alexandria(),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD05122),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text('Kembali ke Menu',
-                style: GoogleFonts.alexandria(color: Colors.white)),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1A1818)),
+              ),
+              const SizedBox(height: 6),
+
+              Text(
+                'Terima kasih telah memesan\ndi Dapur Bu Mon 🍱',
+                style: GoogleFonts.alexandria(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFD05122)),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+
+              Text(
+                'Kami sudah menerima pesanan Anda dan sedang mempersiapkan hidangan terbaik. Pantau status pesanan di halaman Aktivitas ya! 😊',
+                style: GoogleFonts.alexandria(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    height: 1.6),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+
+              // Tombol Kembali ke Beranda
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context); // tutup dialog
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MainScreen()),
+                    (route) => false, // hapus semua route sebelumnya
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+                      stops: [0.17, 0.55, 0.85],
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Kembali ke Beranda',
+                      style: GoogleFonts.alexandria(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+  // ── AKHIR BAGIAN YANG DIUBAH ───────────────────────────────
 
   @override
   void dispose() {
@@ -359,7 +415,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Toggle Ambil / Antar
                         Row(
                           children: [
                             Expanded(child: _buildTipeBtn('ambil', 'Ambil Sendiri',
@@ -371,7 +426,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Pilih Tanggal
                         GestureDetector(
                           onTap: _pilihTanggal,
                           child: _buildPickerRow(
@@ -386,7 +440,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Pilih Jam
                         GestureDetector(
                           onTap: _pilihWaktu,
                           child: _buildPickerRow(

@@ -8,18 +8,15 @@ import 'features/keranjang/keranjang.dart';
 import 'features/aktivitas/aktivitas.dart';
 import 'features/profil/profil.dart';
 import 'admin/shared/navbar_owner.dart';
-// import 'services/test_connection.dart';
 import 'admin/dashboard/dashboard_admin.dart';
 import 'admin/data/pesanan_admin.dart';
 import 'admin/data/kelola_menu.dart';
-import 'admin/data/data_customer.dart'; // ← tambah import
-import 'services/dio_helper.dart'; // ← tambah ini
+import 'admin/data/data_customer.dart';
+import 'services/dio_helper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  DioHelper.init(); // 🔥 WAJIB (init interceptor)
-
+  DioHelper.init();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const MyApp());
 }
@@ -48,20 +45,46 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages =  [
-    const BerandaPage(),
-    const MenuPage(),
-    const KeranjangPage(),
-    const AktivitasPage(),
-    const ProfilPage(),
-  ];
+  // [FIX] Key untuk AktivitasPage agar bisa memanggil method-nya dari luar
+  final GlobalKey<AktivitasPageState> _aktivitasKey =
+      GlobalKey<AktivitasPageState>();
+
+  // [FIX] Callback yang dikirim ke BerandaPage:
+  // saat tombol "Lihat Detail" ditekan → pindah ke tab Aktivitas (index 3)
+  // lalu suruh AktivitasPage expand item dengan id tertentu
+  void _bukaDetailAktivitas(int? idPesanan) {
+    setState(() => _selectedIndex = 3);
+    // Tunggu frame selesai dulu baru expand, supaya widget sudah mounted
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _aktivitasKey.currentState?.bukaDetail(idPesanan);
+    });
+  }
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      // [FIX] BerandaPage menerima callback onLihatDetail
+      BerandaPage(onLihatDetail: _bukaDetailAktivitas),
+      const MenuPage(),
+      const KeranjangPage(),
+      // [FIX] AktivitasPage diberi GlobalKey agar state-nya bisa diakses
+      AktivitasPage(key: _aktivitasKey),
+      const ProfilPage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       extendBody: true,
-      body: _pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: CustomNavbar(
         selectedIndex: _selectedIndex,
         onItemTapped: (index) {
@@ -84,10 +107,10 @@ class _MainOwnerState extends State<MainOwner> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    DashboardAdmin(),    // index 0
-    PesananAdminPage(),  // index 1
-    KelolaMenuPage(),    // index 2
-    DataCustomerPage(),  // index 3 ← ganti dari _PlaceholderPage
+    DashboardAdmin(),
+    PesananAdminPage(),
+    KelolaMenuPage(),
+    DataCustomerPage(),
   ];
 
   @override
