@@ -7,7 +7,6 @@ import 'package:catering_dapur_bu_mon/services/api_service.dart';
 
 class VerifikasiOtpRegister extends StatefulWidget {
   final String nama;
-  final String email;
   final String phone;
   final String alamat;
   final String password;
@@ -15,7 +14,6 @@ class VerifikasiOtpRegister extends StatefulWidget {
   const VerifikasiOtpRegister({
     super.key,
     required this.nama,
-    required this.email,
     required this.phone,
     required this.alamat,
     required this.password,
@@ -82,7 +80,6 @@ class _VerifikasiOtpRegisterState extends State<VerifikasiOtpRegister> {
     try {
       await ApiService.registerWithOtp(
         nama:     widget.nama,
-        email:    widget.email,
         noTelp:   widget.phone,
         alamat:   widget.alamat,
         password: widget.password,
@@ -234,7 +231,6 @@ class _VerifikasiOtpRegisterState extends State<VerifikasiOtpRegister> {
                           ),
                           const Divider(),
                           _buildPreviewRow('Nama',     widget.nama),
-                          _buildPreviewRow('Email',    widget.email),
                           _buildPreviewRow('No. Telp', widget.phone),
                           _buildPreviewRow('Alamat',   widget.alamat),
                         ],

@@ -17,8 +17,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
   bool _isLoading = true;
   bool _isSaving  = false;
 
-  String _email = '';
-
   static const _gradientColors = [
     Color(0xFFD05122),
     Color(0xFFEE8B2E),
@@ -48,7 +46,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
         _namaController.text   = data['nama']    ?? '';
         _noTelpController.text = data['no_telp'] ?? '';
         _alamatController.text = data['alamat']  ?? '';
-        _email                 = data['email']   ?? '';
         _isLoading = false;
       });
     } catch (e) {
@@ -103,7 +100,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     }
   }
 
-  // Field input — sama persis seperti login.dart
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -173,7 +169,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     );
   }
 
-  // Label — sama seperti login.dart
   Widget _buildLabel(String text) {
     return Text(
       text,
@@ -333,17 +328,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
                                 controller: _namaController,
                                 hint: 'Nama lengkap',
                                 keyboardType: TextInputType.name,
-                              ),
-                              const SizedBox(height: 14),
-
-                              // Email (read-only)
-                              _buildLabel('Email'),
-                              const SizedBox(height: 5),
-                              _buildTextField(
-                                controller: TextEditingController(
-                                    text: _email.isEmpty ? '-' : _email),
-                                hint: '-',
-                                readOnly: true,
                               ),
                               const SizedBox(height: 14),
 

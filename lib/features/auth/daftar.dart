@@ -13,7 +13,6 @@ class Daftar extends StatefulWidget {
 
 class _DaftarState extends State<Daftar> {
   final TextEditingController _namaController       = TextEditingController();
-  final TextEditingController _emailController      = TextEditingController();
   final TextEditingController _noTelpController     = TextEditingController();
   final TextEditingController _alamatController     = TextEditingController();
   final TextEditingController _passwordController   = TextEditingController();
@@ -33,7 +32,6 @@ class _DaftarState extends State<Daftar> {
   @override
   void dispose() {
     _namaController.dispose();
-    _emailController.dispose();
     _noTelpController.dispose();
     _alamatController.dispose();
     _passwordController.dispose();
@@ -43,21 +41,16 @@ class _DaftarState extends State<Daftar> {
 
   Future<void> _handleRegister() async {
     final nama       = _namaController.text.trim();
-    final email      = _emailController.text.trim();
     final noTelp     = _noTelpController.text.trim();
     final alamat     = _alamatController.text.trim();
     final password   = _passwordController.text.trim();
     final konfirmasi = _konfirmasiController.text.trim();
 
-    if (nama.isEmpty)   { _showSnackbar('Nama lengkap harus diisi'); return; }
-    if (email.isEmpty)  { _showSnackbar('Email harus diisi'); return; }
-    if (!email.contains('@') || !email.contains('.')) {
-      _showSnackbar('Format email tidak valid'); return;
-    }
-    if (noTelp.isEmpty) { _showSnackbar('No Telepon harus diisi'); return; }
-    if (alamat.isEmpty) { _showSnackbar('Alamat harus diisi'); return; }
-    if (password.isEmpty) { _showSnackbar('Password harus diisi'); return; }
-    if (password.length < 6) { _showSnackbar('Password minimal 6 karakter'); return; }
+    if (nama.isEmpty)         { _showSnackbar('Nama lengkap harus diisi'); return; }
+    if (noTelp.isEmpty)       { _showSnackbar('No Telepon harus diisi'); return; }
+    if (alamat.isEmpty)       { _showSnackbar('Alamat harus diisi'); return; }
+    if (password.isEmpty)     { _showSnackbar('Password harus diisi'); return; }
+    if (password.length < 6)  { _showSnackbar('Password minimal 6 karakter'); return; }
     if (password != konfirmasi) { _showSnackbar('Password tidak sama'); return; }
 
     setState(() => _isLoading = true);
@@ -73,7 +66,6 @@ class _DaftarState extends State<Daftar> {
           MaterialPageRoute(
             builder: (_) => VerifikasiOtpRegister(
               nama:     nama,
-              email:    email,
               phone:    phone ?? noTelp,
               alamat:   alamat,
               password: password,
@@ -349,14 +341,6 @@ class _DaftarState extends State<Daftar> {
                           controller: _namaController,
                           hint: 'Nama Lengkap',
                           keyboardType: TextInputType.name,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildLabel('Email'),
-                        const SizedBox(height: 5),
-                        _buildTextField(
-                          controller: _emailController,
-                          hint: 'Email',
-                          keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 12),
                         _buildLabel('No Telepon'),

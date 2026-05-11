@@ -45,7 +45,6 @@ class ApiService {
 
   static Future<Map<String, dynamic>> register({
     required String nama,
-    required String email,
     required String noTelp,
     required String alamat,
     required String password,
@@ -55,8 +54,7 @@ class ApiService {
         '/auth.php?action=register',
         data: {
           'nama':     nama,
-          if (email.isNotEmpty)  'email':   email,
-          if (noTelp.isNotEmpty) 'no_telp': noTelp,
+          'no_telp':  noTelp,
           'alamat':   alamat,
           'password': password,
         },
@@ -82,21 +80,6 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> verifyEmailOtp({
-    required String email,
-    required String otpCode,
-  }) async {
-    try {
-      final response = await _dio.post(
-        '/auth.php?action=verify_email_otp',
-        data: {'email': email, 'otp_code': otpCode},
-      );
-      return _parse(response);
-    } on DioException catch (e) {
-      throw ApiException(_getErrorMessage(e));
-    }
-  }
-
   static Future<Map<String, dynamic>> resendOtp({
     required String target,
     required String type,
@@ -112,8 +95,9 @@ class ApiService {
     }
   }
 
+  // Login menggunakan nama ATAU no_telp (salah satu wajib diisi)
   static Future<Map<String, dynamic>> login({
-    String? email,
+    String? nama,
     String? noTelp,
     required String password,
   }) async {
@@ -121,7 +105,7 @@ class ApiService {
       final response = await _dio.post(
         '/auth.php?action=login',
         data: {
-          if (email  != null && email.isNotEmpty)  'email':   email,
+          if (nama   != null && nama.isNotEmpty)   'nama':    nama,
           if (noTelp != null && noTelp.isNotEmpty) 'no_telp': noTelp,
           'password': password,
         },
@@ -148,9 +132,9 @@ class ApiService {
     }
   }
 
+  // Register final (setelah OTP diverifikasi) — tanpa email
   static Future<Map<String, dynamic>> registerWithOtp({
     required String nama,
-    required String email,
     required String noTelp,
     required String alamat,
     required String password,
@@ -161,7 +145,6 @@ class ApiService {
         '/auth.php?action=register',
         data: {
           'nama':      nama,
-          'email':     email,
           'no_telp':   noTelp,
           'alamat':    alamat,
           'password':  password,
@@ -184,8 +167,6 @@ class ApiService {
   }
 
   /// Ganti password user yang sedang login.
-  /// [passwordLama] — password saat ini untuk verifikasi di server.
-  /// [passwordBaru] — password baru (minimal 6 karakter, validasi juga di Flutter).
   static Future<Map<String, dynamic>> changePassword({
     required String passwordLama,
     required String passwordBaru,
@@ -329,75 +310,74 @@ class ApiService {
   }
 
   // ==========================================================
-  //  CHECKOUT  ✅ FIXED: support Web (Uint8List) & Mobile (File)
+  //  CHECKOUT
   // ==========================================================
 
-static Future<Map<String, dynamic>> checkout({
-  required String namaPembeli,
-  required String alamat,
-  required String metodeBayar,
-  String  catatan         = '',
-  String? tglAntar,           // ← nama seragam dengan DB
-  String? jamAntar,           // ← nama seragam dengan DB
-  String  tipePengiriman  = 'ambil',
-  File?   buktiBayar,
-  Uint8List? buktiBayarBytes,
-  String?    buktiBayarName,
-}) async {
-  try {
-    MultipartFile? multipartFile;
-    if (kIsWeb) {
-      if (buktiBayarBytes != null) {
-        final filename = buktiBayarName ??
-            'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        multipartFile = MultipartFile.fromBytes(buktiBayarBytes, filename: filename);
+  static Future<Map<String, dynamic>> checkout({
+    required String namaPembeli,
+    required String alamat,
+    required String metodeBayar,
+    String  catatan         = '',
+    String? tglAntar,
+    String? jamAntar,
+    String  tipePengiriman  = 'ambil',
+    File?   buktiBayar,
+    Uint8List? buktiBayarBytes,
+    String?    buktiBayarName,
+  }) async {
+    try {
+      MultipartFile? multipartFile;
+      if (kIsWeb) {
+        if (buktiBayarBytes != null) {
+          final filename = buktiBayarName ??
+              'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          multipartFile = MultipartFile.fromBytes(buktiBayarBytes, filename: filename);
+        }
+      } else {
+        if (buktiBayar != null) {
+          multipartFile = await MultipartFile.fromFile(
+            buktiBayar.path,
+            filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
+        }
       }
-    } else {
-      if (buktiBayar != null) {
-        multipartFile = await MultipartFile.fromFile(
-          buktiBayar.path,
-          filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        );
-      }
+
+      final formData = FormData.fromMap({
+        'nama_pembeli':    namaPembeli,
+        'alamat':          alamat,
+        'metode_bayar':    metodeBayar,
+        'catatan':         catatan,
+        'tipe_pengiriman': tipePengiriman,
+        if (tglAntar != null) 'tgl_antar': tglAntar,
+        if (jamAntar != null) 'jam_antar': jamAntar,
+        if (multipartFile != null) 'bukti_bayar': multipartFile,
+      });
+
+      final response = await _dio.post('/pesanan.php', data: formData);
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
     }
-
-    final formData = FormData.fromMap({
-      'nama_pembeli':    namaPembeli,
-      'alamat':          alamat,
-      'metode_bayar':    metodeBayar,
-      'catatan':         catatan,
-      'tipe_pengiriman': tipePengiriman,
-      if (tglAntar != null) 'tgl_antar': tglAntar,
-      if (jamAntar != null) 'jam_antar': jamAntar,
-      if (multipartFile != null) 'bukti_bayar': multipartFile,
-    });
-
-    final response = await _dio.post('/pesanan.php', data: formData);
-    return _parse(response);
-  } on DioException catch (e) {
-    throw ApiException(_getErrorMessage(e));
   }
-}
 
-// ── Method baru: update jadwal (untuk admin) ──
-static Future<Map<String, dynamic>> updateJadwalAntar({
-  required int idPesanan,
-  String? tglAntar,
-  String? jamAntar,
-}) async {
-  try {
-    final response = await _dio.put(
-      '/pesanan.php?id_pesanan=$idPesanan',
-      data: {
-        'tgl_antar': tglAntar,
-        'jam_antar': jamAntar,
-      },
-    );
-    return _parse(response);
-  } on DioException catch (e) {
-    throw ApiException(_getErrorMessage(e));
+  static Future<Map<String, dynamic>> updateJadwalAntar({
+    required int idPesanan,
+    String? tglAntar,
+    String? jamAntar,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/pesanan.php?id_pesanan=$idPesanan',
+        data: {
+          'tgl_antar': tglAntar,
+          'jam_antar': jamAntar,
+        },
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
   }
-}
 
   // ==========================================================
   //  PESANAN

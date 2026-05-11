@@ -50,15 +50,15 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  // Deteksi otomatis: email atau no_telp
-  bool _isEmail(String input) => input.contains('@');
+  // Deteksi otomatis: no_telp (hanya angka) atau nama
+  bool _isPhone(String input) => RegExp(r'^[0-9+]+$').hasMatch(input);
 
   Future<void> _handleLogin() async {
     final identifier = _identifierController.text.trim();
     final password   = _passwordController.text.trim();
 
     if (identifier.isEmpty) {
-      _showSnackbar('Email atau No Telepon harus diisi');
+      _showSnackbar('Nama atau No Telepon harus diisi');
       _shakeController.forward(from: 0);
       return;
     }
@@ -72,8 +72,8 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
 
     try {
       final result = await ApiService.login(
-        email:    _isEmail(identifier) ? identifier : null,
-        noTelp:  !_isEmail(identifier) ? identifier : null,
+        nama:    !_isPhone(identifier) ? identifier : null,
+        noTelp:  _isPhone(identifier)  ? identifier : null,
         password: password,
       );
 
@@ -290,13 +290,13 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                   left: sw * 0.142,
                   top: sh * 0.500,
                   child: Text(
-                    'Email / No Telepon',
+                    'Nama / No Telepon',
                     style: GoogleFonts.alexandria(
                         color: Colors.black, fontSize: 14),
                   ),
                 ),
 
-                // Input Email / No Telepon (1 field, deteksi otomatis)
+                // Input Nama / No Telepon
                 Positioned(
                   left: sw * 0.142,
                   top: sh * 0.524,
@@ -330,12 +330,11 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                       ),
                       child: TextField(
                         controller: _identifierController,
-                        // keyboard menyesuaikan input user
-                        keyboardType: TextInputType.emailAddress,
+                        keyboardType: TextInputType.text,
                         style: GoogleFonts.alexandria(
                             color: Colors.black, fontSize: 15),
                         decoration: InputDecoration(
-                          hintText: 'Email atau No Telepon',
+                          hintText: 'Nama atau No Telepon',
                           hintStyle: GoogleFonts.alexandria(
                             color: Colors.black.withOpacity(0.3),
                             fontSize: 15,
