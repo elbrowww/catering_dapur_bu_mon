@@ -6,22 +6,72 @@ class AktivitasPage extends StatefulWidget {
   const AktivitasPage({super.key});
 
   @override
-  // [FIX] State dibuat PUBLIC agar bisa diakses via GlobalKey dari MainScreen
   AktivitasPageState createState() => AktivitasPageState();
 }
 
-// [FIX] Nama class State tanpa underscore = public
 class AktivitasPageState extends State<AktivitasPage> {
   String _filterAktif = 'Semua';
   List<Map<String, dynamic>> _semuaPesanan = [];
   bool _isLoading = true;
   String? _error;
 
-  /// id pesanan yang sedang ditampilkan detail-nya
   int? _expandedId;
-
   final ScrollController _scrollController = ScrollController();
   final Map<int, GlobalKey> _itemKeys = {};
+
+  // ============================================================
+  // 🔥 HELPER: Safe type conversion
+  // ============================================================
+  
+  int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
+  double _toDouble(dynamic value, {double defaultValue = 0.0}) {
+    if (value == null) return defaultValue;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
+  String _toString(dynamic value, {String defaultValue = ''}) {
+    if (value == null) return defaultValue;
+    return value.toString();
+  }
+
+  // ============================================================
+  // 🔥 Konversi data pesanan dari API ke format yang aman
+  // ============================================================
+  
+  Map<String, dynamic> _safePesanan(Map<String, dynamic> raw) {
+    return {
+      'id_pesanan': _toInt(raw['id_pesanan']),
+      'status': _toString(raw['status'], defaultValue: 'pending'),
+      'total_harga': _toDouble(raw['total_harga']),
+      'tgl_pesan': _toString(raw['tgl_pesan']),
+      'tgl_antar': _toString(raw['tgl_antar']),
+      'jam_antar': _toString(raw['jam_antar']),
+      'tipe_pengiriman': _toString(raw['tipe_pengiriman'], defaultValue: 'ambil'),
+      'metode_bayar': _toString(raw['metode_bayar']),
+      'catatan': _toString(raw['catatan']),
+      'item_count': _toInt(raw['item_count'], defaultValue: _toInt(raw['items']?.length ?? 0)),
+      'items': raw['items'] ?? [],
+    };
+  }
+
+  List<Map<String, dynamic>> _safePesananList(List<dynamic> rawList) {
+    return rawList.map((item) {
+      if (item is Map<String, dynamic>) {
+        return _safePesanan(item);
+      }
+      return <String, dynamic>{};
+    }).where((item) => item.isNotEmpty).toList();
+  }
 
   @override
   void initState() {
@@ -35,14 +85,9 @@ class AktivitasPageState extends State<AktivitasPage> {
     super.dispose();
   }
 
-  /// [FIX] Method PUBLIC — dipanggil dari MainScreen via GlobalKey
-  /// untuk expand item tertentu setelah pindah tab
   void bukaDetail(int? idPesanan) {
     if (idPesanan == null) return;
-
     setState(() => _expandedId = idPesanan);
-
-    // Scroll ke item setelah frame selesai dirender
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToExpanded(idPesanan);
     });
@@ -68,7 +113,7 @@ class AktivitasPageState extends State<AktivitasPage> {
     try {
       final raw = await ApiService.getPesanan();
       setState(() {
-        _semuaPesanan = raw.cast<Map<String, dynamic>>();
+        _semuaPesanan = _safePesananList(raw);
         _isLoading = false;
       });
     } catch (e) {
@@ -109,7 +154,6 @@ class AktivitasPageState extends State<AktivitasPage> {
     }
   }
 
-  // ── Kelompokkan per tanggal ──────────────────────────────────
   Map<String, List<Map<String, dynamic>>> get _perTanggal {
     final Map<String, List<Map<String, dynamic>>> result = {};
     for (final item in _terfilter) {
@@ -133,9 +177,8 @@ class AktivitasPageState extends State<AktivitasPage> {
     }
   }
 
-  // ── Format harga ─────────────────────────────────────────────
   String _formatHarga(dynamic harga) {
-    final h = (double.tryParse(harga.toString()) ?? 0).toInt();
+    final h = _toDouble(harga).toInt();
     final s = h.toString();
     final buf = StringBuffer();
     for (int i = 0; i < s.length; i++) {
@@ -146,8 +189,7 @@ class AktivitasPageState extends State<AktivitasPage> {
   }
 
   String _metodeBayar(Map<String, dynamic> p) {
-    final raw =
-        (p['metode_bayar'] ?? p['metode'] ?? '').toString().toLowerCase();
+    final raw = _toString(p['metode_bayar']).toLowerCase();
     if (raw.contains('transfer')) return 'Transfer Bank';
     if (raw.contains('cod') || raw.contains('cash')) return 'Cash';
     if (raw.contains('ewallet')) return 'E-Wallet';
@@ -155,8 +197,11 @@ class AktivitasPageState extends State<AktivitasPage> {
   }
 
   int _resolveItemCount(Map<String, dynamic> p) {
-    final fromField = int.tryParse(p['item_count']?.toString() ?? '');
-    if (fromField != null) return fromField;
+    // 🔥 Coba dari item_count dulu
+    final fromField = _toInt(p['item_count']);
+    if (fromField > 0) return fromField;
+    
+    // Fallback ke items array
     final items = p['items'];
     if (items is List) return items.length;
     return 0;
@@ -177,7 +222,6 @@ class AktivitasPageState extends State<AktivitasPage> {
       ),
       child: Column(
         children: [
-          // ── Header "Aktivitas" ──────────────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(23, 14 + statusBarHeight, 23, 0),
             child: Container(
@@ -208,18 +252,15 @@ class AktivitasPageState extends State<AktivitasPage> {
           ),
           const SizedBox(height: 14),
 
-          // ── Body putih ──────────────────────────────────────
           Expanded(
             child: Container(
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(30)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
               child: Column(
                 children: [
-                  // ── Filter chips ────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(34, 18, 34, 12),
                     child: Row(
@@ -237,7 +278,6 @@ class AktivitasPageState extends State<AktivitasPage> {
                     ),
                   ),
 
-                  // ── List ────────────────────────────────────
                   Expanded(
                     child: _isLoading
                         ? const Center(
@@ -254,13 +294,11 @@ class AktivitasPageState extends State<AktivitasPage> {
                                       controller: _scrollController,
                                       padding: const EdgeInsets.fromLTRB(
                                           32, 0, 32, 100),
-                                      itemCount:
-                                          _perTanggal.keys.length,
+                                      itemCount: _perTanggal.keys.length,
                                       itemBuilder: (_, i) {
                                         final tgl = _perTanggal.keys
                                             .elementAt(i);
-                                        final items =
-                                            _perTanggal[tgl]!;
+                                        final items = _perTanggal[tgl]!;
                                         return Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -285,19 +323,19 @@ class AktivitasPageState extends State<AktivitasPage> {
                                               ),
                                             ),
                                             ...items.map((item) {
-                                              final id = item[
-                                                  'id_pesanan'] as int?;
+                                              final id = _toInt(
+                                                  item['id_pesanan']);
                                               final isExpanded =
                                                   _expandedId != null &&
                                                       _expandedId == id;
 
-                                              if (id != null) {
+                                              if (id > 0) {
                                                 _itemKeys.putIfAbsent(
                                                     id, () => GlobalKey());
                                               }
 
                                               return Padding(
-                                                key: id != null
+                                                key: id > 0
                                                     ? _itemKeys[id]
                                                     : null,
                                                 padding:
@@ -321,7 +359,7 @@ class AktivitasPageState extends State<AktivitasPage> {
                                                               : id;
                                                     });
                                                     if (!isExpanded &&
-                                                        id != null) {
+                                                        id > 0) {
                                                       WidgetsBinding
                                                           .instance
                                                           .addPostFrameCallback(
@@ -408,7 +446,7 @@ class AktivitasPageState extends State<AktivitasPage> {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  _AktivitasItem
+//  _AktivitasItem (sudah diperbaiki)
 // ════════════════════════════════════════════════════════════════
 class _AktivitasItem extends StatefulWidget {
   final Map<String, dynamic> pesanan;
@@ -434,6 +472,14 @@ class _AktivitasItem extends StatefulWidget {
 class _AktivitasItemState extends State<_AktivitasItem> {
   Map<String, dynamic>? _detail;
   bool _loadingDetail = false;
+
+  int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
 
   Color _dotColor(String? s) {
     switch (s) {
@@ -473,8 +519,8 @@ class _AktivitasItemState extends State<_AktivitasItem> {
     if (_detail != null) return;
     setState(() => _loadingDetail = true);
     try {
-      final d = await ApiService.getDetailPesanan(
-          widget.pesanan['id_pesanan']);
+      final idPesanan = _toInt(widget.pesanan['id_pesanan']);
+      final d = await ApiService.getDetailPesanan(idPesanan);
       setState(() {
         _detail = d;
         _loadingDetail = false;
@@ -549,7 +595,6 @@ class _AktivitasItemState extends State<_AktivitasItem> {
 
     return Column(
       children: [
-        // ── Baris utama ───────────────────────────────────────
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
@@ -639,7 +684,6 @@ class _AktivitasItemState extends State<_AktivitasItem> {
                 ),
               ),
 
-              // Tombol Lihat / Tutup Detail
               GestureDetector(
                 onTap: () {
                   if (!widget.isExpanded) _loadDetail();
@@ -661,7 +705,6 @@ class _AktivitasItemState extends State<_AktivitasItem> {
           ),
         ),
 
-        // ── Panel detail inline ───────────────────────────────
         if (widget.isExpanded)
           Container(
             width: double.infinity,
