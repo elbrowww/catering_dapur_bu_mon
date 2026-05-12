@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
+import 'otp_verifikasi_profil_page.dart';
 
 class EditProfilPage extends StatefulWidget {
   const EditProfilPage({super.key});
@@ -17,11 +18,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
   bool _isLoading = true;
   bool _isSaving  = false;
 
-  static const _gradientColors = [
-    Color(0xFFD05122),
-    Color(0xFFEE8B2E),
-    Color(0xFFFBA839),
-  ];
+  // Nomor HP lama untuk kirim OTP
+  String _noTelpAwal = '';
+
   static const _gradientStops = [0.17, 0.47, 0.60];
 
   @override
@@ -46,7 +45,8 @@ class _EditProfilPageState extends State<EditProfilPage> {
         _namaController.text   = data['nama']    ?? '';
         _noTelpController.text = data['no_telp'] ?? '';
         _alamatController.text = data['alamat']  ?? '';
-        _isLoading = false;
+        _noTelpAwal = data['no_telp'] ?? '';
+        _isLoading  = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
@@ -58,7 +58,8 @@ class _EditProfilPageState extends State<EditProfilPage> {
     }
   }
 
-  Future<void> _simpanProfil() async {
+  // ── Kirim OTP lalu buka halaman verifikasi ───────────────────────────────
+  Future<void> _lanjutDenganOtp() async {
     if (_namaController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -71,26 +72,33 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
     setState(() => _isSaving = true);
     try {
-      await ApiService.editProfil(
-        nama:   _namaController.text.trim(),
-        noTelp: _noTelpController.text.trim(),
-        alamat: _alamatController.text.trim(),
+      await ApiService.resendOtp(
+        target: _noTelpAwal,
+        type: 'whatsapp',
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profil berhasil diperbarui!'),
-            backgroundColor: Colors.green,
+        final berhasil = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpVerifikasiProfilPage(
+              noTelpLama: _noTelpAwal,
+              namaBaru:   _namaController.text.trim(),
+              noTelpBaru: _noTelpController.text.trim(),
+              alamatBaru: _alamatController.text.trim(),
+            ),
           ),
         );
-        Navigator.pop(context);
+
+        if (berhasil == true && mounted) {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menyimpan: $e'),
+            content: Text('Gagal mengirim OTP: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -140,8 +148,8 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     color: Colors.black.withOpacity(0.3),
                     fontSize: 15,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 14),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   border: InputBorder.none,
                 ),
               ),
@@ -161,8 +169,8 @@ class _EditProfilPageState extends State<EditProfilPage> {
                   color: Colors.black.withOpacity(0.3),
                   fontSize: 15,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 14),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 border: InputBorder.none,
               ),
             ),
@@ -339,11 +347,31 @@ class _EditProfilPageState extends State<EditProfilPage> {
                                 hint: 'Jalan, Kelurahan, Kecamatan...',
                                 maxLines: 3,
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 12),
 
-                              // Tombol Konfirmasi
+                              // Info OTP selalu tampil
+                              Row(
+                                children: [
+                                  const Icon(Icons.info_outline,
+                                      size: 14, color: Color(0xFFD05122)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Setiap perubahan profil memerlukan verifikasi OTP via WhatsApp.',
+                                      style: GoogleFonts.alexandria(
+                                        fontSize: 11,
+                                        color: const Color(0xFFD05122),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // Tombol Lanjut — selalu OTP
                               GestureDetector(
-                                onTap: _isSaving ? null : _simpanProfil,
+                                onTap: _isSaving ? null : _lanjutDenganOtp,
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 150),
                                   width: double.infinity,
@@ -352,12 +380,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
                                     gradient: LinearGradient(
                                       colors: _isSaving
                                           ? [
-                                              const Color(0xFFD05122)
-                                                  .withOpacity(0.6),
-                                              const Color(0xFFEE8B2E)
-                                                  .withOpacity(0.6),
-                                              const Color(0xFFFBA839)
-                                                  .withOpacity(0.6),
+                                              const Color(0xFFD05122).withOpacity(0.6),
+                                              const Color(0xFFEE8B2E).withOpacity(0.6),
+                                              const Color(0xFFFBA839).withOpacity(0.6),
                                             ]
                                           : const [
                                               Color(0xFFD05122),
@@ -387,13 +412,24 @@ class _EditProfilPageState extends State<EditProfilPage> {
                                               strokeWidth: 2.5,
                                             ),
                                           )
-                                        : Text(
-                                            'Konfirmasi',
-                                            style: GoogleFonts.alexandria(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                        : Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'Lanjut',
+                                                style: GoogleFonts.alexandria(
+                                                  color: Colors.white,
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              const Icon(
+                                                Icons.arrow_forward_rounded,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                            ],
                                           ),
                                   ),
                                 ),
