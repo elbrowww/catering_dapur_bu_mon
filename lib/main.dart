@@ -45,7 +45,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // GlobalKey untuk AktivitasPage
+  // GlobalKey untuk AktivitasPage - sekarang bisa diakses karena state sudah public
   final GlobalKey<AktivitasPageState> _aktivitasKey =
       GlobalKey<AktivitasPageState>();
 
@@ -95,7 +95,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: CustomNavbar(
         selectedIndex: _selectedIndex,
-        onItemTapped: _onTabTapped, // ← pakai _onTabTapped
+        onItemTapped: _onTabTapped,
       ),
     );
   }

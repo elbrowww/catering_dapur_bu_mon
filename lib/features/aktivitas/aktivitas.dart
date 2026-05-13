@@ -1,77 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
+import 'package:catering_dapur_bu_mon/services/dio_helper.dart';
+import 'package:catering_dapur_bu_mon/features/shared/navbar.dart';
 
+// ── Helper functions ─────────────────────────────────────────────
+String _formattedPrice(dynamic harga) {
+  final h = (double.tryParse(harga.toString()) ?? 0).toInt();
+  final s = h.toString();
+  final buf = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+    buf.write(s[i]);
+  }
+  return 'Rp $buf';
+}
+
+String _formattedDate(dynamic tgl) {
+  try {
+    final dt = DateTime.parse(tgl.toString());
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/'
+        '${dt.year}  '
+        '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}';
+  } catch (_) {
+    return tgl?.toString() ?? '-';
+  }
+}
+
+String _formatTglAntar(dynamic tgl) {
+  if (tgl == null || tgl.toString().isEmpty) return 'Belum dijadwalkan';
+  try {
+    final dt = DateTime.parse(tgl.toString());
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  } catch (_) {
+    return tgl.toString();
+  }
+}
+
+String _formatJamAntar(dynamic jam) {
+  if (jam == null || jam.toString().isEmpty) return '';
+  final s = jam.toString();
+  return s.length >= 5 ? s.substring(0, 5) : s;
+}
+
+Color _statusColor(String? status) {
+  switch (status) {
+    case 'pending':  return const Color(0xFFF39C12);
+    case 'diterima': return const Color(0xFF3498DB);
+    case 'diproses': return const Color(0xFFEE8B2E);
+    case 'selesai':  return const Color(0xFF0FBC5F);
+    case 'batal':    return const Color(0xFFE74C3C);
+    default:         return Colors.grey;
+  }
+}
+
+String _statusLabel(String? status) {
+  switch (status) {
+    case 'pending':  return 'Pending';
+    case 'diterima': return 'Diterima';
+    case 'diproses': return 'Proses';
+    case 'selesai':  return 'Selesai';
+    case 'batal':    return 'Batal';
+    default:         return status ?? '-';
+  }
+}
+
+IconData _statusIcon(String? status) {
+  switch (status) {
+    case 'pending':  return Icons.hourglass_empty_rounded;
+    case 'diterima': return Icons.thumb_up_rounded;
+    case 'diproses': return Icons.local_fire_department_rounded;
+    case 'selesai':  return Icons.check_circle_rounded;
+    case 'batal':    return Icons.cancel_rounded;
+    default:         return Icons.help_outline;
+  }
+}
+
+// ── Main Page ────────────────────────────────────────────────────
 class AktivitasPage extends StatefulWidget {
-  const AktivitasPage({super.key});
+  final Key? key;
+  const AktivitasPage({this.key}) : super(key: key);
 
   @override
   AktivitasPageState createState() => AktivitasPageState();
 }
 
 class AktivitasPageState extends State<AktivitasPage> {
-  String _filterAktif = 'Semua';
-  List<Map<String, dynamic>> _semuaPesanan = [];
   bool _isLoading = true;
+  List<Map<String, dynamic>> _pesananList = [];
   String? _error;
+  int _selectedFilter = 0;
 
-  int? _expandedId;
-  final ScrollController _scrollController = ScrollController();
-  final Map<int, GlobalKey> _itemKeys = {};
-
-  // ============================================================
-  // 🔥 HELPER: Safe type conversion
-  // ============================================================
-  
-  int _toInt(dynamic value, {int defaultValue = 0}) {
-    if (value == null) return defaultValue;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? defaultValue;
-    if (value is double) return value.toInt();
-    return defaultValue;
-  }
-
-  double _toDouble(dynamic value, {double defaultValue = 0.0}) {
-    if (value == null) return defaultValue;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? defaultValue;
-    return defaultValue;
-  }
-
-  String _toString(dynamic value, {String defaultValue = ''}) {
-    if (value == null) return defaultValue;
-    return value.toString();
-  }
-
-  // ============================================================
-  // 🔥 Konversi data pesanan dari API ke format yang aman
-  // ============================================================
-  
-  Map<String, dynamic> _safePesanan(Map<String, dynamic> raw) {
-    return {
-      'id_pesanan': _toInt(raw['id_pesanan']),
-      'status': _toString(raw['status'], defaultValue: 'pending'),
-      'total_harga': _toDouble(raw['total_harga']),
-      'tgl_pesan': _toString(raw['tgl_pesan']),
-      'tgl_antar': _toString(raw['tgl_antar']),
-      'jam_antar': _toString(raw['jam_antar']),
-      'tipe_pengiriman': _toString(raw['tipe_pengiriman'], defaultValue: 'ambil'),
-      'metode_bayar': _toString(raw['metode_bayar']),
-      'catatan': _toString(raw['catatan']),
-      'item_count': _toInt(raw['item_count'], defaultValue: _toInt(raw['items']?.length ?? 0)),
-      'items': raw['items'] ?? [],
-    };
-  }
-
-  List<Map<String, dynamic>> _safePesananList(List<dynamic> rawList) {
-    return rawList.map((item) {
-      if (item is Map<String, dynamic>) {
-        return _safePesanan(item);
-      }
-      return <String, dynamic>{};
-    }).where((item) => item.isNotEmpty).toList();
-  }
+  final List<String> _filterLabels = ['Semua', 'Pending', 'Proses', 'Selesai', 'Batal'];
+  final List<String> _filterValues = ['', 'pending', 'diproses', 'selesai', 'batal'];
 
   @override
   void initState() {
@@ -79,310 +103,211 @@ class AktivitasPageState extends State<AktivitasPage> {
     _loadPesanan();
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
+  // Method public untuk buka detail dari luar (dipanggil dari MainScreen)
   void bukaDetail(int? idPesanan) {
-    if (idPesanan == null) return;
-    setState(() => _expandedId = idPesanan);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToExpanded(idPesanan);
-    });
-  }
-
-  void _scrollToExpanded(int id) {
-    final key = _itemKeys[id];
-    if (key?.currentContext != null) {
-      Scrollable.ensureVisible(
-        key!.currentContext!,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        alignment: 0.1,
-      );
+    if (idPesanan != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final pesanan = _pesananList.firstWhere(
+          (p) => p['id_pesanan'] == idPesanan,
+          orElse: () => {},
+        );
+        if (pesanan.isNotEmpty) {
+          _showDetail(pesanan);
+        }
+      });
     }
   }
 
   Future<void> _loadPesanan() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() { _isLoading = true; _error = null; });
     try {
-      final raw = await ApiService.getPesanan();
+      final data = await ApiService.getPesanan();
       setState(() {
-        _semuaPesanan = _safePesananList(raw);
-        _isLoading = false;
+        _pesananList = data.map((e) {
+          final rawId = e['id_pesanan'];
+          final rawTotal = e['total_harga'];
+          
+          return {
+            'id_pesanan': rawId is int 
+                ? rawId 
+                : int.tryParse(rawId.toString()) ?? 0,
+            'customer_name': e['customer_name']?.toString() ?? 'Customer',
+            'customer_alamat': e['customer_alamat']?.toString() ?? 'Alamat tidak tersedia',
+            'status': e['status']?.toString() ?? 'pending',
+            'tgl_pesan': e['tgl_pesan']?.toString() ?? DateTime.now().toIso8601String(),
+            'tgl_antar': e['tgl_antar']?.toString(),
+            'jam_antar': e['jam_antar']?.toString(),
+            'total_harga': rawTotal is num 
+                ? rawTotal.toDouble() 
+                : double.tryParse(rawTotal.toString()) ?? 0,
+            'item_count': e['item_count'] is int 
+                ? e['item_count'] 
+                : int.tryParse(e['item_count'].toString()) ?? 0,
+            'metode_bayar': e['metode_bayar']?.toString() ?? '',
+            'catatan': e['catatan']?.toString() ?? '',
+          };
+        }).toList();
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  // ── Filter ─────────────────────────────────────────────────
-  List<Map<String, dynamic>> get _terfilter {
-    switch (_filterAktif) {
-      case 'Bulan ini':
-        final now = DateTime.now();
-        return _semuaPesanan.where((p) {
-          try {
-            final dt = DateTime.parse(p['tgl_pesan'].toString());
-            return dt.month == now.month && dt.year == now.year;
-          } catch (_) {
-            return false;
-          }
-        }).toList();
-      case 'Bulan Lalu':
-        final now = DateTime.now();
-        final bulan = now.month == 1 ? 12 : now.month - 1;
-        final tahun = now.month == 1 ? now.year - 1 : now.year;
-        return _semuaPesanan.where((p) {
-          try {
-            final dt = DateTime.parse(p['tgl_pesan'].toString());
-            return dt.month == bulan && dt.year == tahun;
-          } catch (_) {
-            return false;
-          }
-        }).toList();
-      default:
-        return _semuaPesanan;
-    }
+  List<Map<String, dynamic>> get _filteredList {
+    final status = _filterValues[_selectedFilter];
+    if (status.isEmpty) return _pesananList;
+    return _pesananList.where((p) => p['status'] == status).toList();
   }
 
-  Map<String, List<Map<String, dynamic>>> get _perTanggal {
-    final Map<String, List<Map<String, dynamic>>> result = {};
-    for (final item in _terfilter) {
-      final label = _labelTanggal(item['tgl_pesan']);
-      result.putIfAbsent(label, () => []).add(item);
-    }
-    return result;
-  }
-
-  String _labelTanggal(dynamic tgl) {
-    try {
-      final dt = DateTime.parse(tgl.toString());
-      const bulanNama = [
-        '',
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-      ];
-      return '${dt.day} ${bulanNama[dt.month]} ${dt.year}';
-    } catch (_) {
-      return tgl?.toString() ?? '-';
-    }
-  }
-
-  String _formatHarga(dynamic harga) {
-    final h = _toDouble(harga).toInt();
-    final s = h.toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return 'Rp. $buf';
-  }
-
-  String _metodeBayar(Map<String, dynamic> p) {
-    final raw = _toString(p['metode_bayar']).toLowerCase();
-    if (raw.contains('transfer')) return 'Transfer Bank';
-    if (raw.contains('cod') || raw.contains('cash')) return 'Cash';
-    if (raw.contains('ewallet')) return 'E-Wallet';
-    return raw.isEmpty ? '-' : raw;
-  }
-
-  int _resolveItemCount(Map<String, dynamic> p) {
-    // 🔥 Coba dari item_count dulu
-    final fromField = _toInt(p['item_count']);
-    if (fromField > 0) return fromField;
-    
-    // Fallback ke items array
-    final items = p['items'];
-    if (items is List) return items.length;
-    return 0;
+  void _showDetail(Map<String, dynamic> pesanan) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (_) => _CustomerDetailDialog(pesanan: pesanan),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
-
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFEE8B2E)],
-          stops: [0.21, 0.56, 0.83],
-        ),
-      ),
-      child: Column(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(23, 14 + statusBarHeight, 23, 0),
-            child: Container(
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(46),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF3F1F0C),
-                    Color(0xFFAC3715),
-                    Color(0xFFD05122),
-                    Color(0xFF66270F),
-                  ],
-                  stops: [0.13, 0.36, 0.61, 0.82],
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  'Aktivitas',
-                  style: GoogleFonts.alexandria(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
+          _buildHeader(),
           Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(34, 18, 34, 12),
-                    child: Row(
-                      children: ['Semua', 'Bulan ini', 'Bulan Lalu']
-                          .map((f) => Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: _FilterChip(
-                                  label: f,
-                                  aktif: _filterAktif == f,
-                                  onTap: () =>
-                                      setState(() => _filterAktif = f),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                                color: Color(0xFFD05122)))
-                        : _error != null
-                            ? _buildError()
-                            : _terfilter.isEmpty
-                                ? _buildEmpty()
-                                : RefreshIndicator(
-                                    onRefresh: _loadPesanan,
-                                    color: const Color(0xFFD05122),
-                                    child: ListView.builder(
-                                      controller: _scrollController,
-                                      padding: const EdgeInsets.fromLTRB(
-                                          32, 0, 32, 100),
-                                      itemCount: _perTanggal.keys.length,
-                                      itemBuilder: (_, i) {
-                                        final tgl = _perTanggal.keys
-                                            .elementAt(i);
-                                        final items = _perTanggal[tgl]!;
-                                        return Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.only(
-                                                      bottom: 6, top: 4),
-                                              child: Opacity(
-                                                opacity: 0.5,
-                                                child: Text(
-                                                  tgl,
-                                                  style: GoogleFonts
-                                                      .alexandria(
-                                                    color: const Color(
-                                                        0xFF1A1818),
-                                                    fontSize: 10,
-                                                    fontWeight:
-                                                        FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            ...items.map((item) {
-                                              final id = _toInt(
-                                                  item['id_pesanan']);
-                                              final isExpanded =
-                                                  _expandedId != null &&
-                                                      _expandedId == id;
-
-                                              if (id > 0) {
-                                                _itemKeys.putIfAbsent(
-                                                    id, () => GlobalKey());
-                                              }
-
-                                              return Padding(
-                                                key: id > 0
-                                                    ? _itemKeys[id]
-                                                    : null,
-                                                padding:
-                                                    const EdgeInsets.only(
-                                                        bottom: 10),
-                                                child: _AktivitasItem(
-                                                  pesanan: item,
-                                                  formatHarga:
-                                                      _formatHarga,
-                                                  metodeBayar:
-                                                      _metodeBayar(item),
-                                                  itemCount:
-                                                      _resolveItemCount(
-                                                          item),
-                                                  isExpanded: isExpanded,
-                                                  onToggleDetail: () {
-                                                    setState(() {
-                                                      _expandedId =
-                                                          isExpanded
-                                                              ? null
-                                                              : id;
-                                                    });
-                                                    if (!isExpanded &&
-                                                        id > 0) {
-                                                      WidgetsBinding
-                                                          .instance
-                                                          .addPostFrameCallback(
-                                                              (_) {
-                                                        _scrollToExpanded(
-                                                            id);
-                                                      });
-                                                    }
-                                                  },
-                                                ),
-                                              );
-                                            }),
-                                          ],
-                                        );
-                                      },
-                                    ),
-                                  ),
-                  ),
-                ],
-              ),
+            child: RefreshIndicator(
+              onRefresh: _loadPesanan,
+              color: const Color(0xFFD05122),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFD05122)))
+                  : _error != null
+                      ? _buildError()
+                      : SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Aktivitas Pesanan',
+                                  style: GoogleFonts.alexandria(
+                                      fontSize: 20, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 12),
+                              _buildFilterRow(),
+                              const SizedBox(height: 16),
+                              if (_filteredList.isEmpty)
+                                _buildEmptyState()
+                              else
+                                ..._filteredList.map((p) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: _CustomerOrderCard(
+                                        pesanan: p,
+                                        onTap: () => _showDetail(p),
+                                      ),
+                                    )),
+                              const SizedBox(height: 80),
+                            ],
+                          ),
+                        ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+          stops: [0.17, 0.47, 0.60],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Aktivitas Saya',
+                      style: GoogleFonts.alexandria(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Lihat riwayat pesanan Anda',
+                      style: GoogleFonts.alexandria(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(
+          _filterLabels.length,
+          (i) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedFilter = i),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: i == _selectedFilter 
+                      ? const Color(0xFFEE8B2E) 
+                      : Colors.transparent,
+                  border: Border.all(width: 1.5, color: const Color(0xFFDB6626)),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Text(
+                  _filterLabels[i],
+                  style: GoogleFonts.lora(
+                    fontSize: 12,
+                    fontWeight: i == _selectedFilter ? FontWeight.bold : FontWeight.w500,
+                    color: i == _selectedFilter ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -392,684 +317,548 @@ class AktivitasPageState extends State<AktivitasPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.wifi_off_rounded,
-              color: Colors.grey.shade400, size: 40),
-          const SizedBox(height: 8),
-          Text(
-            _error!,
-            textAlign: TextAlign.center,
-            style:
-                GoogleFonts.alexandria(color: Colors.grey, fontSize: 13),
-          ),
+          Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _loadPesanan,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: const LinearGradient(
-                    colors: [Color(0xFFD05122), Color(0xFFEE8B2E)]),
-              ),
-              child: Text(
-                'Coba Lagi',
-                style: GoogleFonts.alexandria(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold),
-              ),
+          Text(_error!,
+              style: GoogleFonts.alexandria(color: Colors.grey, fontSize: 14),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadPesanan,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD05122),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
+            child: Text('Coba Lagi', style: GoogleFonts.alexandria(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long_outlined,
-              size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            'Belum ada aktivitas',
-            style: GoogleFonts.alexandria(
-                color: Colors.grey, fontSize: 15),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.only(top: 60),
+        child: Column(
+          children: [
+            Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text('Tidak ada pesanan',
+                style: GoogleFonts.alexandria(fontSize: 16, color: Colors.grey[500])),
+            const SizedBox(height: 8),
+            Text('Belum ada pesanan yang dibuat',
+                style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[400])),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  _AktivitasItem (sudah diperbaiki)
-// ════════════════════════════════════════════════════════════════
-class _AktivitasItem extends StatefulWidget {
+// ── Customer Order Card ─────────────────────────────────────────
+class _CustomerOrderCard extends StatelessWidget {
   final Map<String, dynamic> pesanan;
-  final String Function(dynamic) formatHarga;
-  final String metodeBayar;
-  final int itemCount;
-  final bool isExpanded;
-  final VoidCallback onToggleDetail;
-
-  const _AktivitasItem({
-    required this.pesanan,
-    required this.formatHarga,
-    required this.metodeBayar,
-    required this.itemCount,
-    required this.isExpanded,
-    required this.onToggleDetail,
-  });
-
-  @override
-  State<_AktivitasItem> createState() => _AktivitasItemState();
-}
-
-class _AktivitasItemState extends State<_AktivitasItem> {
-  Map<String, dynamic>? _detail;
-  bool _loadingDetail = false;
-
-  int _toInt(dynamic value, {int defaultValue = 0}) {
-    if (value == null) return defaultValue;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? defaultValue;
-    if (value is double) return value.toInt();
-    return defaultValue;
-  }
-
-  Color _dotColor(String? s) {
-    switch (s) {
-      case 'pending':
-        return const Color(0xFFF39C12);
-      case 'diterima':
-        return const Color(0xFF3498DB);
-      case 'diproses':
-        return const Color(0xFFEE8B2E);
-      case 'selesai':
-        return const Color(0xFF0FBC5F);
-      case 'batal':
-        return const Color(0xFFE74C3C);
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _statusLabel(String? s) {
-    switch (s) {
-      case 'pending':
-        return 'Menunggu';
-      case 'diterima':
-        return 'Diterima';
-      case 'diproses':
-        return 'Diproses';
-      case 'selesai':
-        return 'Selesai';
-      case 'batal':
-        return 'Batal';
-      default:
-        return s ?? '-';
-    }
-  }
-
-  Future<void> _loadDetail() async {
-    if (_detail != null) return;
-    setState(() => _loadingDetail = true);
-    try {
-      final idPesanan = _toInt(widget.pesanan['id_pesanan']);
-      final d = await ApiService.getDetailPesanan(idPesanan);
-      setState(() {
-        _detail = d;
-        _loadingDetail = false;
-      });
-    } catch (_) {
-      setState(() {
-        _detail = widget.pesanan;
-        _loadingDetail = false;
-      });
-    }
-  }
-
-  @override
-  void didUpdateWidget(_AktivitasItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isExpanded && !oldWidget.isExpanded) {
-      _loadDetail();
-    }
-  }
-
-  String _formatTglLengkap(dynamic tgl, dynamic jam) {
-    if (tgl == null || tgl.toString().isEmpty) return 'Belum dijadwalkan';
-    try {
-      final dt = DateTime.parse(tgl.toString());
-      const days = [
-        'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
-      ];
-      final hari = days[dt.weekday - 1];
-      final d = dt.day.toString().padLeft(2, '0');
-      final m = dt.month.toString().padLeft(2, '0');
-      final jamStr = jam?.toString() ?? '';
-      final jamFmt =
-          jamStr.length >= 5 ? ' • ${jamStr.substring(0, 5)}' : '';
-      return '$hari, $d/$m/${dt.year}$jamFmt';
-    } catch (_) {
-      return tgl.toString();
-    }
-  }
-
-  String _formatTglPesan(dynamic tgl) {
-    try {
-      final dt = DateTime.parse(tgl.toString());
-      return '${dt.day.toString().padLeft(2, '0')}/'
-          '${dt.month.toString().padLeft(2, '0')}/'
-          '${dt.year}  '
-          '${dt.hour.toString().padLeft(2, '0')}:'
-          '${dt.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return tgl?.toString() ?? '-';
-    }
-  }
-
-  int _stepIndex(String? s) {
-    switch (s) {
-      case 'pending':
-        return 0;
-      case 'diterima':
-        return 1;
-      case 'diproses':
-        return 2;
-      case 'selesai':
-        return 3;
-      default:
-        return -1;
-    }
-  }
+  final VoidCallback onTap;
+  const _CustomerOrderCard({required this.pesanan, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final status = widget.pesanan['status'] as String?;
-    final itemCount = widget.itemCount;
-
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: widget.isExpanded
-                ? const BorderRadius.only(
-                    topLeft: Radius.circular(9),
-                    topRight: Radius.circular(9),
-                  )
-                : BorderRadius.circular(9),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x3F000000),
-                spreadRadius: 3,
-                offset: Offset(0, 1.7),
-                blurRadius: 3,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 65,
-                height: 65,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF79F36),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: const Icon(Icons.fastfood,
-                    color: Colors.white, size: 32),
-              ),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      itemCount > 0
-                          ? '$itemCount item pesanan'
-                          : 'Pesanan aktif',
-                      style: GoogleFonts.alexandria(
-                          color: Colors.black, fontSize: 14),
-                    ),
-                    Text(
-                      widget.formatHarga(
-                          widget.pesanan['total_harga'] ?? 0),
-                      style: GoogleFonts.alexandria(
-                        color: const Color(0xFFDC6727),
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Opacity(
-                          opacity: 0.7,
-                          child: Text(
-                            widget.metodeBayar,
-                            style: GoogleFonts.alexandria(
-                                color: Colors.black, fontSize: 13),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _dotColor(status),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _statusLabel(status),
-                          style: GoogleFonts.alexandria(
-                            fontSize: 11,
-                            color: _dotColor(status),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              GestureDetector(
-                onTap: () {
-                  if (!widget.isExpanded) _loadDetail();
-                  widget.onToggleDetail();
-                },
-                child: Opacity(
-                  opacity: 0.6,
-                  child: Text(
-                    widget.isExpanded ? 'Tutup' : 'Lihat Detail',
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        if (widget.isExpanded)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAFAFA),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(9),
-                bottomRight: Radius.circular(9),
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x3F000000),
-                  spreadRadius: 3,
-                  offset: Offset(0, 3),
-                  blurRadius: 3,
-                ),
-              ],
-            ),
-            child: _loadingDetail
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFFD05122), strokeWidth: 2),
-                    ),
-                  )
-                : _buildDetailPanel(status),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildDetailPanel(String? status) {
-    final p = _detail ?? widget.pesanan;
+    final status = pesanan['status'] as String?;
+    final color = _statusColor(status);
     final isBatal = status == 'batal';
-    final tglAntar = p['tgl_antar'];
-    final jamAntar = p['jam_antar'];
-    final tipe = (p['tipe_pengiriman'] ?? 'ambil').toString();
-    final catatan = (p['catatan'] ?? '').toString();
-    final items = (p['items'] as List<dynamic>?) ?? [];
+    final alamat = pesanan['customer_alamat'] ?? 'Alamat tidak tersedia';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!isBatal) ...[
-          _sectionLabel('Status Pesanan'),
-          const SizedBox(height: 8),
-          _TimelineWidget(currentStep: _stepIndex(status)),
-          const SizedBox(height: 14),
-        ],
-
-        _sectionLabel('Info Pesanan'),
-        const SizedBox(height: 8),
-        _infoRow(
-          icon: Icons.calendar_today_rounded,
-          label: 'Dipesan',
-          value: _formatTglPesan(p['tgl_pesan']),
-        ),
-        const SizedBox(height: 5),
-        _infoRow(
-          icon: tipe == 'antar'
-              ? Icons.local_shipping_rounded
-              : Icons.store_rounded,
-          label: tipe == 'antar' ? 'Jadwal Antar' : 'Jadwal Ambil',
-          value: tglAntar != null && tglAntar.toString().isNotEmpty
-              ? _formatTglLengkap(tglAntar, jamAntar)
-              : 'Belum dijadwalkan',
-          valueColor: tglAntar != null && tglAntar.toString().isNotEmpty
-              ? const Color(0xFFD05122)
-              : null,
-        ),
-        const SizedBox(height: 5),
-        _infoRow(
-          icon: Icons.payment_rounded,
-          label: 'Pembayaran',
-          value: widget.metodeBayar,
-        ),
-
-        if (catatan.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF8E1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFFFCC02)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.sticky_note_2_outlined,
-                    size: 13, color: Color(0xFFF39C12)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    catatan,
-                    style: GoogleFonts.alexandria(
-                        fontSize: 11,
-                        color: const Color(0xFF7D5A00)),
-                  ),
-                ),
-              ],
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
             ),
-          ),
-        ],
-
-        if (items.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          _sectionLabel('Item Pesanan'),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade200),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              children: [
-                ...items.asMap().entries.map((e) {
-                  final item = e.value;
-                  final isLast = e.key == items.length - 1;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      border: isLast
-                          ? null
-                          : Border(
-                              bottom: BorderSide(
-                                  color: Colors.grey.shade200)),
-                    ),
-                    child: Row(children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
                       Container(
-                        width: 26,
-                        height: 26,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF0E8),
-                          borderRadius: BorderRadius.circular(5),
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Center(
-                          child: Text(
-                            '${item['jumlah']}x',
+                        child: Text('#${pesanan['id_pesanan']}',
                             style: GoogleFonts.alexandria(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFD05122),
-                            ),
-                          ),
-                        ),
+                                fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          item['nama'] ?? '-',
-                          style: GoogleFonts.alexandria(fontSize: 11),
+                        child: Text(_formattedDate(pesanan['tgl_pesan']),
+                            style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600])),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      Text(
-                        widget.formatHarga(item['harga_satuan'] ?? 0),
-                        style: GoogleFonts.alexandria(
-                            fontSize: 10, color: Colors.grey[600]),
-                      ),
-                    ]),
-                  );
-                }),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(8)),
-                    border: Border(
-                        top: BorderSide(color: Colors.grey.shade200)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total',
-                        style: GoogleFonts.alexandria(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        widget.formatHarga(p['total_harga'] ??
-                            widget.pesanan['total_harga'] ??
-                            0),
-                        style: GoogleFonts.alexandria(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFD05122),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(_statusIcon(status), size: 12, color: color),
+                            const SizedBox(width: 4),
+                            Text(_statusLabel(status),
+                                style: GoogleFonts.alexandria(
+                                    fontSize: 10, fontWeight: FontWeight.w500, color: color)),
+                          ],
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  // Alamat
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.location_on_rounded, size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          alamat,
+                          style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[700]),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (pesanan['tgl_antar'] != null && pesanan['tgl_antar'].toString().isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Text('Antar: ${_formatTglAntar(pesanan['tgl_antar'])}',
+                            style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600])),
+                        if (pesanan['jam_antar'] != null && pesanan['jam_antar'].toString().isNotEmpty)
+                          Text(' pukul ${_formatJamAntar(pesanan['jam_antar'])}',
+                              style: GoogleFonts.alexandria(fontSize: 11, color: const Color(0xFFD05122), fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Total',
+                              style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600])),
+                          Text(_formattedPrice(pesanan['total_harga']),
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFFD05122))),
+                        ],
+                      ),
+                      if (!isBatal)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD05122).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Text('Lihat Detail',
+                                  style: GoogleFonts.alexandria(fontSize: 11, color: const Color(0xFFD05122), fontWeight: FontWeight.w600)),
+                              const Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xFFD05122)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Customer Detail Dialog ──────────────────────────────────────
+class _CustomerDetailDialog extends StatelessWidget {
+  final Map<String, dynamic> pesanan;
+  const _CustomerDetailDialog({required this.pesanan});
+
+  static const _timelineSteps = [
+    {'key': 'pending',  'label': 'Pending'},
+    {'key': 'diterima', 'label': 'Diterima'},
+    {'key': 'diproses', 'label': 'Diproses'},
+    {'key': 'selesai',  'label': 'Selesai'},
+  ];
+
+  int _currentStepIndex(String? status) {
+    switch (status) {
+      case 'pending':  return 0;
+      case 'diterima': return 1;
+      case 'diproses': return 2;
+      case 'selesai':  return 3;
+      default:         return -1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = pesanan['status'] as String?;
+    final color = _statusColor(status);
+    final currentStep = _currentStepIndex(status);
+    final isBatal = status == 'batal';
+    final alamat = pesanan['customer_alamat'] ?? 'Alamat tidak tersedia';
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+                stops: [0.17, 0.47, 0.60],
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Detail Pesanan',
+                          style: GoogleFonts.alexandria(fontSize: 12, color: Colors.white70)),
+                      Text('#${pesanan['id_pesanan']}',
+                          style: GoogleFonts.alexandria(
+                              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
-        ],
-      ],
-    );
-  }
 
-  Widget _sectionLabel(String label) {
-    return Text(
-      label,
-      style: GoogleFonts.alexandria(
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
-        color: Colors.grey[500],
-        letterSpacing: 0.5,
-      ),
-    );
-  }
+          // Body
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Status Timeline
+                if (!isBatal) ...[
+                  const Text('Status Pesanan',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 10),
+                  _CustomerTimeline(
+                    steps: _timelineSteps,
+                    currentStep: currentStep,
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
-  Widget _infoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    Color? valueColor,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 13, color: Colors.grey[400]),
-        const SizedBox(width: 6),
-        SizedBox(
-          width: 85,
-          child: Text(
-            label,
-            style: GoogleFonts.alexandria(
-                fontSize: 10, color: Colors.grey[500]),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.alexandria(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: valueColor ?? Colors.black87,
+                // Info Grid
+                const Text('Info Pesanan',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 10),
+                _CustomerInfoGrid(items: [
+                  _InfoItem(icon: Icons.payment_rounded, label: 'Metode Bayar', 
+                      value: pesanan['metode_bayar']?.toString() ?? '-'),
+                  _InfoItem(icon: Icons.calendar_today_rounded, label: 'Tanggal', 
+                      value: _formattedDate(pesanan['tgl_pesan'])),
+                  _InfoItem(icon: Icons.info_outline_rounded, label: 'Status', 
+                      value: _statusLabel(status), valueColor: color),
+                  _InfoItem(icon: Icons.location_on_rounded, label: 'Alamat',
+                      value: alamat, valueColor: const Color(0xFFD05122)),
+                  _InfoItem(icon: Icons.event_available_rounded, label: 'Tgl Antar', 
+                      value: _formatTglAntar(pesanan['tgl_antar'])),
+                  _InfoItem(icon: Icons.access_time_rounded, label: 'Jam Antar', 
+                      value: _formatJamAntar(pesanan['jam_antar']).isNotEmpty 
+                          ? _formatJamAntar(pesanan['jam_antar']) : '-'),
+                ]),
+
+                // Catatan
+                if (pesanan['catatan'] != null && pesanan['catatan'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8E1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFCC02)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.sticky_note_2_outlined, size: 16, color: Color(0xFFF39C12)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(pesanan['catatan'].toString(),
+                              style: GoogleFonts.alexandria(fontSize: 12, color: const Color(0xFF7D5A00))),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Total
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFAFAFA),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total Pesanan',
+                          style: GoogleFonts.alexandria(fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text(_formattedPrice(pesanan['total_harga']),
+                          style: GoogleFonts.alexandria(
+                              fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFFD05122))),
+                    ],
+                  ),
+                ),
+
+                // Status message
+                const SizedBox(height: 16),
+                if (status == 'selesai')
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F8EF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: Color(0xFF0FBC5F), size: 18),
+                        const SizedBox(width: 8),
+                        Text('Pesanan telah selesai',
+                            style: GoogleFonts.alexandria(fontSize: 13, color: Color(0xFF0FBC5F), fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )
+                else if (status == 'batal')
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEB),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cancel_rounded, color: Colors.red, size: 18),
+                        const SizedBox(width: 8),
+                        Text('Pesanan telah dibatalkan',
+                            style: GoogleFonts.alexandria(fontSize: 13, color: Colors.red, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ),
-        ),
-      ],
+
+          // Close button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD05122),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text('Tutup', style: GoogleFonts.alexandria(fontSize: 14, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  _TimelineWidget
-// ════════════════════════════════════════════════════════════════
-class _TimelineWidget extends StatelessWidget {
+// ── Customer Timeline ───────────────────────────────────────────
+class _CustomerTimeline extends StatelessWidget {
+  final List<Map<String, String?>> steps;
   final int currentStep;
-  const _TimelineWidget({required this.currentStep});
-  static const _steps = ['Pending', 'Diterima', 'Proses', 'Selesai'];
+  const _CustomerTimeline({required this.steps, required this.currentStep});
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: List.generate(4, (i) {
+      children: steps.asMap().entries.map((e) {
+        final i = e.key;
+        final step = e.value;
         final isDone = i < currentStep;
         final isActive = i == currentStep;
-        final isLast = i == 3;
-        final color = isDone
-            ? const Color(0xFF0FBC5F)
-            : isActive
-                ? const Color(0xFFD05122)
-                : Colors.grey.shade300;
+        final isLast = i == steps.length - 1;
 
         return Expanded(
-          child: Row(children: [
-            Expanded(
-              child: Column(children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isDone
-                        ? const Color(0xFF0FBC5F)
-                        : isActive
-                            ? const Color(0xFFD05122)
-                            : Colors.grey.shade200,
-                  ),
-                  child: Icon(
-                    isDone
-                        ? Icons.check_rounded
-                        : isActive
-                            ? Icons.radio_button_checked_rounded
-                            : Icons.radio_button_unchecked_rounded,
-                    size: 12,
-                    color: isDone || isActive
-                        ? Colors.white
-                        : Colors.grey.shade400,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _steps[i],
-                  style: GoogleFonts.alexandria(
-                    fontSize: 8,
-                    fontWeight:
-                        isActive ? FontWeight.bold : FontWeight.normal,
-                    color: color,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ]),
-            ),
-            if (!isLast)
+          child: Row(
+            children: [
               Expanded(
-                child: Container(
-                  height: 2,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  color: i < currentStep
-                      ? const Color(0xFF0FBC5F)
-                      : Colors.grey.shade200,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 24, height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDone
+                            ? const Color(0xFF0FBC5F)
+                            : isActive
+                                ? const Color(0xFFD05122)
+                                : Colors.grey.shade200,
+                        border: isActive
+                            ? Border.all(color: const Color(0xFFD05122), width: 2)
+                            : null,
+                      ),
+                      child: Icon(
+                        isDone
+                            ? Icons.check_rounded
+                            : isActive
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                        size: 14,
+                        color: isDone || isActive ? Colors.white : Colors.grey.shade400,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      step['label'] ?? '',
+                      style: GoogleFonts.alexandria(
+                        fontSize: 9,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                        color: isDone
+                            ? const Color(0xFF0FBC5F)
+                            : isActive
+                                ? const Color(0xFFD05122)
+                                : Colors.grey.shade400,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-          ]),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 18),
+                    color: i < currentStep
+                        ? const Color(0xFF0FBC5F)
+                        : Colors.grey.shade200,
+                  ),
+                ),
+            ],
+          ),
         );
-      }),
+      }).toList(),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  _FilterChip
-// ════════════════════════════════════════════════════════════════
-class _FilterChip extends StatelessWidget {
+// ── Customer Info Grid ──────────────────────────────────────────
+class _InfoItem {
+  final IconData icon;
   final String label;
-  final bool aktif;
-  final VoidCallback onTap;
+  final String value;
+  final Color? valueColor;
+  const _InfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+}
 
-  const _FilterChip(
-      {required this.label, required this.aktif, required this.onTap});
+class _CustomerInfoGrid extends StatelessWidget {
+  final List<_InfoItem> items;
+  const _CustomerInfoGrid({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 25,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 2.2,
+      children: items.map((item) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: aktif ? const Color(0xFFEE8B2E) : Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(width: 1.5, color: const Color(0xFFDB6626)),
+          color: const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.shade200),
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.lora(
-              color: Colors.black,
-              fontSize: 12,
-              fontWeight: aktif ? FontWeight.bold : FontWeight.w500,
+        child: Row(
+          children: [
+            Icon(item.icon, size: 14, color: Colors.grey[500]),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(item.label,
+                      style: GoogleFonts.alexandria(fontSize: 10, color: Colors.grey[500]),
+                      overflow: TextOverflow.ellipsis),
+                  Text(item.value,
+                      style: GoogleFonts.alexandria(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: item.valueColor ?? Colors.black87),
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
-      ),
+      )).toList(),
     );
   }
 }

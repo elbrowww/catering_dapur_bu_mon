@@ -142,7 +142,36 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
     setState(() { _isLoading = true; _error = null; });
     try {
       final data = await ApiService.getPesanan();
-      setState(() => _allPesanan = data.cast<Map<String, dynamic>>());
+      setState(() {
+        _allPesanan = data.map((e) {
+          final rawId = e['id_pesanan'];
+          final rawCustomerId = e['id_customer'];
+          final rawTotal = e['total_harga'];
+          
+          return {
+            'id_pesanan': rawId is int 
+                ? rawId 
+                : int.tryParse(rawId.toString()) ?? 0,
+            'id_customer': rawCustomerId is int 
+                ? rawCustomerId 
+                : int.tryParse(rawCustomerId.toString()) ?? 0,
+            'customer_name': e['customer_name']?.toString() ?? 'Customer',
+            'customer_alamat': e['customer_alamat']?.toString() ?? 'Alamat tidak tersedia', // 🔥 ALAMAT
+            'status': e['status']?.toString() ?? 'pending',
+            'tgl_pesan': e['tgl_pesan']?.toString() ?? DateTime.now().toIso8601String(),
+            'tgl_antar': e['tgl_antar']?.toString(),
+            'jam_antar': e['jam_antar']?.toString(),
+            'total_harga': rawTotal is num 
+                ? rawTotal.toDouble() 
+                : double.tryParse(rawTotal.toString()) ?? 0,
+            'item_count': e['item_count'] is int 
+                ? e['item_count'] 
+                : int.tryParse(e['item_count'].toString()) ?? 0,
+            'metode_bayar': e['metode_bayar']?.toString() ?? '',
+            'catatan': e['catatan']?.toString() ?? '',
+          };
+        }).toList();
+      });
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -508,7 +537,7 @@ class _OrderCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(_formattedDate(pesanan['tgl_pesan']),
                         style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[600])),
-                    if (itemCount != null) ...[
+                    if (itemCount != null && itemCount > 0) ...[
                       const SizedBox(width: 12),
                       const Icon(Icons.shopping_bag_outlined, size: 13, color: Colors.grey),
                       const SizedBox(width: 4),
@@ -681,12 +710,42 @@ class _DetailDialogState extends State<_DetailDialog> {
     try {
       final d = await ApiService.getDetailPesanan(widget.pesanan['id_pesanan']);
 
-      // ── Debug: cetak semua key & value yang diterima dari API ──
-      debugPrint('=== DETAIL PESANAN ===');
-      d.forEach((k, v) => debugPrint('  $k: $v'));
-
       setState(() {
-        _detail = d;
+        _detail = {
+          'id_pesanan': d['id_pesanan'] is int 
+              ? d['id_pesanan'] 
+              : int.tryParse(d['id_pesanan'].toString()) ?? 0,
+          'customer_name': d['customer_name']?.toString() ?? widget.pesanan['customer_name'],
+          'customer_alamat': d['customer_alamat']?.toString() ?? widget.pesanan['customer_alamat'] ?? 'Alamat tidak tersedia', // 🔥 ALAMAT
+          'status': d['status']?.toString() ?? widget.pesanan['status'],
+          'tgl_pesan': d['tgl_pesan']?.toString() ?? widget.pesanan['tgl_pesan'],
+          'tgl_antar': d['tgl_antar']?.toString() ?? widget.pesanan['tgl_antar'],
+          'jam_antar': d['jam_antar']?.toString() ?? widget.pesanan['jam_antar'],
+          'total_harga': d['total_harga'] is num 
+              ? d['total_harga'].toDouble() 
+              : double.tryParse(d['total_harga'].toString()) ?? 0,
+          'metode_bayar': d['metode_bayar']?.toString() ?? widget.pesanan['metode_bayar'] ?? '',
+          'catatan': d['catatan']?.toString() ?? '',
+          'bukti_transfer': d['bukti_transfer']?.toString() ?? 
+                            d['bukti_bayar']?.toString() ?? '',
+          'items': (d['items'] as List<dynamic>?)?.map((item) {
+            return {
+              'id_item': item['id_item'] is int 
+                  ? item['id_item'] 
+                  : int.tryParse(item['id_item'].toString()) ?? 0,
+              'id_menu': item['id_menu'] is int 
+                  ? item['id_menu'] 
+                  : int.tryParse(item['id_menu'].toString()) ?? 0,
+              'nama': item['nama']?.toString() ?? '-',
+              'jumlah': item['jumlah'] is int 
+                  ? item['jumlah'] 
+                  : int.tryParse(item['jumlah'].toString()) ?? 0,
+              'harga_satuan': item['harga_satuan'] is num 
+                  ? item['harga_satuan'].toDouble() 
+                  : double.tryParse(item['harga_satuan'].toString()) ?? 0,
+            };
+          }).toList() ?? [],
+        };
         _loadingDetail = false;
       });
     } catch (e) {
@@ -698,9 +757,7 @@ class _DetailDialogState extends State<_DetailDialog> {
     }
   }
 
-  /// Resolves URL gambar bukti transfer.
-  /// PHP mengirim field "bukti_transfer" dari tabel pembayaran (pb.bukti_transfer).
-  /// Fallback ke beberapa nama alternatif untuk jaga-jaga.
+  /// Resolves URL gambar bukti transfer
   String get _buktiBayarUrl {
     if (_detail == null) return '';
     final raw = (_detail!['bukti_transfer'] ??
@@ -715,13 +772,12 @@ class _DetailDialogState extends State<_DetailDialog> {
     return _buildImageUrl(raw.isEmpty ? null : raw);
   }
 
-  /// Cek apakah metode pembayaran adalah transfer.
-
+  /// Cek apakah metode pembayaran adalah transfer
   bool get _isTransfer {
-    final metode = (_detail?['metode_bayar']         ??
-                    _detail?['metode']               ??
-                    widget.pesanan['metode_bayar']   ??
-                    widget.pesanan['metode']         ??
+    final metode = (_detail?['metode_bayar'] ??
+                    _detail?['metode'] ??
+                    widget.pesanan['metode_bayar'] ??
+                    widget.pesanan['metode'] ??
                     '')
         .toString()
         .toLowerCase()
@@ -766,6 +822,7 @@ class _DetailDialogState extends State<_DetailDialog> {
     final actions     = _nextStatus[status] ?? [];
     final nama        = widget.pesanan['customer_name'] ??
         'Customer #${widget.pesanan['id_customer']}';
+    final alamat      = _detail?['customer_alamat'] ?? widget.pesanan['customer_alamat'] ?? 'Alamat tidak tersedia'; // 🔥 ALAMAT
     final isBatal     = status == 'batal';
     final isSelesai   = status == 'selesai';
     final currentStep = _currentStepIndex(status);
@@ -864,6 +921,13 @@ class _DetailDialogState extends State<_DetailDialog> {
                             icon: Icons.person_outline_rounded,
                             label: 'Customer',
                             value: _detail?['customer_name'] ?? nama,
+                          ),
+                          // 🔥 ALAMAT - Ditambahkan di InfoGrid
+                          _InfoItem(
+                            icon: Icons.location_on_rounded,
+                            label: 'Alamat',
+                            value: alamat,
+                            valueColor: const Color(0xFFD05122),
                           ),
                           _InfoItem(
                             icon: Icons.event_available_rounded,
@@ -1597,7 +1661,6 @@ class _BuktiTransferWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Kosong — belum ada file atau belum transfer
     if (url.isEmpty) {
       return Container(
         width: double.infinity,
@@ -1620,7 +1683,6 @@ class _BuktiTransferWidget extends StatelessWidget {
       );
     }
 
-    // Ada URL — tampilkan gambar
     return GestureDetector(
       onTap: () => _showFullscreen(context),
       child: Stack(
@@ -1677,7 +1739,6 @@ class _BuktiTransferWidget extends StatelessWidget {
               ),
             ),
           ),
-          // Badge "Tap untuk perbesar"
           Positioned(
             bottom: 8, right: 8,
             child: Container(
