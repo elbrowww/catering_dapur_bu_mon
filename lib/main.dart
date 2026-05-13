@@ -45,16 +45,16 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // [FIX] Key untuk AktivitasPage agar bisa memanggil method-nya dari luar
+  // GlobalKey untuk AktivitasPage
   final GlobalKey<AktivitasPageState> _aktivitasKey =
       GlobalKey<AktivitasPageState>();
 
-  // [FIX] Callback yang dikirim ke BerandaPage:
-  // saat tombol "Lihat Detail" ditekan → pindah ke tab Aktivitas (index 3)
-  // lalu suruh AktivitasPage expand item dengan id tertentu
+  // GlobalKey untuk BerandaPage — supaya bisa panggil refreshAvatar()
+  final GlobalKey<BerandaPageState> _berandaKey =
+      GlobalKey<BerandaPageState>();
+
   void _bukaDetailAktivitas(int? idPesanan) {
     setState(() => _selectedIndex = 3);
-    // Tunggu frame selesai dulu baru expand, supaya widget sudah mounted
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _aktivitasKey.currentState?.bukaDetail(idPesanan);
     });
@@ -66,14 +66,22 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _pages = [
-      // [FIX] BerandaPage menerima callback onLihatDetail
-      BerandaPage(onLihatDetail: _bukaDetailAktivitas),
+      BerandaPage(key: _berandaKey, onLihatDetail: _bukaDetailAktivitas),
       const MenuPage(),
       const KeranjangPage(),
-      // [FIX] AktivitasPage diberi GlobalKey agar state-nya bisa diakses
       AktivitasPage(key: _aktivitasKey),
       const ProfilPage(),
     ];
+  }
+
+  void _onTabTapped(int index) {
+    // Kalau kembali ke tab Beranda (0), refresh avatar
+    if (index == 0 && _selectedIndex != 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _berandaKey.currentState?.refreshAvatar();
+      });
+    }
+    setState(() => _selectedIndex = index);
   }
 
   @override
@@ -87,9 +95,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: CustomNavbar(
         selectedIndex: _selectedIndex,
-        onItemTapped: (index) {
-          setState(() => _selectedIndex = index);
-        },
+        onItemTapped: _onTabTapped, // ← pakai _onTabTapped
       ),
     );
   }

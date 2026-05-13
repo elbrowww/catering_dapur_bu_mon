@@ -300,24 +300,23 @@ class ApiService {
     }
   }
 
-  // Tambahkan method ini di ApiService untuk validasi pre-order
-static Future<Map<String, dynamic>> validatePreorder({
-  required int idMenu,
-  required String tanggalAntar,
-}) async {
-  try {
-    final response = await _dio.post(
-      '/validate_preorder.php',
-      data: {
-        'id_menu': idMenu,
-        'tanggal_antar': tanggalAntar,
-      },
-    );
-    return _parse(response);
-  } on DioException catch (e) {
-    throw ApiException(_getErrorMessage(e));
+  static Future<Map<String, dynamic>> validatePreorder({
+    required int idMenu,
+    required String tanggalAntar,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/validate_preorder.php',
+        data: {
+          'id_menu': idMenu,
+          'tanggal_antar': tanggalAntar,
+        },
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
   }
-}
 
   static Future<Map<String, dynamic>> hapusDariKeranjang(int idItem) async {
     try {
@@ -519,6 +518,24 @@ static Future<Map<String, dynamic>> validatePreorder({
       if (body.isEmpty) throw const ApiException('Tidak ada data yang diubah');
 
       final response = await _dio.put('/profil.php', data: body);
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  // ==========================================================
+  //  AVATAR PROFIL
+  // ==========================================================
+
+  static Future<Map<String, dynamic>> updateAvatar({
+    required String namaAvatar,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/profil.php?action=update_avatar',
+        data: {'avatar': namaAvatar},
+      );
       return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));
