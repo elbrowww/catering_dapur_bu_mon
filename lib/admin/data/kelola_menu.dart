@@ -31,7 +31,6 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
   bool   _isLoading      = true;
   String _errorMsg       = '';
 
-  // ── PERUBAHAN: kategori dinamis dari DB (tidak hardcode) ──────────────────
   List<String> _kategoriList = ['Semua'];
 
   final _searchController = TextEditingController();
@@ -49,13 +48,12 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
     super.dispose();
   }
 
-  // ── Load semua menu dari API ───────────────────────────────────────────────
+  // ── Load semua menu dari API dengan konversi tipe data ─────────────────────
   Future<void> _loadMenu() async {
     setState(() { _isLoading = true; _errorMsg = ''; });
     try {
       final data = await ApiService.getMenu();
 
-      // ── PERUBAHAN: generate kategori unik dari data DB ────────────────────
       final kategoriSet = <String>{};
       for (var item in data) {
         final kat = (item['kategori'] ?? '').toString().trim();
@@ -63,16 +61,33 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
       }
 
       setState(() {
-        _menuList      = data.map((e) => Map<String, dynamic>.from(e)).toList();
-        _kategoriList  = ['Semua', ...kategoriSet.toList()];
-        _isLoading     = false;
+        // 🔥 KONVERSI AMAN: konversi id_menu dan harga
+        _menuList = data.map((e) {
+          final rawId = e['id_menu'];
+          final rawHarga = e['harga'];
+          
+          return {
+            'id_menu': rawId is int 
+                ? rawId 
+                : int.tryParse(rawId.toString()) ?? 0,
+            'nama': e['nama']?.toString() ?? '',
+            'deskripsi': e['deskripsi']?.toString() ?? '',
+            'harga': rawHarga is num 
+                ? rawHarga.toDouble() 
+                : double.tryParse(rawHarga.toString().replaceAll(',', '.')) ?? 0.0,
+            'kategori': e['kategori']?.toString() ?? '',
+            'foto': e['foto']?.toString() ?? '',
+          };
+        }).toList();
+        _kategoriList = ['Semua', ...kategoriSet.toList()];
+        _isLoading = false;
       });
     } catch (e) {
       setState(() { _errorMsg = e.toString(); _isLoading = false; });
     }
   }
 
-  // ── PERUBAHAN: filter pakai perbandingan langsung seperti customer ─────────
+  // ── Filter list ────────────────────────────────────────────────────────────
   List<Map<String, dynamic>> get _filteredList {
     return _menuList.where((item) {
       final nama     = (item['nama'] ?? '').toString().toLowerCase();
@@ -98,11 +113,11 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
     setState(() => _isLoading = true);
     try {
       await ApiService.tambahMenu(
-        nama      : result['nama'],
-        deskripsi : result['deskripsi'],
-        harga     : double.tryParse(result['harga'].toString()) ?? 0,
-        foto      : _dummyImageUrl,
-        kategori  : result['jenis'] ?? '',
+        nama: result['nama']?.toString() ?? '',
+        deskripsi: result['deskripsi']?.toString() ?? '',
+        harga: double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
+        foto: _dummyImageUrl,
+        kategori: result['jenis']?.toString() ?? '',
       );
       _showSnack('Menu berhasil ditambahkan', isError: false);
       await _loadMenu();
@@ -114,27 +129,38 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
 
   // ── Edit Menu ──────────────────────────────────────────────────────────────
   void _showEditMenu(Map<String, dynamic> item) async {
+    final hargaValue = item['harga'] is num 
+        ? (item['harga'] as num).toString()
+        : item['harga']?.toString() ?? '0';
+        
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => EditMenuDialog(
-        namaMenu  : item['nama']      ?? '',
-        harga     : item['harga'].toString(),
-        jenis     : item['kategori']  ?? 'Paket Nasi',
-        deskripsi : item['deskripsi'] ?? '',
+        namaMenu: item['nama']?.toString() ?? '',
+        harga: hargaValue,
+        jenis: item['kategori']?.toString() ?? 'Paket Nasi',
+        deskripsi: item['deskripsi']?.toString() ?? '',
       ),
     );
     if (result == null) return;
 
     setState(() => _isLoading = true);
     try {
+      // 🔥 KONVERSI AMAN: pastikan id_menu adalah int
+      final idMenu = item['id_menu'] is int 
+          ? item['id_menu'] 
+          : int.tryParse(item['id_menu'].toString()) ?? 0;
+          
+      if (idMenu == 0) throw Exception('ID Menu tidak valid');
+          
       await ApiService.editMenu(
-        item['id_menu'] as int,
+        idMenu,
         {
-          'nama'      : result['nama'],
-          'deskripsi' : result['deskripsi'],
-          'harga'     : double.tryParse(result['harga'].toString()) ?? 0,
-          'kategori'  : result['jenis'],
-          'foto'      : item['foto'] ?? _dummyImageUrl,
+          'nama': result['nama']?.toString() ?? '',
+          'deskripsi': result['deskripsi']?.toString() ?? '',
+          'harga': double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
+          'kategori': result['jenis']?.toString() ?? '',
+          'foto': item['foto']?.toString() ?? _dummyImageUrl,
         },
       );
       _showSnack('Menu berhasil diperbarui', isError: false);
@@ -155,7 +181,14 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
 
     setState(() => _isLoading = true);
     try {
-      await ApiService.hapusMenu(item['id_menu'] as int);
+      // 🔥 KONVERSI AMAN: pastikan id_menu adalah int
+      final idMenu = item['id_menu'] is int 
+          ? item['id_menu'] 
+          : int.tryParse(item['id_menu'].toString()) ?? 0;
+          
+      if (idMenu == 0) throw Exception('ID Menu tidak valid');
+      
+      await ApiService.hapusMenu(idMenu);
       _showSnack('Menu berhasil dihapus', isError: false);
       await _loadMenu();
     } catch (e) {
@@ -256,7 +289,6 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
             const SizedBox(height: 10),
             _TambahMenuButton(onTap: _showTambahMenu),
             const SizedBox(height: 10),
-            // ── PERUBAHAN: kirim _kategoriList dinamis ─────────────────────
             _FilterRow(
               labels    : _kategoriList,
               selected  : _selectedFilter,
@@ -394,9 +426,18 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
   }
 
   void _simpan() {
-    if (_namaController.text.isEmpty) return;
-    if (_hargaController.text.isEmpty) return;
-    if (_selectedJenis == null) return;
+    if (_namaController.text.isEmpty) {
+      _showError('Nama menu harus diisi');
+      return;
+    }
+    if (_hargaController.text.isEmpty) {
+      _showError('Harga harus diisi');
+      return;
+    }
+    if (_selectedJenis == null) {
+      _showError('Jenis menu harus dipilih');
+      return;
+    }
 
     Navigator.pop(context, {
       'nama'      : _namaController.text,
@@ -404,6 +445,16 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
       'deskripsi' : _deskripsiController.text,
       'jenis'     : _selectedJenis,
     });
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.alexandria(color: Colors.white)),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -667,11 +718,18 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     _hargaController     = TextEditingController(text: widget.harga);
     _deskripsiController = TextEditingController(text: widget.deskripsi);
 
-    // ── PERUBAHAN: mapping langsung tanpa toLowerCase ─────────────────────
     const jenisValid = ['Paket Nasi', 'Olahan Ayam', 'Jajanan'];
     _selectedJenis = jenisValid.contains(widget.jenis.trim())
         ? widget.jenis.trim()
         : 'Paket Nasi';
+  }
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _hargaController.dispose();
+    _deskripsiController.dispose();
+    super.dispose();
   }
 
   TextStyle _alex({double size = 14, Color color = Colors.black,
@@ -749,8 +807,14 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
   }
 
   void _simpan() {
-    if (_namaController.text.isEmpty) return;
-    if (_hargaController.text.isEmpty) return;
+    if (_namaController.text.isEmpty) {
+      _showError('Nama menu harus diisi');
+      return;
+    }
+    if (_hargaController.text.isEmpty) {
+      _showError('Harga harus diisi');
+      return;
+    }
 
     Navigator.pop(context, {
       'nama'      : _namaController.text,
@@ -758,6 +822,16 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
       'deskripsi' : _deskripsiController.text,
       'jenis'     : _selectedJenis ?? widget.jenis,
     });
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.alexandria(color: Colors.white)),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -968,7 +1042,6 @@ class _TambahMenuButton extends StatelessWidget {
   }
 }
 
-// ── PERUBAHAN: _FilterRow terima List<String> labels dinamis ──────────────────
 class _FilterRow extends StatelessWidget {
   final List<String> labels;
   final int selected;
