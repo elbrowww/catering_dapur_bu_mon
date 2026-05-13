@@ -24,67 +24,113 @@ class KeranjangController {
   }
 
   // ============================================================
-  // LOAD KERANJANG DARI SERVER
-  // ============================================================
-  Future<void> loadKeranjang() async {
+// LOAD KERANJANG DARI SERVER (DIPERBAIKI - Tanpa animasi saat reload)
+// ============================================================
+Future<void> loadKeranjang({bool showLoading = true}) async {
+  print('🔄 [Controller] Loading keranjang dari server... showLoading: $showLoading');
+  
+  // 🔥 Hanya tampilkan loading indicator jika showLoading = true
+  if (showLoading) {
     _isLoading = true;
     _errorMessage = null;
     _notify();
-
-    try {
-      final response = await ApiService.getKeranjang();
-      
-      print('📦 Load keranjang response: $response');
-      
-      // 🔥 Response adalah Map dengan key 'items'
-      if (response is Map<String, dynamic>) {
-        final rawItems = response['items'] as List<dynamic>? ?? [];
-        
-        _items = rawItems.map((item) {
-          // Parse harga dengan aman
-          double rawHarga = 0;
-          final hargaSatuan = item['harga_satuan'];
-          if (hargaSatuan != null) {
-            if (hargaSatuan is int) {
-              rawHarga = hargaSatuan.toDouble();
-            } else if (hargaSatuan is double) {
-              rawHarga = hargaSatuan;
-            } else if (hargaSatuan is String) {
-              rawHarga = double.tryParse(hargaSatuan) ?? 0;
-            } else if (hargaSatuan is num) {
-              rawHarga = hargaSatuan.toDouble();
-            }
-          }
-          
-          return {
-            'id_item': item['id_item'] ?? 0,
-            'id_menu': item['id_menu'] ?? 0,
-            'nama': item['nama'] ?? item['nama_menu'] ?? 'Menu',
-            'harga': rawHarga.toInt(),
-            'jumlah': item['jumlah'] is int 
-                ? item['jumlah'] 
-                : (int.tryParse(item['jumlah']?.toString() ?? '1') ?? 1),
-            'imageUrl': item['foto'] ?? item['imageUrl'] ?? '',
-            'stok': item['stok'] is int 
-                ? item['stok'] 
-                : (int.tryParse(item['stok']?.toString() ?? '999') ?? 999),
-          };
-        }).toList().cast<Map<String, dynamic>>();
-      } else {
-        _items = [];
-      }
-
-      print('✅ Keranjang loaded: ${_items.length} items');
-      
-    } catch (e) {
-      print('❌ Error loading keranjang: $e');
-      _errorMessage = e.toString();
-      _items = [];
-    } finally {
-      _isLoading = false;
-      _notify();
-    }
   }
+
+  try {
+    final response = await ApiService.getKeranjang();
+    
+    print('📦 [Controller] Load keranjang response: $response');
+    
+    // Reset items sebelum diisi
+    final List<Map<String, dynamic>> newItems = [];
+    
+    if (response is Map<String, dynamic>) {
+      final rawItems = response['items'] as List<dynamic>? ?? [];
+      print('📦 [Controller] Jumlah item dari server: ${rawItems.length}');
+      
+      for (var item in rawItems) {
+        // Parse id_item - bisa int atau String
+        final idItemRaw = item['id_item'];
+        int idItem = 0;
+        if (idItemRaw is int) {
+          idItem = idItemRaw;
+        } else if (idItemRaw is String) {
+          idItem = int.tryParse(idItemRaw) ?? 0;
+        }
+        
+        // Parse id_menu
+        final idMenuRaw = item['id_menu'];
+        int idMenu = 0;
+        if (idMenuRaw is int) {
+          idMenu = idMenuRaw;
+        } else if (idMenuRaw is String) {
+          idMenu = int.tryParse(idMenuRaw) ?? 0;
+        }
+        
+        // Parse harga
+        double rawHarga = 0;
+        final hargaSatuan = item['harga_satuan'];
+        if (hargaSatuan != null) {
+          if (hargaSatuan is int) {
+            rawHarga = hargaSatuan.toDouble();
+          } else if (hargaSatuan is double) {
+            rawHarga = hargaSatuan;
+          } else if (hargaSatuan is String) {
+            rawHarga = double.tryParse(hargaSatuan) ?? 0;
+          } else if (hargaSatuan is num) {
+            rawHarga = hargaSatuan.toDouble();
+          }
+        }
+        
+        // Parse jumlah - bisa int atau String
+        final jumlahRaw = item['jumlah'];
+        int jumlah = 1;
+        if (jumlahRaw is int) {
+          jumlah = jumlahRaw;
+        } else if (jumlahRaw is String) {
+          jumlah = int.tryParse(jumlahRaw) ?? 1;
+        }
+        
+        // Parse stok
+        final stokRaw = item['stok'];
+        int stok = 999;
+        if (stokRaw is int) {
+          stok = stokRaw;
+        } else if (stokRaw is String) {
+          stok = int.tryParse(stokRaw) ?? 999;
+        }
+        
+        final parsedItem = {
+          'id_item': idItem,
+          'id_menu': idMenu,
+          'nama': item['nama'] ?? item['nama_menu'] ?? 'Menu',
+          'harga': rawHarga.toInt(),
+          'jumlah': jumlah,
+          'imageUrl': item['foto'] ?? item['imageUrl'] ?? '',
+          'stok': stok,
+        };
+        
+        newItems.add(parsedItem);
+        print('✅ [Controller] Item ditambahkan: ${parsedItem['nama']}, id_item: $idItem, jumlah: $jumlah');
+      }
+    }
+    
+    _items = newItems;
+    print('✅ [Controller] Keranjang loaded: ${_items.length} items');
+    
+  } catch (e) {
+    print('❌ [Controller] Error loading keranjang: $e');
+    if (showLoading) {
+      _errorMessage = e.toString();
+    }
+    _items = [];
+  } finally {
+    if (showLoading) {
+      _isLoading = false;
+    }
+    _notify();
+  }
+}
 
   // ============================================================
   // TAMBAH ITEM KE KERANJANG (via API)
@@ -146,73 +192,113 @@ class KeranjangController {
   // UPDATE JUMLAH ITEM
   // ============================================================
   Future<bool> updateJumlah(int index, int jumlahBaru) async {
-    if (index >= _items.length) return false;
-    
-    final item = _items[index];
-    if (jumlahBaru <= 0) {
-      return await hapusItem(index);
-    }
-    
-    // Cek stok (jika ada info stok)
-    final stok = item['stok'] as int? ?? 999;
-    if (jumlahBaru > stok) {
-      _errorMessage = 'Stok tidak mencukupi. Maksimal $stok item.';
-      _notify();
-      return false;
-    }
-    
-    _isLoading = true;
+  if (index >= _items.length) return false;
+  
+  final item = _items[index];
+  
+  // Validasi jumlah minimal 1 (jangan sampai 0, karena akan dihapus)
+  if (jumlahBaru <= 0) {
+    return await hapusItem(index);
+  }
+  
+  // Cek stok (jika ada info stok)
+  final stok = item['stok'] as int? ?? 999;
+  if (jumlahBaru > stok) {
+    _errorMessage = 'Stok tidak mencukupi. Maksimal $stok item.';
     _notify();
-    
-    try {
-      final idItem = item['id_item'] as int?;
-      if (idItem != null && idItem != 0) {
-        await ApiService.ubahJumlahItem(
-          idItem: idItem, 
-          jumlah: jumlahBaru
-        );
-      }
-      
-      // Update lokal
-      item['jumlah'] = jumlahBaru;
-      _notify();
-      return true;
-      
-    } catch (e) {
-      print('❌ Error updating quantity: $e');
-      _errorMessage = e.toString();
-      return false;
-    } finally {
-      _isLoading = false;
-      _notify();
-    }
+    print('❌ Stok melebihi batas: $jumlahBaru > $stok');
+    return false;
   }
-
-  // ============================================================
-  // TAMBAH SATU
-  // ============================================================
-  Future<bool> tambahSatu(int index) async {
-    if (index >= _items.length) return false;
-    final item = _items[index];
-    final int baru = (item['jumlah'] as int) + 1;
-    return await updateJumlah(index, baru);
-  }
-
-  // ============================================================
-  // KURANG SATU
-  // ============================================================
-  Future<bool> kurangSatu(int index) async {
-    if (index >= _items.length) return false;
-    final item = _items[index];
-    final int sekarang = item['jumlah'] as int;
+  
+  _isLoading = true;
+  _notify();
+  
+  try {
+    final idItem = item['id_item'] as int?;
+    print('🔄 Updating item: idItem=$idItem, index=$index, jumlahBaru=$jumlahBaru');
     
-    if (sekarang > 1) {
-      final int baru = sekarang - 1;
-      return await updateJumlah(index, baru);
+    if (idItem != null && idItem != 0) {
+      // Coba panggil API
+      final result = await ApiService.ubahJumlahItem(
+        idItem: idItem, 
+        jumlah: jumlahBaru
+      );
+      print('✅ API update response: $result');
     } else {
-      return await hapusItem(index);
+      print('⚠️ idItem null atau 0, hanya update lokal');
     }
+    
+    // 🔥 UPDATE LOKAL (yang terpenting)
+    _items[index]['jumlah'] = jumlahBaru;
+    print('✅ Jumlah diperbarui menjadi: ${_items[index]['jumlah']}');
+    _notify(); // 🔥 Pastikan UI refresh
+    
+    return true;
+    
+  } catch (e) {
+    print('❌ Error updating quantity: $e');
+    _errorMessage = e.toString();
+    
+    // 🔥 Tetap update lokal agar UI responsif
+    _items[index]['jumlah'] = jumlahBaru;
+    _notify();
+    return false;
+  } finally {
+    _isLoading = false;
+    _notify();
   }
+}
+
+// ============================================================
+// KURANG SATU (DIPERBAIKI DENGAN DEBUG)
+// ============================================================
+Future<bool> kurangSatu(int index) async {
+  print('🔽 kurangSatu dipanggil untuk index: $index');
+  
+  if (index >= _items.length) {
+    print('❌ Index out of range: $index, items length: ${_items.length}');
+    return false;
+  }
+  
+  final item = _items[index];
+  final int sekarang = item['jumlah'] as int;
+  print('📊 Item: ${item['nama']}, jumlah sekarang: $sekarang');
+  
+  if (sekarang > 1) {
+    final int baru = sekarang - 1;
+    print('➕ Mengurangi dari $sekarang menjadi $baru');
+    return await updateJumlah(index, baru);
+  } else {
+    print('🗑️ Jumlah = 1, akan menghapus item');
+    return await hapusItem(index);
+  }
+}
+
+// ============================================================
+// TAMBAH SATU (DIPERBAIKI)
+// ============================================================
+Future<bool> tambahSatu(int index) async {
+  print('🔼 tambahSatu dipanggil untuk index: $index');
+  
+  if (index >= _items.length) return false;
+  
+  final item = _items[index];
+  final int sekarang = item['jumlah'] as int;
+  final stok = item['stok'] as int? ?? 999;
+  
+  print('📊 Item: ${item['nama']}, jumlah: $sekarang, stok: $stok');
+  
+  if (sekarang >= stok) {
+    print('❌ Stok habis!');
+    _errorMessage = 'Stok hanya tersisa $stok item';
+    _notify();
+    return false;
+  }
+  
+  final int baru = sekarang + 1;
+  print('➕ Menambah dari $sekarang menjadi $baru');
+  return await updateJumlah(index, baru);
+}
 
   // ============================================================
   // HAPUS ITEM
