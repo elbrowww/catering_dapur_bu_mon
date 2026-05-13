@@ -7,6 +7,9 @@ import 'package:catering_dapur_bu_mon/services/api_service.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 import 'package:catering_dapur_bu_mon/main.dart';
 
+// 🔥 Tambahkan import config
+import 'package:catering_dapur_bu_mon/services/config.dart';
+
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
 
@@ -41,6 +44,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.initState();
     _loadUserData();
     _ctrl.loadKeranjang();
+  }
+
+  // 🔥 Helper untuk mendapatkan URL lengkap gambar
+  String _getFullImageUrl(String imageUrl) {
+    if (imageUrl.isEmpty) return '';
+    // Jika sudah URL lengkap, return as-is
+    if (imageUrl.startsWith('http')) return imageUrl;
+    // Tambahkan base URL
+    return '${AppConfig.imageBaseUrl}$imageUrl';
   }
 
   Future<void> _loadUserData() async {
@@ -169,7 +181,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // ── HANYA BAGIAN INI YANG DIUBAH ──────────────────────────
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -181,7 +192,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon centang dalam lingkaran gradasi
               Container(
                 width: 80,
                 height: 80,
@@ -196,7 +206,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     color: Colors.white, size: 48),
               ),
               const SizedBox(height: 20),
-
               Text(
                 '🎉 Pesanan Masuk!',
                 style: GoogleFonts.alexandria(
@@ -205,7 +214,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     color: const Color(0xFF1A1818)),
               ),
               const SizedBox(height: 6),
-
               Text(
                 'Terima kasih telah memesan\ndi Dapur Bu Mon 🍱',
                 style: GoogleFonts.alexandria(
@@ -215,7 +223,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-
               Text(
                 'Kami sudah menerima pesanan Anda dan sedang mempersiapkan hidangan terbaik. Pantau status pesanan di halaman Aktivitas ya! 😊',
                 style: GoogleFonts.alexandria(
@@ -225,15 +232,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
-
-              // Tombol Kembali ke Beranda
               GestureDetector(
                 onTap: () {
-                  Navigator.pop(context); // tutup dialog
+                  Navigator.pop(context);
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (_) => const MainScreen()),
-                    (route) => false, // hapus semua route sebelumnya
+                    (route) => false,
                   );
                 },
                 child: Container(
@@ -263,7 +268,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
-  // ── AKHIR BAGIAN YANG DIUBAH ───────────────────────────────
 
   @override
   void dispose() {
@@ -299,7 +303,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                // ── Daftar Pesanan ──
+                // ── Daftar Pesanan (DIPERBAIKI) ──
                 _buildCard(
                   title: 'Daftar Pesanan',
                   child: Column(
@@ -313,20 +317,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             child: Row(
                               children: [
                                 Container(
-                                  width: 50, height: 50,
+                                  width: 50, 
+                                  height: 50,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF79F36),
                                     borderRadius: BorderRadius.circular(5),
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(5),
-                                    child: Image.network(
-                                      item['imageUrl'] ?? '',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          const Icon(Icons.fastfood,
-                                              color: Colors.white, size: 24),
-                                    ),
+                                    child: _buildMenuImage(item['imageUrl'] ?? ''), // 🔥 Perbaikan di sini
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -612,6 +611,40 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 🔥 Method baru untuk menampilkan gambar menu dengan loading indicator
+  Widget _buildMenuImage(String imageUrl) {
+    final fullUrl = _getFullImageUrl(imageUrl);
+    
+    if (fullUrl.isEmpty) {
+      return const Icon(Icons.fastfood, color: Colors.white, size: 24);
+    }
+    
+    return Image.network(
+      fullUrl,
+      fit: BoxFit.cover,
+      width: 50,
+      height: 50,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (_, __, ___) => const Icon(
+        Icons.fastfood,
+        color: Colors.white,
+        size: 24,
       ),
     );
   }

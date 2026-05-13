@@ -455,22 +455,31 @@ class _MenuCard extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(6),
                     child: item.foto.isNotEmpty
-                        ? Image.network(
-                            item.foto,
-                            width: 106,
-                            height: 106,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.fastfood,
-                              color: Colors.white,
-                              size: 48,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.fastfood,
-                            color: Colors.white,
-                            size: 48,
-                          ),
+    ? Image.network(
+        item.imageUrl,  // ✅ PAKAI GETTER imageUrl
+        width: 106,
+        height: 106,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => const Icon(
+          Icons.fastfood,
+          color: Colors.white,
+          size: 48,
+        ),
+      )
+    : const Icon(
+        Icons.fastfood,
+        color: Colors.white,
+        size: 48,
+      ),
                   ),
                 ),
                 // 🔥 Badge status (Tersedia / Pre-order)

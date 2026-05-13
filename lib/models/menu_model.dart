@@ -1,6 +1,14 @@
 import 'package:intl/intl.dart';
 
 class MenuModel {
+  // 🔥 TAMBAHKAN INI - Base URL untuk gambar
+  // Untuk emulator Android: gunakan 10.0.2.2
+  // Untuk device fisik: ganti dengan IP komputer (contoh: 192.168.1.100)
+  static const String baseImageUrl = 'http://192.168.0.5/dapur_bu_mon/assets/images/';
+  
+ // 🔥 TAMBAHKAN GETTER INI - URL lengkap gambar
+  String get imageUrl => '$baseImageUrl$foto';
+
   final int idMenu;
   final String nama;
   final String deskripsi;
@@ -9,8 +17,6 @@ class MenuModel {
   final String kategori;
   final int tersedia;
   final int stok;
-  
-  // 🔥 Field baru untuk pre-order
   final int minPreorderDays;
   final int allowPreorder;
   final String statusOrder;
@@ -33,80 +39,87 @@ class MenuModel {
     this.canPreorder = true,
   });
 
+ 
+  
+  // 🔥 Tambahan untuk debugging
+  String get imageDebugInfo => 'Image: $foto → URL: $imageUrl';
+
   factory MenuModel.fromJson(Map<String, dynamic> json) {
-  double parseHarga(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is String) return double.tryParse(value) ?? 0.0;
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    return 0.0;
-  }
-
-  int parseStok(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
-
-  int parseIntValue(dynamic value, {int defaultValue = 0}) {
-    if (value == null) return defaultValue;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? defaultValue;
-    return defaultValue;
-  }
-
-  bool parseBool(dynamic value, {bool defaultValue = false}) {
-    if (value == null) return defaultValue;
-    if (value is bool) return value;
-    if (value is int) return value == 1;
-    if (value is String) {
-      final lower = value.toLowerCase();
-      return lower == '1' || lower == 'true';
+    // ... (kode fromJson Anda tetap sama)
+    // Saya copy dari file Anda:
+    double parseHarga(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      if (value is int) return value.toDouble();
+      if (value is double) return value;
+      return 0.0;
     }
-    return defaultValue;
+
+    int parseStok(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    int parseIntValue(dynamic value, {int defaultValue = 0}) {
+      if (value == null) return defaultValue;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? defaultValue;
+      return defaultValue;
+    }
+
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
+      if (value == null) return defaultValue;
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      if (value is String) {
+        final lower = value.toLowerCase();
+        return lower == '1' || lower == 'true';
+      }
+      return defaultValue;
+    }
+
+    final stokValue = parseStok(json['stok']);
+    
+    final minDays = parseIntValue(
+      json['min_preorder_days'] ?? json['preorder_min_days'],
+      defaultValue: stokValue > 0 ? 0 : 1,
+    );
+    
+    final allowPreorderValue = parseBool(
+      json['allow_preorder'],
+      defaultValue: true,
+    ) ? 1 : 0;
+    
+    final statusFromApi = json['status_order']?.toString() ?? (stokValue > 0 ? 'tersedia' : 'preorder');
+    final isAvailableFromApi = parseBool(
+      json['is_available_today'],
+      defaultValue: stokValue > 0,
+    );
+    final canPreorderFromApi = parseBool(
+      json['can_preorder'],
+      defaultValue: allowPreorderValue == 1,
+    );
+
+    return MenuModel(
+      idMenu: parseIntValue(json['id_menu']),
+      nama: json['nama'] ?? '',
+      deskripsi: json['deskripsi'] ?? '',
+      harga: parseHarga(json['harga']),
+      foto: json['foto'] ?? '',
+      kategori: json['kategori']?.toString() ?? 'Lainnya',
+      tersedia: parseIntValue(json['tersedia'], defaultValue: 1),
+      stok: stokValue,
+      minPreorderDays: minDays,
+      allowPreorder: allowPreorderValue,
+      statusOrder: statusFromApi,
+      isAvailableToday: isAvailableFromApi,
+      canPreorder: canPreorderFromApi,
+    );
   }
 
-  final stokValue = parseStok(json['stok']);
-  
-  // 🔥 Parse dengan aman untuk field yang mungkin berupa String
-  final minDays = parseIntValue(
-    json['min_preorder_days'] ?? json['preorder_min_days'],
-    defaultValue: stokValue > 0 ? 0 : 1,
-  );
-  
-  final allowPreorderValue = parseBool(
-    json['allow_preorder'],
-    defaultValue: true,
-  ) ? 1 : 0;
-  
-  final statusFromApi = json['status_order']?.toString() ?? (stokValue > 0 ? 'tersedia' : 'preorder');
-  final isAvailableFromApi = parseBool(
-    json['is_available_today'],
-    defaultValue: stokValue > 0,
-  );
-  final canPreorderFromApi = parseBool(
-    json['can_preorder'],
-    defaultValue: allowPreorderValue == 1,
-  );
-
-  return MenuModel(
-    idMenu: parseIntValue(json['id_menu']),
-    nama: json['nama'] ?? '',
-    deskripsi: json['deskripsi'] ?? '',
-    harga: parseHarga(json['harga']),
-    foto: json['foto'] ?? '',
-    kategori: json['kategori']?.toString() ?? 'Lainnya',
-    tersedia: parseIntValue(json['tersedia'], defaultValue: 1),
-    stok: stokValue,
-    minPreorderDays: minDays,
-    allowPreorder: allowPreorderValue,
-    statusOrder: statusFromApi,
-    isAvailableToday: isAvailableFromApi,
-    canPreorder: canPreorderFromApi,
-  );
-}
-
+  // ... (rest of your code - formattedHarga, isTersedia, isHabis, labelStok, dll tetap sama)
   String get formattedHarga {
     final numberFormat = NumberFormat.currency(
       locale: 'id_ID',
@@ -117,28 +130,17 @@ class MenuModel {
   }
 
   bool get isTersedia => tersedia == 1;
-
-  /// Stok habis jika 0
   bool get isHabis => stok == 0;
-
-  /// Label stok untuk ditampilkan
+  
   String get labelStok {
     if (stok == 0) return 'Pre-order';
     if (stok <= 5) return 'Stok: $stok (Segera Habis)';
     return 'Stok: $stok';
   }
-
-  /// 🔥 Getter untuk menentukan apakah menu bisa dipesan HARI INI
-  bool get isAvailableForToday {
-    return stok > 0 && !isHabis && isAvailableToday;
-  }
   
-  /// 🔥 Getter untuk pre-order (bisa pesan untuk besok atau setelahnya)
-  bool get canPreOrder {
-    return canPreorder && allowPreorder == 1;
-  }
-
-  /// 🔥 Mendapatkan pesan status untuk ditampilkan ke user
+  bool get isAvailableForToday => stok > 0 && !isHabis && isAvailableToday;
+  bool get canPreOrder => canPreorder && allowPreorder == 1;
+  
   String get statusMessage {
     if (isAvailableForToday) {
       return '✅ Tersedia • Bisa pesan hari ini atau pre-order';
@@ -152,55 +154,41 @@ class MenuModel {
       return '❌ Tidak tersedia untuk sementara';
     }
   }
-
-  /// 🔥 Mendapatkan warna status
+  
   int get statusColor {
-    if (isAvailableForToday) return 0xFF4CAF50; // Hijau
-    if (canPreOrder) return 0xFFFFA726; // Orange
-    return 0xFFE53935; // Merah
+    if (isAvailableForToday) return 0xFF4CAF50;
+    if (canPreOrder) return 0xFFFFA726;
+    return 0xFFE53935;
   }
-
-  /// 🔥 Label status pendek untuk badge
+  
   String get shortStatusLabel {
     if (isAvailableForToday) return 'Tersedia';
     if (canPreOrder) return 'Pre-order';
     return 'Habis';
   }
-
-  /// 🔥 Validasi apakah bisa pesan pada tanggal tertentu
+  
   bool canOrderOnDate(DateTime selectedDate) {
     final today = DateTime.now();
     final orderDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final todayDate = DateTime(today.year, today.month, today.day);
-    
     final daysDiff = orderDate.difference(todayDate).inDays;
     
-    // Menu tersedia (stok > 0)
     if (isAvailableForToday) {
-      return daysDiff >= 0; // Bisa hari ini atau setelahnya
+      return daysDiff >= 0;
+    } else if (canPreOrder) {
+      return daysDiff >= minPreorderDays;
     }
-    // Menu pre-order (stok = 0)
-    else if (canPreOrder) {
-      return daysDiff >= minPreorderDays; // Minimal H-minPreorderDays
-    }
-    
     return false;
   }
-
-  /// 🔥 Mendapatkan minimal tanggal yang bisa dipilih
+  
   DateTime get minOrderDate {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
-    if (isAvailableForToday) {
-      return today;
-    } else if (canPreOrder) {
-      return today.add(Duration(days: minPreorderDays));
-    }
-    return today.add(const Duration(days: 365)); // Tidak bisa order
+    if (isAvailableForToday) return today;
+    if (canPreOrder) return today.add(Duration(days: minPreorderDays));
+    return today.add(const Duration(days: 365));
   }
-
-  /// 🔥 Mendapatkan format pesan error jika tidak bisa order
+  
   String getOrderErrorMessage(DateTime selectedDate) {
     final today = DateTime.now();
     final daysDiff = DateTime(selectedDate.year, selectedDate.month, selectedDate.day)
@@ -208,9 +196,7 @@ class MenuModel {
         .inDays;
     
     if (isAvailableForToday) {
-      if (daysDiff < 0) {
-        return 'Tidak bisa memesan untuk tanggal yang sudah lewat';
-      }
+      if (daysDiff < 0) return 'Tidak bisa memesan untuk tanggal yang sudah lewat';
       return '';
     } else if (canPreOrder) {
       if (daysDiff < minPreorderDays) {
@@ -224,14 +210,13 @@ class MenuModel {
     }
     return 'Menu tidak tersedia untuk dipesan';
   }
-
-  /// Warna badge stok
-  /// Merah = habis, Orange = hampir habis (≤5), Hijau = aman
+  
   int get warnaStok {
     if (stok == 0) return 0xFFE53935;
     if (stok <= 5) return 0xFFFFA726;
     return 0xFF4CAF50;
   }
+  
 
   /// 🔥 Copy with method untuk update sebagian field
   MenuModel copyWith({

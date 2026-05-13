@@ -206,20 +206,29 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(14),
                             child: widget.menu.foto.isNotEmpty
-                                ? Image.network(
-                                    widget.menu.foto,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(
-                                      Icons.fastfood,
-                                      color: Colors.white,
-                                      size: 80,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.fastfood,
-                                    color: Colors.white,
-                                    size: 80,
-                                  ),
+    ? Image.network(
+        widget.menu.imageUrl,  // ✅ PAKAI GETTER imageUrl
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => const Icon(
+          Icons.fastfood,
+          color: Colors.white,
+          size: 80,
+        ),
+      )
+    : const Icon(
+        Icons.fastfood,
+        color: Colors.white,
+        size: 80,
+      ),
                           ),
                         ),
                         // Overlay "Stok Habis" di atas gambar

@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/checkout.dart';
 
+// 🔥 Tambahkan import config
+import 'package:catering_dapur_bu_mon/services/config.dart';
+
 class KeranjangPage extends StatefulWidget {
   const KeranjangPage({super.key});
 
@@ -62,24 +65,33 @@ class _KeranjangPageState extends State<KeranjangPage> {
     );
   }
 
-void _checkout() {
-  if (_ctrl.items.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Keranjang masih kosong!',
-            style: GoogleFonts.alexandria(color: Colors.white)),
-        backgroundColor: const Color(0xFFD05122),
-      ),
+  void _checkout() {
+    if (_ctrl.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Keranjang masih kosong!',
+              style: GoogleFonts.alexandria(color: Colors.white)),
+          backgroundColor: const Color(0xFFD05122),
+        ),
+      );
+      return;
+    }
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CheckoutPage()),
     );
-    return;
   }
-  
-  // Navigasi ke halaman checkout
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const CheckoutPage()),
-  );
-}
+
+  // 🔥 Helper untuk mendapatkan URL lengkap gambar
+  String _getFullImageUrl(String imageUrl) {
+    if (imageUrl.isEmpty) return '';
+    // Jika sudah URL lengkap, return as-is
+    if (imageUrl.startsWith('http')) return imageUrl;
+    // Tambahkan base URL
+    return '${AppConfig.imageBaseUrl}$imageUrl';
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = _ctrl.items;
@@ -157,7 +169,7 @@ void _checkout() {
                                   nama: items[i]['nama'],
                                   harga: _ctrl.formatRupiah(items[i]['harga']),
                                   jumlah: items[i]['jumlah'],
-                                  imageUrl: items[i]['imageUrl'] ?? '',
+                                  imageUrl: _getFullImageUrl(items[i]['imageUrl'] ?? ''), // 🔥 Perbaikan di sini
                                   onTambah: () => _ctrl.tambahSatu(i),
                                   onKurang: () => _ctrl.kurangSatu(i),
                                 ),
@@ -298,7 +310,7 @@ void _checkout() {
   }
 }
 
-// ── Item Keranjang ─────────────────────────────────────────────
+// ── Item Keranjang (DIPERBAIKI) ─────────────────────────────────────────────
 class _KeranjangItem extends StatelessWidget {
   final String nama;
   final String harga;
@@ -345,12 +357,26 @@ class _KeranjangItem extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(5),
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.fastfood, color: Colors.white, size: 32),
-              ),
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.fastfood,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    )
+                  : const Icon(Icons.fastfood, color: Colors.white, size: 32),
             ),
           ),
           const SizedBox(width: 12),

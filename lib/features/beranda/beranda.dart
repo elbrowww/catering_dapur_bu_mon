@@ -1138,12 +1138,21 @@ class _MenuTerlarisCard extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: menu.foto.isNotEmpty
-              ? Image.network(menu.foto,
-                  width: 300,
-                  height: 160,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder())
-              : _placeholder(),
+    ? Image.network(menu.imageUrl,  // ✅ PAKAI GETTER
+        width: 300,
+        height: 160,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => _placeholder())
+    : _placeholder(),
         ),
         const SizedBox(height: 6),
         Row(children: [
@@ -1215,12 +1224,21 @@ class _MenuCard extends StatelessWidget {
             borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12), topRight: Radius.circular(12)),
             child: menu.foto.isNotEmpty
-                ? Image.network(menu.foto,
-                    width: double.infinity,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder())
-                : _placeholder(),
+    ? Image.network(menu.imageUrl,  // ✅ PAKAI GETTER
+        width: double.infinity,
+        height: 80,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) => _placeholder())
+    : _placeholder(),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 5, 6, 6),
