@@ -17,6 +17,11 @@ const _listShadow = [
 const _dummyImageUrl =
     'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SONxcLGhX9Sc4jqH3qj%2Fb611dcd57e8a8124c09e46eb95298a801a223e17image%203.png?alt=media&token=274a3b20-6268-4ae8-80a1-410fb38711f3';
 
+// Kategori sesuai enum di DB: AYAM, JAJAN, PAKET NASI
+const _kategoriDb = ['AYAM', 'JAJAN', 'PAKET NASI'];
+
+String _labelKategori(String db) => db.toUpperCase();
+
 // ── Kelola Menu Page ──────────────────────────────────────────────────────────
 
 class KelolaMenuPage extends StatefulWidget {
@@ -48,7 +53,7 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
     super.dispose();
   }
 
-  // ── Load semua menu dari API dengan konversi tipe data ─────────────────────
+  // ── Load semua menu dari API ───────────────────────────────────────────────
   Future<void> _loadMenu() async {
     setState(() { _isLoading = true; _errorMsg = ''; });
     try {
@@ -56,31 +61,35 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
 
       final kategoriSet = <String>{};
       for (var item in data) {
-        final kat = (item['kategori'] ?? '').toString().trim();
+        final kat = (item['kategori'] ?? '').toString().trim().toUpperCase();
         if (kat.isNotEmpty) kategoriSet.add(kat);
       }
 
       setState(() {
-        // 🔥 KONVERSI AMAN: konversi id_menu dan harga
         _menuList = data.map((e) {
-          final rawId = e['id_menu'];
+          final rawId    = e['id_menu'];
           final rawHarga = e['harga'];
-          
+          final rawStok  = e['stok'];
+
           return {
-            'id_menu': rawId is int 
-                ? rawId 
+            'id_menu' : rawId is int
+                ? rawId
                 : int.tryParse(rawId.toString()) ?? 0,
-            'nama': e['nama']?.toString() ?? '',
+            'nama'    : e['nama']?.toString() ?? '',
             'deskripsi': e['deskripsi']?.toString() ?? '',
-            'harga': rawHarga is num 
-                ? rawHarga.toDouble() 
+            'harga'   : rawHarga is num
+                ? rawHarga.toDouble()
                 : double.tryParse(rawHarga.toString().replaceAll(',', '.')) ?? 0.0,
-            'kategori': e['kategori']?.toString() ?? '',
-            'foto': e['foto']?.toString() ?? '',
+            'kategori': (e['kategori']?.toString() ?? '').toUpperCase(),
+            'foto'    : e['foto']?.toString() ?? '',
+            'stok'    : rawStok is int
+                ? rawStok
+                : int.tryParse(rawStok.toString()) ?? 0,
           };
         }).toList();
+
         _kategoriList = ['Semua', ...kategoriSet.toList()];
-        _isLoading = false;
+        _isLoading    = false;
       });
     } catch (e) {
       setState(() { _errorMsg = e.toString(); _isLoading = false; });
@@ -92,7 +101,7 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
     return _menuList.where((item) {
       final nama     = (item['nama'] ?? '').toString().toLowerCase();
       final query    = _searchController.text.toLowerCase();
-      final kategori = (item['kategori'] ?? '').toString().trim();
+      final kategori = (item['kategori'] ?? '').toString().toUpperCase().trim();
 
       final matchSearch   = query.isEmpty || nama.contains(query);
       final matchKategori = _selectedFilter == 0 ||
@@ -113,11 +122,11 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
     setState(() => _isLoading = true);
     try {
       await ApiService.tambahMenu(
-        nama: result['nama']?.toString() ?? '',
-        deskripsi: result['deskripsi']?.toString() ?? '',
-        harga: double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
-        foto: _dummyImageUrl,
-        kategori: result['jenis']?.toString() ?? '',
+        nama      : result['nama']?.toString() ?? '',
+        deskripsi : result['deskripsi']?.toString() ?? '',
+        harga     : double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
+        foto      : _dummyImageUrl,
+        kategori  : result['kategori']?.toString() ?? '',
       );
       _showSnack('Menu berhasil ditambahkan', isError: false);
       await _loadMenu();
@@ -129,38 +138,39 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
 
   // ── Edit Menu ──────────────────────────────────────────────────────────────
   void _showEditMenu(Map<String, dynamic> item) async {
-    final hargaValue = item['harga'] is num 
+    final hargaValue = item['harga'] is num
         ? (item['harga'] as num).toString()
         : item['harga']?.toString() ?? '0';
-        
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => EditMenuDialog(
-        namaMenu: item['nama']?.toString() ?? '',
-        harga: hargaValue,
-        jenis: item['kategori']?.toString() ?? 'Paket Nasi',
-        deskripsi: item['deskripsi']?.toString() ?? '',
+        namaMenu  : item['nama']?.toString() ?? '',
+        harga     : hargaValue,
+        kategori  : (item['kategori']?.toString() ?? '').toUpperCase(),
+        deskripsi : item['deskripsi']?.toString() ?? '',
+        stok      : item['stok'] is int ? item['stok'] : int.tryParse(item['stok'].toString()) ?? 0,
       ),
     );
     if (result == null) return;
 
     setState(() => _isLoading = true);
     try {
-      // 🔥 KONVERSI AMAN: pastikan id_menu adalah int
-      final idMenu = item['id_menu'] is int 
-          ? item['id_menu'] 
+      final idMenu = item['id_menu'] is int
+          ? item['id_menu']
           : int.tryParse(item['id_menu'].toString()) ?? 0;
-          
+
       if (idMenu == 0) throw Exception('ID Menu tidak valid');
-          
+
       await ApiService.editMenu(
         idMenu,
         {
-          'nama': result['nama']?.toString() ?? '',
+          'nama'     : result['nama']?.toString() ?? '',
           'deskripsi': result['deskripsi']?.toString() ?? '',
-          'harga': double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
-          'kategori': result['jenis']?.toString() ?? '',
-          'foto': item['foto']?.toString() ?? _dummyImageUrl,
+          'harga'    : double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
+          'kategori' : result['kategori']?.toString() ?? '',
+          'stok'     : int.tryParse(result['stok'].toString()) ?? 0,
+          'foto'     : item['foto']?.toString() ?? _dummyImageUrl,
         },
       );
       _showSnack('Menu berhasil diperbarui', isError: false);
@@ -181,13 +191,12 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
 
     setState(() => _isLoading = true);
     try {
-      // 🔥 KONVERSI AMAN: pastikan id_menu adalah int
-      final idMenu = item['id_menu'] is int 
-          ? item['id_menu'] 
+      final idMenu = item['id_menu'] is int
+          ? item['id_menu']
           : int.tryParse(item['id_menu'].toString()) ?? 0;
-          
+
       if (idMenu == 0) throw Exception('ID Menu tidak valid');
-      
+
       await ApiService.hapusMenu(idMenu);
       _showSnack('Menu berhasil dihapus', isError: false);
       await _loadMenu();
@@ -222,8 +231,7 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFFD05122)))
+                      child: CircularProgressIndicator(color: Color(0xFFD05122)))
                   : _errorMsg.isNotEmpty
                       ? _buildError()
                       : _buildContent(),
@@ -249,15 +257,13 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
                     fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text(_errorMsg,
-                style: GoogleFonts.alexandria(
-                    fontSize: 12, color: Colors.grey),
+                style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey),
                 textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _loadMenu,
               icon: const Icon(Icons.refresh),
-              label: Text('Coba Lagi',
-                  style: GoogleFonts.alexandria()),
+              label: Text('Coba Lagi', style: GoogleFonts.alexandria()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD05122),
                 foregroundColor: Colors.white,
@@ -290,7 +296,8 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
             _TambahMenuButton(onTap: _showTambahMenu),
             const SizedBox(height: 10),
             _FilterRow(
-              labels    : _kategoriList,
+              labels    : _kategoriList.map((k) =>
+                  k == 'Semua' ? 'Semua' : _labelKategori(k)).toList(),
               selected  : _selectedFilter,
               onSelected: (i) => setState(() => _selectedFilter = i),
             ),
@@ -306,8 +313,7 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
                           size: 60, color: Colors.grey),
                       const SizedBox(height: 12),
                       Text('Tidak ada menu ditemukan',
-                          style: GoogleFonts.alexandria(
-                              color: Colors.grey)),
+                          style: GoogleFonts.alexandria(color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -317,9 +323,9 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _MenuItemCard(
-                    item      : item,
-                    onDelete  : () => _hapusMenu(item),
-                    onEdit    : () => _showEditMenu(item),
+                    item    : item,
+                    onDelete: () => _hapusMenu(item),
+                    onEdit  : () => _showEditMenu(item),
                   ),
                 ),
               ),
@@ -347,7 +353,8 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
   final _namaController      = TextEditingController();
   final _hargaController     = TextEditingController();
   final _deskripsiController = TextEditingController();
-  String? _selectedJenis;
+  final _stokController      = TextEditingController(text: '0');
+  String? _selectedKategori;
 
   TextStyle _alex({double size = 14, Color color = Colors.black,
       FontWeight weight = FontWeight.normal}) =>
@@ -376,14 +383,14 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
           height: height,
           decoration: _fieldDecor(),
           child: TextField(
-            controller: controller,
+            controller : controller,
             keyboardType: type,
-            maxLines: maxLines,
-            style: _alex(),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: _alex(color: Colors.black.withOpacity(0.2)),
-              contentPadding: const EdgeInsets.symmetric(
+            maxLines   : maxLines,
+            style      : _alex(),
+            decoration : InputDecoration(
+              hintText        : hint,
+              hintStyle       : _alex(color: Colors.black.withOpacity(0.2)),
+              contentPadding  : const EdgeInsets.symmetric(
                   horizontal: 14, vertical: 14),
               border: InputBorder.none,
             ),
@@ -394,11 +401,11 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
     );
   }
 
-  Widget _buildDropdown(String label) {
+  Widget _buildDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: _alex()),
+        Text('Kategori', style: _alex()),
         const SizedBox(height: 6),
         Container(
           height: 48,
@@ -407,16 +414,16 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               isExpanded: true,
-              value: _selectedJenis,
-              hint: Text('Pilih Jenis',
+              value: _selectedKategori,
+              hint: Text('Pilih Kategori',
                   style: _alex(color: Colors.black.withOpacity(0.2))),
               icon: const Icon(Icons.keyboard_arrow_down,
                   color: Colors.grey, size: 20),
-              items: ['Paket Nasi', 'Olahan Ayam', 'Jajanan']
-                  .map((e) =>
-                      DropdownMenuItem(value: e, child: Text(e, style: _alex())))
-                  .toList(),
-              onChanged: (val) => setState(() => _selectedJenis = val),
+              items: _kategoriDb.map((e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(_labelKategori(e), style: _alex()),
+                  )).toList(),
+              onChanged: (val) => setState(() => _selectedKategori = val),
             ),
           ),
         ),
@@ -425,32 +432,107 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
     );
   }
 
+  // ── Stok stepper ──────────────────────────────────────────────────────────
+  Widget _buildStokStepper() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Stok Tersedia', style: _alex()),
+        const SizedBox(height: 6),
+        Container(
+          height: 48,
+          decoration: _fieldDecor(),
+          child: Row(
+            children: [
+              // Tombol kurang
+              GestureDetector(
+                onTap: () {
+                  final cur = int.tryParse(_stokController.text) ?? 0;
+                  if (cur > 0) _stokController.text = (cur - 1).toString();
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFAC3715),
+                    borderRadius: BorderRadius.only(
+                      topLeft    : Radius.circular(9),
+                      bottomLeft : Radius.circular(9),
+                    ),
+                  ),
+                  child: const Icon(Icons.remove,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+              // Input stok
+              Expanded(
+                child: TextField(
+                  controller   : _stokController,
+                  keyboardType : TextInputType.number,
+                  textAlign    : TextAlign.center,
+                  style        : _alex(size: 16, weight: FontWeight.bold),
+                  decoration   : const InputDecoration(
+                    border         : InputBorder.none,
+                    contentPadding : EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              // Tombol tambah
+              GestureDetector(
+                onTap: () {
+                  final cur = int.tryParse(_stokController.text) ?? 0;
+                  _stokController.text = (cur + 1).toString();
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0FBC5F),
+                    borderRadius: BorderRadius.only(
+                      topRight    : Radius.circular(9),
+                      bottomRight : Radius.circular(9),
+                    ),
+                  ),
+                  child: const Icon(Icons.add,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   void _simpan() {
-    if (_namaController.text.isEmpty) {
+    if (_namaController.text.trim().isEmpty) {
       _showError('Nama menu harus diisi');
       return;
     }
-    if (_hargaController.text.isEmpty) {
+    if (_hargaController.text.trim().isEmpty) {
       _showError('Harga harus diisi');
       return;
     }
-    if (_selectedJenis == null) {
-      _showError('Jenis menu harus dipilih');
+    if (_selectedKategori == null) {
+      _showError('Kategori menu harus dipilih');
       return;
     }
 
     Navigator.pop(context, {
-      'nama'      : _namaController.text,
-      'harga'     : _hargaController.text,
-      'deskripsi' : _deskripsiController.text,
-      'jenis'     : _selectedJenis,
+      'nama'     : _namaController.text.trim(),
+      'harga'    : _hargaController.text.trim(),
+      'deskripsi': _deskripsiController.text.trim(),
+      'kategori' : _selectedKategori,
+      'stok'     : int.tryParse(_stokController.text) ?? 0,
     });
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.alexandria(color: Colors.white)),
+        content: Text(message,
+            style: GoogleFonts.alexandria(color: Colors.white)),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
       ),
@@ -469,6 +551,7 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ── Header ──
             Container(
               width: double.infinity, height: 70,
               decoration: const BoxDecoration(
@@ -489,6 +572,7 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
                 ],
               ),
             ),
+            // ── Form ──
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(22),
@@ -503,7 +587,9 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
                         'Deskripsi Menu', 'Tulis deskripsi singkat menu',
                         _deskripsiController,
                         maxLines: 4, height: 100),
-                    _buildDropdown('Jenis'),
+                    _buildDropdown(),
+                    _buildStokStepper(),
+                    // Gambar placeholder
                     Text('Gambar', style: _alex()),
                     const SizedBox(height: 6),
                     Container(
@@ -521,6 +607,7 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
                       ),
                     ),
                     const SizedBox(height: 30),
+                    // Tombol aksi
                     Row(
                       children: [
                         Expanded(
@@ -618,7 +705,8 @@ class HapusMenuDialog extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+              padding: const EdgeInsets.symmetric(
+                  vertical: 30, horizontal: 20),
               child: Column(
                 children: [
                   const Icon(Icons.warning_amber_rounded,
@@ -627,13 +715,15 @@ class HapusMenuDialog extends StatelessWidget {
                   Text(
                     'Yakin ingin hapus menu "$namaMenu" dari daftar menu?',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.lora(color: Colors.black, fontSize: 16),
+                    style: GoogleFonts.lora(
+                        color: Colors.black, fontSize: 16),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 25),
+              padding: const EdgeInsets.only(
+                  left: 20, right: 20, bottom: 25),
               child: Row(
                 children: [
                   Expanded(
@@ -690,15 +780,17 @@ class HapusMenuDialog extends StatelessWidget {
 class EditMenuDialog extends StatefulWidget {
   final String namaMenu;
   final String harga;
-  final String jenis;
+  final String kategori;
   final String deskripsi;
+  final int    stok;
 
   const EditMenuDialog({
     super.key,
     required this.namaMenu,
     required this.harga,
-    required this.jenis,
+    required this.kategori,
     this.deskripsi = '',
+    this.stok      = 0,
   });
 
   @override
@@ -709,7 +801,8 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
   late TextEditingController _namaController;
   late TextEditingController _hargaController;
   late TextEditingController _deskripsiController;
-  String? _selectedJenis;
+  late TextEditingController _stokController;
+  String? _selectedKategori;
 
   @override
   void initState() {
@@ -717,11 +810,12 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     _namaController      = TextEditingController(text: widget.namaMenu);
     _hargaController     = TextEditingController(text: widget.harga);
     _deskripsiController = TextEditingController(text: widget.deskripsi);
+    _stokController      = TextEditingController(text: widget.stok.toString());
 
-    const jenisValid = ['Paket Nasi', 'Olahan Ayam', 'Jajanan'];
-    _selectedJenis = jenisValid.contains(widget.jenis.trim())
-        ? widget.jenis.trim()
-        : 'Paket Nasi';
+    final kategoriUpper = widget.kategori.toUpperCase().trim();
+    _selectedKategori = _kategoriDb.contains(kategoriUpper)
+        ? kategoriUpper
+        : _kategoriDb.first;
   }
 
   @override
@@ -729,6 +823,7 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     _namaController.dispose();
     _hargaController.dispose();
     _deskripsiController.dispose();
+    _stokController.dispose();
     super.dispose();
   }
 
@@ -759,14 +854,14 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
           height: height,
           decoration: _fieldDecor(),
           child: TextField(
-            controller: controller,
+            controller  : controller,
             keyboardType: type,
-            maxLines: maxLines,
-            style: _alex(),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: _alex(color: Colors.black.withOpacity(0.2)),
-              contentPadding: const EdgeInsets.symmetric(
+            maxLines    : maxLines,
+            style       : _alex(),
+            decoration  : InputDecoration(
+              hintText       : hint,
+              hintStyle      : _alex(color: Colors.black.withOpacity(0.2)),
+              contentPadding : const EdgeInsets.symmetric(
                   horizontal: 14, vertical: 14),
               border: InputBorder.none,
             ),
@@ -777,11 +872,11 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     );
   }
 
-  Widget _buildDropdown(String label) {
+  Widget _buildDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: _alex()),
+        Text('Kategori', style: _alex()),
         const SizedBox(height: 6),
         Container(
           height: 48,
@@ -790,14 +885,14 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               isExpanded: true,
-              value: _selectedJenis,
+              value: _selectedKategori,
               icon: const Icon(Icons.keyboard_arrow_down,
                   color: Colors.grey, size: 20),
-              items: ['Paket Nasi', 'Olahan Ayam', 'Jajanan']
-                  .map((e) =>
-                      DropdownMenuItem(value: e, child: Text(e, style: _alex())))
-                  .toList(),
-              onChanged: (val) => setState(() => _selectedJenis = val),
+              items: _kategoriDb.map((e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(_labelKategori(e), style: _alex()),
+                  )).toList(),
+              onChanged: (val) => setState(() => _selectedKategori = val),
             ),
           ),
         ),
@@ -806,28 +901,106 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     );
   }
 
+  // ── Stok stepper ──────────────────────────────────────────────────────────
+  Widget _buildStokStepper() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Stok Tersedia', style: _alex()),
+        const SizedBox(height: 6),
+        Container(
+          height: 48,
+          decoration: _fieldDecor(),
+          child: Row(
+            children: [
+              // Tombol kurang
+              GestureDetector(
+                onTap: () {
+                  final cur = int.tryParse(_stokController.text) ?? 0;
+                  if (cur > 0) {
+                    setState(() => _stokController.text = (cur - 1).toString());
+                  }
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFAC3715),
+                    borderRadius: BorderRadius.only(
+                      topLeft    : Radius.circular(9),
+                      bottomLeft : Radius.circular(9),
+                    ),
+                  ),
+                  child: const Icon(Icons.remove,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+              // Input angka stok
+              Expanded(
+                child: TextField(
+                  controller  : _stokController,
+                  keyboardType: TextInputType.number,
+                  textAlign   : TextAlign.center,
+                  style       : _alex(size: 16, weight: FontWeight.bold),
+                  decoration  : const InputDecoration(
+                    border        : InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              // Tombol tambah
+              GestureDetector(
+                onTap: () {
+                  final cur = int.tryParse(_stokController.text) ?? 0;
+                  setState(() => _stokController.text = (cur + 1).toString());
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0FBC5F),
+                    borderRadius: BorderRadius.only(
+                      topRight    : Radius.circular(9),
+                      bottomRight : Radius.circular(9),
+                    ),
+                  ),
+                  child: const Icon(Icons.add,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   void _simpan() {
-    if (_namaController.text.isEmpty) {
+    if (_namaController.text.trim().isEmpty) {
       _showError('Nama menu harus diisi');
       return;
     }
-    if (_hargaController.text.isEmpty) {
+    if (_hargaController.text.trim().isEmpty) {
       _showError('Harga harus diisi');
       return;
     }
 
     Navigator.pop(context, {
-      'nama'      : _namaController.text,
-      'harga'     : _hargaController.text,
-      'deskripsi' : _deskripsiController.text,
-      'jenis'     : _selectedJenis ?? widget.jenis,
+      'nama'     : _namaController.text.trim(),
+      'harga'    : _hargaController.text.trim(),
+      'deskripsi': _deskripsiController.text.trim(),
+      'kategori' : _selectedKategori ?? widget.kategori,
+      'stok'     : int.tryParse(_stokController.text) ?? 0,
     });
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.alexandria(color: Colors.white)),
+        content: Text(message,
+            style: GoogleFonts.alexandria(color: Colors.white)),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
       ),
@@ -846,6 +1019,7 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ── Header ──
             Container(
               width: double.infinity, height: 70,
               decoration: const BoxDecoration(
@@ -866,6 +1040,7 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
                 ],
               ),
             ),
+            // ── Form ──
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(22),
@@ -880,7 +1055,9 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
                         'Deskripsi Menu', 'Tulis deskripsi singkat menu',
                         _deskripsiController,
                         maxLines: 4, height: 100),
-                    _buildDropdown('Jenis'),
+                    _buildDropdown(),
+                    _buildStokStepper(),
+                    // Gambar placeholder
                     Text('Gambar', style: _alex()),
                     const SizedBox(height: 6),
                     Container(
@@ -898,6 +1075,7 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
                       ),
                     ),
                     const SizedBox(height: 30),
+                    // Tombol aksi
                     Row(
                       children: [
                         Expanded(
@@ -978,14 +1156,14 @@ class _SearchBar extends StatelessWidget {
             ),
             child: TextField(
               controller: controller,
-              onChanged: onChanged,
-              style: GoogleFonts.alexandria(fontSize: 14),
+              onChanged : onChanged,
+              style     : GoogleFonts.alexandria(fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Cari menu...',
-                hintStyle: GoogleFonts.alexandria(
+                hintText   : 'Cari menu...',
+                hintStyle  : GoogleFonts.alexandria(
                     color: Colors.black.withOpacity(0.3)),
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                border: InputBorder.none,
+                prefixIcon : const Icon(Icons.search, color: Colors.grey),
+                border     : InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 8),
               ),
@@ -1108,6 +1286,9 @@ class _MenuItemCard extends StatelessWidget {
     final foto  = (item['foto'] ?? '').toString();
     final nama  = (item['nama'] ?? '-').toString();
     final harga = item['harga'];
+    final stok  = item['stok'] is int
+        ? item['stok'] as int
+        : int.tryParse(item['stok'].toString()) ?? 0;
 
     String hargaStr;
     if (harga is num) {
@@ -1119,6 +1300,20 @@ class _MenuItemCard extends StatelessWidget {
       hargaStr = harga?.toString() ?? '-';
     }
 
+    // Warna badge stok
+    Color stokColor;
+    String stokLabel;
+    if (stok == 0) {
+      stokColor = const Color(0xFFD32F2F);
+      stokLabel = 'Habis';
+    } else if (stok <= 5) {
+      stokColor = const Color(0xFFF57C00);
+      stokLabel = 'Stok: $stok';
+    } else {
+      stokColor = const Color(0xFF0FBC5F);
+      stokLabel = 'Stok: $stok';
+    }
+
     return Container(
       decoration: BoxDecoration(
           color: Colors.white,
@@ -1127,6 +1322,7 @@ class _MenuItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Row(
         children: [
+          // Foto menu
           ClipRRect(
             borderRadius: BorderRadius.circular(5),
             child: Image.network(
@@ -1141,33 +1337,54 @@ class _MenuItemCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
+          // Info menu
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(nama,
                     style: GoogleFonts.alexandria(fontSize: 14)),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(hargaStr,
                     style: GoogleFonts.alexandria(
                       color: const Color(0xFFDC6727),
-                      fontSize: 17,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                     )),
+                const SizedBox(height: 4),
+                // Badge stok
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: stokColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: stokColor, width: 0.8),
+                  ),
+                  child: Text(
+                    stokLabel,
+                    style: GoogleFonts.alexandria(
+                      color: stokColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+          // Tombol aksi
           Column(
             children: [
               _ActionButton(
                 color: const Color(0xFFFD4141),
-                icon: Icons.delete_outline,
+                icon : Icons.delete_outline,
                 onTap: onDelete,
               ),
               const SizedBox(height: 4),
               _ActionButton(
                 color: const Color(0xFF0FBC5F),
-                icon: Icons.edit_outlined,
+                icon : Icons.edit_outlined,
                 onTap: onEdit,
               ),
             ],

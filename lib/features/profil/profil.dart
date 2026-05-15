@@ -552,14 +552,14 @@ class _ProfilPageState extends State<ProfilPage> {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                      horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x3F000000),
-                        spreadRadius: 3,
+                        spreadRadius: 2,
                         offset: Offset(0, 2),
                         blurRadius: 4,
                       ),
@@ -568,16 +568,16 @@ class _ProfilPageState extends State<ProfilPage> {
                   child: Row(
                     children: [
                       Container(
-                        width: 70, height: 70,
+                        width: 52, height: 52,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(12),
                           child: Image.network(
                             'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2F316b1609f20a8554436bf178b307cada634003f6user%201.png?alt=media&token=0dd54a77-ed31-408c-9241-66cd7452900f',
-                            width: 50, height: 50,
+                            width: 38, height: 38,
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -586,21 +586,23 @@ class _ProfilPageState extends State<ProfilPage> {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text('Edit Profil',
                                 style: GoogleFonts.alexandria(
                                   color: Colors.black,
-                                  fontSize: 20,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 )),
+                            const SizedBox(height: 2),
                             Text('Ubah nama, alamat, dll',
                                 style: GoogleFonts.alexandria(
-                                    color: Colors.black, fontSize: 15)),
+                                    color: Colors.black54, fontSize: 12)),
                           ],
                         ),
                       ),
                       const Icon(Icons.chevron_right,
-                          color: Colors.black54),
+                          color: Colors.black45, size: 22),
                     ],
                   ),
                 ),
@@ -611,7 +613,7 @@ class _ProfilPageState extends State<ProfilPage> {
             Positioned(
               left: screenWidth * 0.056,
               right: screenWidth * 0.056,
-              top: statusBarHeight + 447,
+              top: statusBarHeight + 397,
               child: GestureDetector(
                 onTap: () => Navigator.push(
                   context,
@@ -620,14 +622,14 @@ class _ProfilPageState extends State<ProfilPage> {
                 ),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                      horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x3F000000),
-                        spreadRadius: 3,
+                        spreadRadius: 2,
                         offset: Offset(0, 2),
                         blurRadius: 4,
                       ),
@@ -636,16 +638,16 @@ class _ProfilPageState extends State<ProfilPage> {
                   child: Row(
                     children: [
                       Container(
-                        width: 70, height: 70,
+                        width: 52, height: 52,
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF8EF),
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(12),
                           child: Image.network(
                             'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2Fd9a301e2d64a9171618781d7bcf96f3b5983ca8fpadlock%201.png?alt=media&token=c787a911-aa18-4b7d-90ba-f77d1988788c',
-                            width: 50, height: 50,
+                            width: 30, height: 30,
                             fit: BoxFit.contain,
                           ),
                         ),
@@ -654,21 +656,23 @@ class _ProfilPageState extends State<ProfilPage> {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Keamanan dan Password',
+                            Text('Keamanan & Password',
                                 style: GoogleFonts.alexandria(
                                   color: Colors.black,
-                                  fontSize: 20,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 )),
-                            Text('Ubah Password',
+                            const SizedBox(height: 2),
+                            Text('Ubah password',
                                 style: GoogleFonts.alexandria(
-                                    color: Colors.black, fontSize: 15)),
+                                    color: Colors.black54, fontSize: 12)),
                           ],
                         ),
                       ),
                       const Icon(Icons.chevron_right,
-                          color: Colors.black54),
+                          color: Colors.black45, size: 22),
                     ],
                   ),
                 ),
@@ -679,7 +683,7 @@ class _ProfilPageState extends State<ProfilPage> {
             Positioned(
               left: screenWidth * 0.144,
               right: screenWidth * 0.144,
-              top: statusBarHeight + 610,
+              top: statusBarHeight + 540,
               child: GestureDetector(
                 onTap: _showLogoutDialog,
                 child: Container(

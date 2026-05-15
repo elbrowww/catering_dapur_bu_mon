@@ -15,7 +15,6 @@ class BerandaPage extends StatefulWidget {
   State<BerandaPage> createState() => BerandaPageState();
 }
 
-// ← nama class State dibuat publik (tanpa underscore)
 class BerandaPageState extends State<BerandaPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -54,7 +53,6 @@ class BerandaPageState extends State<BerandaPage> {
     } catch (_) {}
   }
 
-  // ← method publik dipanggil dari main.dart saat kembali ke tab beranda
   Future<void> refreshAvatar() async => _loadAvatar();
 
   Future<void> _fetchMenu() async {
@@ -496,7 +494,6 @@ class BerandaPageState extends State<BerandaPage> {
             fit: BoxFit.contain,
           ),
           const SizedBox(width: 16),
-          // ── Avatar pojok kanan atas ──
           Container(
             width: 45,
             height: 45,
@@ -1138,21 +1135,22 @@ class _MenuTerlarisCard extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: menu.foto.isNotEmpty
-    ? Image.network(menu.imageUrl,  // ✅ PAKAI GETTER
-        width: 300,
-        height: 160,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 2,
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) => _placeholder())
-    : _placeholder(),
+              ? Image.network(
+                  menu.imageUrl,
+                  width: 300,
+                  height: 160,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => _placeholder())
+              : _placeholder(),
         ),
         const SizedBox(height: 6),
         Row(children: [
@@ -1224,21 +1222,22 @@ class _MenuCard extends StatelessWidget {
             borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12), topRight: Radius.circular(12)),
             child: menu.foto.isNotEmpty
-    ? Image.network(menu.imageUrl,  // ✅ PAKAI GETTER
-        width: double.infinity,
-        height: 80,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 2,
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) => _placeholder())
-    : _placeholder(),
+                ? Image.network(
+                    menu.imageUrl,
+                    width: double.infinity,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => _placeholder())
+                : _placeholder(),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(6, 5, 6, 6),
@@ -1311,18 +1310,22 @@ class _UlasanCard extends StatelessWidget {
         ],
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── Avatar customer sesuai foto_profil ──
         Container(
           width: 48,
-          height: 43,
+          height: 48,
           decoration: BoxDecoration(
               color: Colors.white, borderRadius: BorderRadius.circular(10)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F316b1609f20a8554436bf178b307cada634003f6user%201.png?alt=media&token=7e8f650d-fedf-4394-bbc4-445243b57769',
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.person, color: Color(0xFFD05122), size: 26),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Image.asset(
+                'assets/avatars/${ulasan.fotoProfil}',
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) =>
+                    _AvatarInisial(nama: ulasan.namaCustomer),
+              ),
             ),
           ),
         ),
@@ -1360,6 +1363,54 @@ class _UlasanCard extends StatelessWidget {
           ]),
         ),
       ]),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  AVATAR INISIAL — fallback jika asset tidak ditemukan
+// ══════════════════════════════════════════════════════════════
+class _AvatarInisial extends StatelessWidget {
+  final String nama;
+  const _AvatarInisial({required this.nama});
+
+  Color get _warnaBg {
+    const colors = [
+      Color(0xFFD05122),
+      Color(0xFFEE8B2E),
+      Color(0xFF4CAF50),
+      Color(0xFF2196F3),
+      Color(0xFF9C27B0),
+      Color(0xFFFF5722),
+      Color(0xFF00BCD4),
+    ];
+    if (nama.isEmpty) return colors[0];
+    return colors[nama.codeUnitAt(0) % colors.length];
+  }
+
+  String get _inisial {
+    if (nama.isEmpty) return '?';
+    final parts = nama.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return nama[0].toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: _warnaBg,
+      child: Center(
+        child: Text(
+          _inisial,
+          style: GoogleFonts.alexandria(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 }

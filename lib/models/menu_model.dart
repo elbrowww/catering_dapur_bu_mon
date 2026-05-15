@@ -4,7 +4,7 @@ class MenuModel {
   // 🔥 TAMBAHKAN INI - Base URL untuk gambar
   // Untuk emulator Android: gunakan 10.0.2.2
   // Untuk device fisik: ganti dengan IP komputer (contoh: 192.168.1.100)
-  static const String baseImageUrl = 'http://192.168.0.5/dapur_bu_mon/assets/images/';
+  static const String baseImageUrl = 'http://192.168.1.11/dapur_bu_mon/assets/images/';
   
  // 🔥 TAMBAHKAN GETTER INI - URL lengkap gambar
   String get imageUrl => '$baseImageUrl$foto';

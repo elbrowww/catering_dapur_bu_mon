@@ -2,6 +2,7 @@ class UlasanModel {
   final int idUlasan;
   final int idPesanan;
   final String namaCustomer;
+  final String fotoProfil;
   final int rating;
   final String komentar;
   final String tanggal;
@@ -10,6 +11,7 @@ class UlasanModel {
     required this.idUlasan,
     required this.idPesanan,
     required this.namaCustomer,
+    this.fotoProfil = 'tikus.png',
     required this.rating,
     required this.komentar,
     required this.tanggal,
@@ -24,6 +26,7 @@ class UlasanModel {
                       ? json['id_pesanan']
                       : int.tryParse(json['id_pesanan'].toString()) ?? 0,
       namaCustomer: json['nama_customer'] ?? '',
+      fotoProfil:   json['foto_profil'] as String? ?? 'tikus.png',
       rating:       json['rating'] is int
                       ? json['rating']
                       : int.tryParse(json['rating'].toString()) ?? 0,
@@ -36,6 +39,7 @@ class UlasanModel {
         'id_ulasan':     idUlasan,
         'id_pesanan':    idPesanan,
         'nama_customer': namaCustomer,
+        'foto_profil':   fotoProfil,
         'rating':        rating,
         'komentar':      komentar,
         'tanggal':       tanggal,
