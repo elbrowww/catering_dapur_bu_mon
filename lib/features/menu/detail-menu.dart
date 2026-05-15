@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/models/menu_model.dart';
-// import 'package:catering_dapur_bu_mon/services/api_service.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 
 // ============================================================
 // DETAIL MENU PAGE
-// Dipanggil via Navigator.push dari _MenuCard di menu.dart
-// Menerima MenuModel dari API
 // ============================================================
 class DetailMenuPage extends StatefulWidget {
   final MenuModel menu;
@@ -21,24 +18,31 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
   int _jumlah = 1;
   bool _isLoading = false;
 
+  // 🔥 Pre-order: tidak ada batasan stok, bisa tambah bebas
+  // Tersedia: dibatasi stok yang ada
   void _tambah() {
-    // Jangan bisa tambah melebihi stok
-    if (_jumlah < widget.menu.stok) {
+    if (widget.menu.isHabis) {
+      // Menu pre-order → tidak ada batasan jumlah (Bu Mon masak sesuai pesanan)
       setState(() => _jumlah++);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Stok hanya tersisa ${widget.menu.stok}',
-            style: GoogleFonts.alexandria(color: Colors.white),
+      // Menu tersedia → dibatasi stok
+      if (_jumlah < widget.menu.stok) {
+        setState(() => _jumlah++);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Stok hanya tersisa ${widget.menu.stok} untuk hari ini',
+              style: GoogleFonts.alexandria(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFFFFA726),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
           ),
-          backgroundColor: const Color(0xFFFFA726),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -47,23 +51,8 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
       });
 
   Future<void> _tambahKeranjang() async {
-    // Jangan bisa pesan jika stok habis
-    if (widget.menu.isHabis) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Stok ${widget.menu.nama} sedang habis.',
-            style: GoogleFonts.alexandria(color: Colors.white),
-          ),
-          backgroundColor: const Color(0xFFE53935),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-      return;
-    }
+    // 🔥 Tidak ada blokir — baik menu tersedia maupun pre-order bisa masuk keranjang
+    // Validasi tanggal dilakukan saat checkout
 
     setState(() => _isLoading = true);
 
@@ -78,22 +67,31 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
 
       if (mounted) {
         if (success) {
+          // Tampilkan info berbeda untuk tersedia vs pre-order
+          final isPreorder = widget.menu.isHabis;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
+                  Icon(
+                    isPreorder
+                        ? Icons.schedule_rounded
+                        : Icons.check_circle,
+                    color: Colors.white,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '$_jumlah× ${widget.menu.nama} ditambahkan ke keranjang!',
+                      isPreorder
+                          ? '$_jumlah× ${widget.menu.nama} ditambahkan (Pre-order — pilih tanggal saat checkout)'
+                          : '$_jumlah× ${widget.menu.nama} ditambahkan ke keranjang!',
                       style: GoogleFonts.alexandria(color: Colors.white),
                     ),
                   ),
                 ],
               ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
+              backgroundColor: isPreorder ? Colors.orange : Colors.green,
+              duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -103,23 +101,14 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '$_jumlah× ${widget.menu.nama} ditambahkan ke keranjang! (Lokal)',
-                      style: GoogleFonts.alexandria(color: Colors.white),
-                    ),
-                  ),
-                ],
+              content: Text(
+                'Gagal menambahkan ke keranjang',
+                style: GoogleFonts.alexandria(color: Colors.white),
               ),
-              backgroundColor: Colors.orange,
+              backgroundColor: Colors.red,
               duration: const Duration(seconds: 2),
             ),
           );
-          Navigator.pop(context);
         }
       }
     } catch (e) {
@@ -143,7 +132,8 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool habis = widget.menu.isHabis;
+    // 🔥 Gunakan isHabis untuk menentukan tampilan pre-order
+    final bool isPreorder = widget.menu.isHabis;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -158,7 +148,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
               height: 300,
               child: Stack(
                 children: [
-                  // Background gradient oranye
                   Positioned.fill(
                     child: Container(
                       decoration: const BoxDecoration(
@@ -175,7 +164,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                       ),
                     ),
                   ),
-                  // Layer overlay dekorasi
                   Positioned.fill(
                     child: Image.network(
                       'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMOKhEnss8buSiiHoow%2Fb772f011-4b7a-4be1-bd2b-4419616209dc.png',
@@ -183,7 +171,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                       errorBuilder: (_, __, ___) => const SizedBox(),
                     ),
                   ),
-                  // Gambar makanan di tengah
                   Center(
                     child: Stack(
                       alignment: Alignment.center,
@@ -206,40 +193,41 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(14),
                             child: widget.menu.foto.isNotEmpty
-    ? Image.network(
-        widget.menu.imageUrl,  // ✅ PAKAI GETTER imageUrl
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 2,
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) => const Icon(
-          Icons.fastfood,
-          color: Colors.white,
-          size: 80,
-        ),
-      )
-    : const Icon(
-        Icons.fastfood,
-        color: Colors.white,
-        size: 80,
-      ),
+                                ? Image.network(
+                                    widget.menu.imageUrl,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.fastfood,
+                                      color: Colors.white,
+                                      size: 80,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.fastfood,
+                                    color: Colors.white,
+                                    size: 80,
+                                  ),
                           ),
                         ),
-                        // Overlay "Stok Habis" di atas gambar
-                        if (habis)
+                        // 🔥 Badge pre-order (ganti overlay "Stok Habis")
+                        if (isPreorder)
                           Positioned(
                             top: 50,
                             child: Container(
                               width: 201,
                               height: 201,
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.45),
+                                color: Colors.black.withOpacity(0.35),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Center(
@@ -247,16 +235,24 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE53935),
+                                    color: Colors.orange.shade700,
                                     borderRadius: BorderRadius.circular(30),
                                   ),
-                                  child: Text(
-                                    'Stok Habis',
-                                    style: GoogleFonts.alexandria(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.schedule_rounded,
+                                          color: Colors.white, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Pre-order',
+                                        style: GoogleFonts.alexandria(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -296,7 +292,7 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
             ),
           ),
 
-          // ── Panel info (putih, rounded atas) ────────────
+          // ── Panel info ──────────────────────────────────
           Positioned(
             top: 265,
             left: 0,
@@ -312,7 +308,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Nama + rating
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -321,8 +316,7 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                           child: Text(
                             widget.menu.nama,
                             style: GoogleFonts.alexandria(
-                              color:
-                                  const Color(0xFF1A1818).withOpacity(0.85),
+                              color: const Color(0xFF1A1818).withOpacity(0.85),
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
                             ),
@@ -336,8 +330,7 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                             Text(
                               '5',
                               style: GoogleFonts.alexandria(
-                                color: const Color(0xFF1A1818)
-                                    .withOpacity(0.8),
+                                color: const Color(0xFF1A1818).withOpacity(0.8),
                                 fontSize: 22,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -349,7 +342,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
 
                     const SizedBox(height: 4),
 
-                    // Harga + Badge Stok berdampingan
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -362,7 +354,7 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Badge stok
+                        // 🔥 Badge stok / pre-order
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 5),
@@ -374,15 +366,17 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                widget.menu.isHabis
-                                    ? Icons.remove_shopping_cart_rounded
+                                isPreorder
+                                    ? Icons.schedule_rounded
                                     : Icons.inventory_2_rounded,
                                 color: Colors.white,
                                 size: 13,
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                widget.menu.labelStok,
+                                isPreorder
+                                    ? 'Pre-order'
+                                    : widget.menu.labelStok,
                                 style: GoogleFonts.alexandria(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -397,21 +391,55 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
 
                     const SizedBox(height: 6),
 
-                    // Estimasi
+                    // 🔥 Info berbeda untuk tersedia vs pre-order
                     Text(
-                      'Estimasi Pembuatan 2 Jam  |  Minimal booking H-2',
+                      isPreorder
+                          ? '⏰ Pre-order  |  Pilih tanggal saat checkout (min. besok)'
+                          : 'Estimasi Pembuatan 2 Jam  |  Tersedia hari ini',
                       style: GoogleFonts.alexandria(
-                        color: const Color(0xFF1A1818).withOpacity(0.5),
+                        color: isPreorder
+                            ? Colors.orange.shade700
+                            : const Color(0xFF1A1818).withOpacity(0.5),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
 
+                    // 🔥 Banner info pre-order
+                    if (isPreorder) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                color: Colors.orange.shade700, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Menu ini tersedia lewat pre-order. Bu Mon akan memasakkan khusus untuk Anda sesuai tanggal yang dipilih saat checkout.',
+                                style: GoogleFonts.alexandria(
+                                  color: Colors.orange.shade800,
+                                  fontSize: 12,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 20),
                     const Divider(color: Color(0xFFEEEEEE)),
                     const SizedBox(height: 14),
 
-                    // Deskripsi
                     Text(
                       'Deskripsi',
                       style: GoogleFonts.alexandria(
@@ -459,15 +487,14 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
               ),
               child: Row(
                 children: [
-                  // Tombol kurang — disabled jika habis
+                  // 🔥 Tombol kurang — selalu aktif (pre-order bebas jumlah)
                   _TombolBulat(
                     icon: Icons.remove,
-                    onTap: habis ? () {} : _kurang,
-                    disabled: habis,
+                    onTap: _kurang,
+                    disabled: false,
                   ),
                   const SizedBox(width: 8),
 
-                  // Angka jumlah
                   Container(
                     width: 42,
                     height: 42,
@@ -477,7 +504,7 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                     ),
                     child: Center(
                       child: Text(
-                        habis ? '0' : '$_jumlah',
+                        '$_jumlah',
                         style: GoogleFonts.alexandria(
                           color: const Color(0xFF1A1818),
                           fontSize: 20,
@@ -488,18 +515,18 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                   ),
                   const SizedBox(width: 8),
 
-                  // Tombol tambah — disabled jika habis
+                  // 🔥 Tombol tambah — selalu aktif
                   _TombolBulat(
                     icon: Icons.add,
-                    onTap: habis ? () {} : _tambah,
-                    disabled: habis,
+                    onTap: _tambah,
+                    disabled: false,
                   ),
                   const SizedBox(width: 14),
 
-                  // Tombol Tambah Keranjang
+                  // 🔥 Tombol Tambah Keranjang — selalu aktif (tidak ada blokir)
                   Expanded(
                     child: GestureDetector(
-                      onTap: (_isLoading || habis) ? null : _tambahKeranjang,
+                      onTap: _isLoading ? null : _tambahKeranjang,
                       child: Container(
                         height: 50,
                         decoration: BoxDecoration(
@@ -507,22 +534,23 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                           gradient: LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
-                            colors: habis
+                            // 🔥 Warna oranye untuk pre-order, gradient normal untuk tersedia
+                            colors: isPreorder
                                 ? [
-                                    Colors.grey.shade400,
-                                    Colors.grey.shade500,
+                                    Colors.orange.shade600,
+                                    Colors.orange.shade400,
                                   ]
                                 : const [
                                     Color(0xFFEE8B2E),
                                     Color(0xFFD05122),
                                     Color(0xFFAC3715),
                                   ],
-                            stops: habis ? [0.0, 1.0] : [0.0, 0.5, 1.0],
+                            stops: isPreorder ? [0.0, 1.0] : [0.0, 0.5, 1.0],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: habis
-                                  ? Colors.grey.withOpacity(0.3)
+                              color: isPreorder
+                                  ? Colors.orange.withOpacity(0.4)
                                   : const Color(0xFFD05122).withOpacity(0.4),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
@@ -544,16 +572,16 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    habis
-                                        ? Icons.remove_shopping_cart_rounded
+                                    isPreorder
+                                        ? Icons.schedule_rounded
                                         : Icons.shopping_cart_outlined,
                                     color: Colors.white,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    habis
-                                        ? 'Stok Habis'
+                                    isPreorder
+                                        ? 'Pre-order Sekarang'
                                         : 'Tambah Keranjang',
                                     style: GoogleFonts.alexandria(
                                       color: Colors.white,

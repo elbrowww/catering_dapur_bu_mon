@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart'; // ✅ untuk kIsWeb & Uint8List
+import 'package:flutter/foundation.dart';
 import 'dio_helper.dart';
 import 'session_manager.dart';
 
@@ -95,7 +95,6 @@ class ApiService {
     }
   }
 
-  // Login menggunakan nama ATAU no_telp (salah satu wajib diisi)
   static Future<Map<String, dynamic>> login({
     String? nama,
     String? noTelp,
@@ -132,7 +131,6 @@ class ApiService {
     }
   }
 
-  // Register final (setelah OTP diverifikasi) — tanpa email
   static Future<Map<String, dynamic>> registerWithOtp({
     required String nama,
     required String noTelp,
@@ -166,7 +164,6 @@ class ApiService {
     await SessionManager.clearSession();
   }
 
-  /// Ganti password user yang sedang login.
   static Future<Map<String, dynamic>> changePassword({
     required String passwordLama,
     required String passwordBaru,
@@ -192,6 +189,20 @@ class ApiService {
   static Future<List<dynamic>> getMenu() async {
     try {
       final response = await _dio.get('/menu.php');
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List)                        return data;
+        if (data is Map && data['data'] is List) return data['data'];
+      }
+      return [];
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  static Future<List<dynamic>> getMenuTerlaris() async {
+    try {
+      final response = await _dio.get('/menu.php?action=terlaris');
       if (response.statusCode == 200) {
         final data = response.data;
         if (data is List)                        return data;
@@ -318,9 +329,15 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> hapusDariKeranjang(int idItem) async {
+  // 🔥 PERBAIKAN: idItem nullable — null = kosongkan semua, int = hapus satu item
+  static Future<Map<String, dynamic>> hapusDariKeranjang(int? idItem) async {
     try {
-      final response = await _dio.delete('/keranjang.php?id_item=$idItem');
+      // Jika idItem null → hapus semua (kosongkan keranjang), tidak kirim query param
+      // Jika idItem ada  → hapus item spesifik
+      final url = idItem != null
+          ? '/keranjang.php?id_item=$idItem'
+          : '/keranjang.php';
+      final response = await _dio.delete(url);
       return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));
@@ -535,6 +552,25 @@ class ApiService {
       final response = await _dio.post(
         '/profil.php?action=update_avatar',
         data: {'avatar': namaAvatar},
+      );
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  // ==========================================================
+  //  DASHBOARD ADMIN
+  // ==========================================================
+
+  static Future<Map<String, dynamic>> getDashboardAdmin({
+    required int bulan,
+    required int tahun,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/dashboard_admin.php',
+        queryParameters: {'bulan': bulan, 'tahun': tahun},
       );
       return _parse(response);
     } on DioException catch (e) {

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/checkout.dart';
-
-// 🔥 Tambahkan import config
 import 'package:catering_dapur_bu_mon/services/config.dart';
 
 class KeranjangPage extends StatefulWidget {
@@ -29,7 +27,27 @@ class _KeranjangPageState extends State<KeranjangPage> {
     super.dispose();
   }
 
-  void _onUpdate() => setState(() {});
+  void _onUpdate() {
+    // Tampilkan snackbar error jika ada
+    if (_ctrl.errorMessage != null && mounted) {
+      final msg = _ctrl.errorMessage!;
+      _ctrl.clearError();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg, style: GoogleFonts.alexandria(color: Colors.white)),
+              backgroundColor: Colors.red.shade700,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      });
+    }
+    setState(() {});
+  }
 
   Future<void> _loadKeranjang() async {
     await _ctrl.loadKeranjang();
@@ -76,19 +94,16 @@ class _KeranjangPageState extends State<KeranjangPage> {
       );
       return;
     }
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CheckoutPage()),
     );
   }
 
-  // 🔥 Helper untuk mendapatkan URL lengkap gambar
   String _getFullImageUrl(String imageUrl) {
     if (imageUrl.isEmpty) return '';
-    // Jika sudah URL lengkap, return as-is
     if (imageUrl.startsWith('http')) return imageUrl;
-    // Tambahkan base URL
     return '${AppConfig.imageBaseUrl}$imageUrl';
   }
 
@@ -109,7 +124,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
       ),
       child: Column(
         children: [
-          // ── Header ─────────────────────────────────
+          // ── Header ──────────────────────────────────────────
           Padding(
             padding: EdgeInsets.fromLTRB(24, 16 + statusBarHeight, 24, 0),
             child: Container(
@@ -141,7 +156,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
           ),
           const SizedBox(height: 16),
 
-          // ── Body putih ────────────────────────────
+          // ── Body putih ──────────────────────────────────────
           Expanded(
             child: Container(
               width: double.infinity,
@@ -161,7 +176,8 @@ class _KeranjangPageState extends State<KeranjangPage> {
                           children: [
                             Expanded(
                               child: ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                                padding: const EdgeInsets.fromLTRB(
+                                    20, 20, 20, 12),
                                 itemCount: items.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: 12),
@@ -169,14 +185,17 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                   nama: items[i]['nama'],
                                   harga: _ctrl.formatRupiah(items[i]['harga']),
                                   jumlah: items[i]['jumlah'],
-                                  imageUrl: _getFullImageUrl(items[i]['imageUrl'] ?? ''), // 🔥 Perbaikan di sini
+                                  imageUrl: _getFullImageUrl(
+                                      items[i]['imageUrl'] ?? ''),
+                                  isPreorder: items[i]['is_preorder'] == true,
                                   onTambah: () => _ctrl.tambahSatu(i),
                                   onKurang: () => _ctrl.kurangSatu(i),
                                 ),
                               ),
                             ),
                             Padding(
-                              padding: EdgeInsets.fromLTRB(20, 0, 20, navbarHeight),
+                              padding: EdgeInsets.fromLTRB(
+                                  20, 0, 20, navbarHeight),
                               child: Column(
                                 children: [
                                   Container(
@@ -204,24 +223,27 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                                 color: Colors.black,
                                                 fontSize: 16)),
                                         Text(
-                                            _ctrl.formatRupiah(_ctrl.total),
-                                            style: GoogleFonts.alexandria(
-                                              color: const Color(0xFFDC6727),
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.bold,
-                                            )),
+                                          _ctrl.formatRupiah(_ctrl.total),
+                                          style: GoogleFonts.alexandria(
+                                            color: const Color(0xFFDC6727),
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
                                   const SizedBox(height: 10),
 
                                   GestureDetector(
-                                    onTap: _ctrl.isLoading ? null : _checkout,
+                                    onTap:
+                                        _ctrl.isLoading ? null : _checkout,
                                     child: Container(
                                       width: double.infinity,
                                       height: 43,
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(18),
+                                        borderRadius:
+                                            BorderRadius.circular(18),
                                         gradient: const LinearGradient(
                                           colors: [
                                             Color(0xFFEE8B2E),
@@ -236,7 +258,8 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                             ? const SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                   color: Colors.white,
                                                 ),
@@ -253,12 +276,14 @@ class _KeranjangPageState extends State<KeranjangPage> {
                                   const SizedBox(height: 8),
 
                                   GestureDetector(
-                                    onTap: _ctrl.isLoading ? null : _kosongkan,
+                                    onTap:
+                                        _ctrl.isLoading ? null : _kosongkan,
                                     child: Container(
                                       width: double.infinity,
                                       height: 43,
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(18),
+                                        borderRadius:
+                                            BorderRadius.circular(18),
                                         gradient: const LinearGradient(
                                           colors: [
                                             Color(0xFFAC3715),
@@ -299,7 +324,8 @@ class _KeranjangPageState extends State<KeranjangPage> {
               size: 72, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text('Keranjang masih kosong',
-              style: GoogleFonts.alexandria(color: Colors.grey, fontSize: 16)),
+              style:
+                  GoogleFonts.alexandria(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 8),
           Text('Yuk tambahkan menu favoritmu!',
               style: GoogleFonts.alexandria(
@@ -310,12 +336,13 @@ class _KeranjangPageState extends State<KeranjangPage> {
   }
 }
 
-// ── Item Keranjang (DIPERBAIKI) ─────────────────────────────────────────────
+// ── Item Keranjang ──────────────────────────────────────────────────────────
 class _KeranjangItem extends StatelessWidget {
   final String nama;
   final String harga;
   final int jumlah;
   final String imageUrl;
+  final bool isPreorder;
   final VoidCallback onTambah;
   final VoidCallback onKurang;
 
@@ -324,6 +351,7 @@ class _KeranjangItem extends StatelessWidget {
     required this.harga,
     required this.jumlah,
     required this.imageUrl,
+    required this.isPreorder,
     required this.onTambah,
     required this.onKurang,
   });
@@ -332,7 +360,6 @@ class _KeranjangItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -348,58 +375,90 @@ class _KeranjangItem extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Gambar
           Container(
             width: 65,
-            height: 65,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF79F36),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(5),
-              child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.fastfood,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    )
-                  : const Icon(Icons.fastfood, color: Colors.white, size: 32),
+            height: 80,
+            alignment: Alignment.center,
+            child: Container(
+              width: 65,
+              height: 65,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF79F36),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.fastfood,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      )
+                    : const Icon(Icons.fastfood,
+                        color: Colors.white, size: 32),
+              ),
             ),
           ),
           const SizedBox(width: 12),
 
+          // Info
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(nama,
-                    style: GoogleFonts.alexandria(
-                        color: Colors.black, fontSize: 14)),
-                const SizedBox(height: 2),
-                Text(harga,
-                    style: GoogleFonts.alexandria(
-                      color: const Color(0xFFDC6727),
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    )),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(nama,
+                      style: GoogleFonts.alexandria(
+                          color: Colors.black, fontSize: 14)),
+                  const SizedBox(height: 2),
+                  Text(harga,
+                      style: GoogleFonts.alexandria(
+                        color: const Color(0xFFDC6727),
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      )),
+                  // Badge pre-order per item
+                  if (isPreorder) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '⏰ Pre-order',
+                        style: GoogleFonts.alexandria(
+                          color: Colors.orange.shade800,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
 
+          // Tombol jumlah
           Row(
             children: [
               _TombolJumlah(onTap: onKurang, isReduce: true),
@@ -412,12 +471,14 @@ class _KeranjangItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: Center(
-                  child: Text('$jumlah',
-                      style: GoogleFonts.alexandria(
-                        color: const Color(0xFF1A1818),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      )),
+                  child: Text(
+                    '$jumlah',
+                    style: GoogleFonts.alexandria(
+                      color: const Color(0xFF1A1818),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 2),
@@ -430,7 +491,7 @@ class _KeranjangItem extends StatelessWidget {
   }
 }
 
-// ── Tombol + / − ───────────────────────────────────────────────
+// ── Tombol + / − ────────────────────────────────────────────────────────────
 class _TombolJumlah extends StatelessWidget {
   final VoidCallback onTap;
   final bool isReduce;
@@ -447,7 +508,11 @@ class _TombolJumlah extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(3),
           gradient: const LinearGradient(
-            colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+            colors: [
+              Color(0xFFD05122),
+              Color(0xFFEE8B2E),
+              Color(0xFFFBA839),
+            ],
             stops: [0.17, 0.47, 0.60],
           ),
           boxShadow: const [

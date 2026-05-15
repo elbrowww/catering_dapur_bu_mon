@@ -25,6 +25,11 @@ class BerandaPageState extends State<BerandaPage> {
   bool _isLoadingMenu = true;
   String? _errorMenu;
 
+  // ── Menu Terlaris ──────────────────────────────────────────
+  List<MenuModel> _menuTerlaris = [];
+  bool _isLoadingTerlaris = true;
+  // ──────────────────────────────────────────────────────────
+
   List<UlasanModel> _daftarUlasan = [];
   bool _isLoadingUlasan = true;
   String? _errorUlasan;
@@ -38,6 +43,7 @@ class BerandaPageState extends State<BerandaPage> {
     super.initState();
     _getLocation();
     _fetchMenu();
+    _fetchMenuTerlaris();
     _fetchUlasan();
     _loadAvatar();
   }
@@ -81,6 +87,23 @@ class BerandaPageState extends State<BerandaPage> {
       });
     }
   }
+
+  // ── Fetch 3 menu terlaris dari endpoint khusus ─────────────
+  Future<void> _fetchMenuTerlaris() async {
+    setState(() => _isLoadingTerlaris = true);
+    try {
+      final raw = await ApiService.getMenuTerlaris();
+      setState(() {
+        _menuTerlaris = raw
+            .map((e) => MenuModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        _isLoadingTerlaris = false;
+      });
+    } catch (_) {
+      setState(() => _isLoadingTerlaris = false);
+    }
+  }
+  // ──────────────────────────────────────────────────────────
 
   Future<void> _fetchUlasan() async {
     setState(() {
@@ -265,28 +288,30 @@ class BerandaPageState extends State<BerandaPage> {
                   fontWeight: FontWeight.bold)),
         ),
         const SizedBox(height: 8),
+        // ── Menu Terlaris — data dari DB ───────────────────────
         SizedBox(
           height: 210,
-          child: _isLoadingMenu
+          child: _isLoadingTerlaris
               ? const Center(
                   child: CircularProgressIndicator(color: Color(0xFFD05122)))
-              : _menuTersedia.isEmpty
+              : _menuTerlaris.isEmpty
                   ? const SizedBox()
                   : ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 26),
-                      itemCount: _menuTersedia.take(4).length,
+                      itemCount: _menuTerlaris.length,
                       itemBuilder: (_, i) {
                         return Padding(
                           padding: const EdgeInsets.only(right: 16),
                           child: GestureDetector(
-                            onTap: () => _keDetailMenu(_menuTersedia[i]),
-                            child: _MenuTerlarisCard(menu: _menuTersedia[i]),
+                            onTap: () => _keDetailMenu(_menuTerlaris[i]),
+                            child: _MenuTerlarisCard(menu: _menuTerlaris[i]),
                           ),
                         );
                       },
                     ),
         ),
+        // ──────────────────────────────────────────────────────
         const SizedBox(height: 24),
 
         Padding(
@@ -1121,7 +1146,7 @@ class _TrackingCardState extends State<_TrackingCard> {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  MENU TERLARIS CARD
+//  MENU TERLARIS CARD — tanpa bintang
 // ══════════════════════════════════════════════════════════════
 class _MenuTerlarisCard extends StatelessWidget {
   final MenuModel menu;
@@ -1153,40 +1178,37 @@ class _MenuTerlarisCard extends StatelessWidget {
               : _placeholder(),
         ),
         const SizedBox(height: 6),
+        // ── Info nama & kategori saja, tanpa bintang ───────────
         Row(children: [
           Flexible(
             child: Opacity(
               opacity: 0.8,
-              child: Text(menu.nama,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
+              child: Text(
+                menu.nama,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.alexandria(
+                    color: const Color(0xFF1A1818),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          const Icon(Icons.star, size: 12, color: Color(0xFFF79F36)),
-          const SizedBox(width: 2),
-          Opacity(
-              opacity: 0.8,
-              child: Text('5',
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500))),
           if (menu.kategori.isNotEmpty) ...[
             const SizedBox(width: 8),
             Opacity(
-                opacity: 0.6,
-                child: Text(menu.kategori,
-                    style: GoogleFonts.alexandria(
-                        color: const Color(0xFF1A1818),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500))),
+              opacity: 0.6,
+              child: Text(
+                menu.kategori,
+                style: GoogleFonts.alexandria(
+                    color: const Color(0xFF1A1818),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500),
+              ),
+            ),
           ],
         ]),
+        // ──────────────────────────────────────────────────────
       ]),
     );
   }
