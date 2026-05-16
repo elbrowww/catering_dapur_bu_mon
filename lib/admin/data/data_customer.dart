@@ -9,18 +9,21 @@ class _CustomerData {
   final String nama;
   final String noTelp;
   final String alamat;
+  final String fotoProfil;
 
   const _CustomerData({
     required this.nama,
     required this.noTelp,
     required this.alamat,
+    required this.fotoProfil,
   });
 
   factory _CustomerData.fromJson(Map<String, dynamic> json) {
     return _CustomerData(
-      nama:   json['nama']    ?? '',
-      noTelp: json['no_telp'] ?? '',
-      alamat: json['alamat']  ?? '',
+      nama:       json['nama']        ?? '',
+      noTelp:     json['no_telp']     ?? '',
+      alamat:     json['alamat']      ?? '',
+      fotoProfil: json['foto_profil'] ?? 'tikus.png',
     );
   }
 }
@@ -296,7 +299,6 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
                   ),
                 ],
               ),
-              // Indikator halaman
               if (!widget.isLoading &&
                   widget.errorMessage == null &&
                   widget.ulasanList.isNotEmpty)
@@ -312,7 +314,6 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
           ),
           const SizedBox(height: 12),
 
-          // Konten: Loading / Error / Empty / Slider
           if (widget.isLoading)
             Container(
               width: double.infinity,
@@ -372,11 +373,9 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
               final u = widget.ulasanList[_currentPage];
               return Column(
                 children: [
-                  // ── Card ulasan + panah kiri kanan ──
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Tombol prev
                       GestureDetector(
                         onTap: _currentPage > 0
                             ? () => setState(() => _currentPage--)
@@ -390,8 +389,6 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
                         ),
                       ),
                       const SizedBox(width: 6),
-
-                      // Card ulasan
                       Expanded(
                         child: Container(
                           width: double.infinity,
@@ -412,7 +409,6 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Nama + tanggal
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -434,7 +430,6 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
                                   ),
                                 ],
                               ),
-                              // Bintang rating
                               Row(
                                 children: List.generate(5, (si) {
                                   return Icon(
@@ -447,7 +442,6 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
                                 }),
                               ),
                               const SizedBox(height: 6),
-                              // Komentar FULL
                               Text(
                                 u.komentar,
                                 style: GoogleFonts.alexandria(
@@ -461,9 +455,7 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
                           ),
                         ),
                       ),
-
                       const SizedBox(width: 6),
-                      // Tombol next
                       GestureDetector(
                         onTap: _currentPage < widget.ulasanList.length - 1
                             ? () => setState(() => _currentPage++)
@@ -478,10 +470,7 @@ class _UlasanSliderCardState extends State<_UlasanSliderCard> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 10),
-
-                  // Dot indicator
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(widget.ulasanList.length, (i) {
@@ -602,15 +591,37 @@ class _CustomerCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: const Color(0xFFF79F36),
-            child: Text(
-              customer.nama.isNotEmpty ? customer.nama[0].toUpperCase() : '?',
-              style: GoogleFonts.alexandria(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+          // ── Avatar ────────────────────────────────────────
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFFFF0E8),
+              border: Border.all(
+                color: const Color(0xFFD05122),
+                width: 2,
+              ),
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Image.asset(
+                  'assets/avatars/${customer.fotoProfil}',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Center(
+                    child: Text(
+                      customer.nama.isNotEmpty
+                          ? customer.nama[0].toUpperCase()
+                          : '?',
+                      style: GoogleFonts.alexandria(
+                        color: const Color(0xFFD05122),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -619,7 +630,6 @@ class _CustomerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Nama
                 Text(
                   customer.nama,
                   style: GoogleFonts.alexandria(
@@ -629,7 +639,6 @@ class _CustomerCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                // No. Telepon
                 Row(
                   children: [
                     const Icon(Icons.phone,
@@ -645,7 +654,6 @@ class _CustomerCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                // Alamat
                 Row(
                   children: [
                     const Icon(Icons.location_on,
@@ -668,7 +676,6 @@ class _CustomerCard extends StatelessWidget {
               ],
             ),
           ),
-
         ],
       ),
     );

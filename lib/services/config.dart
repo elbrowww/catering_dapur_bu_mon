@@ -3,7 +3,7 @@ class AppConfig {
   // 🔥 Pilih salah satu sesuai kebutuhan:
   
   // Untuk Emulator Android (AVD)
-  static const String baseUrl = 'http://192.168.1.11';
+  static const String baseUrl = 'http://192.168.1.17';
   
   // Untuk Device Fisik (ganti dengan IP komputer Anda)
   // Cek IP dengan:

@@ -15,8 +15,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
   final _noTelpController = TextEditingController();
   final _alamatController = TextEditingController();
 
-  bool _isLoading = true;
-  bool _isSaving  = false;
+  bool   _isLoading = true;
+  bool   _isSaving  = false;
+  String _avatar    = 'tikus.png'; // ← tambah
 
   // Nomor HP lama untuk kirim OTP
   String _noTelpAwal = '';
@@ -42,9 +43,10 @@ class _EditProfilPageState extends State<EditProfilPage> {
     try {
       final data = await ApiService.getProfil();
       setState(() {
-        _namaController.text   = data['nama']    ?? '';
-        _noTelpController.text = data['no_telp'] ?? '';
-        _alamatController.text = data['alamat']  ?? '';
+        _namaController.text   = data['nama']        ?? '';
+        _noTelpController.text = data['no_telp']     ?? '';
+        _alamatController.text = data['alamat']      ?? '';
+        _avatar                = data['foto_profil'] ?? 'tikus.png'; // ← tambah
         _noTelpAwal = data['no_telp'] ?? '';
         _isLoading  = false;
       });
@@ -58,7 +60,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     }
   }
 
-  // ── Kirim OTP lalu buka halaman verifikasi ───────────────────────────────
   Future<void> _lanjutDenganOtp() async {
     if (_namaController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -220,7 +221,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     clipBehavior: Clip.none,
                     children: [
 
-                      // Panel putih bawah
+                      // ── Panel putih bawah ──────────────────
                       Positioned(
                         left: 0,
                         top: sh * 0.372,
@@ -234,7 +235,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                         ),
                       ),
 
-                      // Foto profil
+                      // ── Avatar (tampil saja, tidak bisa tap) ──
                       Positioned(
                         left: sw * 0.313,
                         top: sh * 0.080,
@@ -243,52 +244,33 @@ class _EditProfilPageState extends State<EditProfilPage> {
                           height: 150,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(75),
-                          ),
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Positioned(
-                                left: 10,
-                                top: 10,
-                                child: Image.network(
-                                  'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2F988b443c-cf48-42ae-9b9d-4ea1a53dfaa5.png',
-                                  width: 130,
-                                  height: 130,
-                                  fit: BoxFit.contain,
-                                ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-
-                      // Ikon edit foto
-                      Positioned(
-                        left: sw * 0.572,
-                        top: sh * 0.195,
-                        child: Image.network(
-                          'https://storage.googleapis.com/codeless-app.appspot.com/uploads%2Fimages%2F0SMpkHR7SLEvor999HjP%2Fc6f7abf4-bbd0-4265-9843-7332090b758c.png',
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      Positioned(
-                        left: sw * 0.585,
-                        top: sh * 0.202,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(200),
-                          child: Image.network(
-                            'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2Fdbc746d275f5080798ce1a4d831e54481b78d1c4Create%20profile%20-%20empty.png?alt=media&token=d572421f-71e8-4990-b603-9eb3f8d1352b',
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
+                          child: ClipOval(
+                            child: Padding(
+                              padding: const EdgeInsets.all(18),
+                              child: Image.asset(
+                                'assets/avatars/$_avatar',
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.pets,
+                                  size: 60,
+                                  color: Color(0xFFD05122),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
 
-                      // Nama user (reaktif)
+                      // ── Nama user (reaktif) ────────────────
                       Positioned(
                         left: sw * 0.05,
                         right: sw * 0.05,
@@ -306,7 +288,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                         ),
                       ),
 
-                      // Form fields
+                      // ── Form fields ────────────────────────
                       Positioned(
                         left: sw * 0.087,
                         top: sh * 0.395,
@@ -349,7 +331,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                               ),
                               const SizedBox(height: 12),
 
-                              // Info OTP selalu tampil
+                              // Info OTP
                               Row(
                                 children: [
                                   const Icon(Icons.info_outline,
@@ -369,7 +351,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
                               const SizedBox(height: 20),
 
-                              // Tombol Lanjut — selalu OTP
+                              // Tombol Lanjut
                               GestureDetector(
                                 onTap: _isSaving ? null : _lanjutDenganOtp,
                                 child: AnimatedContainer(
