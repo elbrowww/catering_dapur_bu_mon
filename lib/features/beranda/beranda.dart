@@ -25,10 +25,8 @@ class BerandaPageState extends State<BerandaPage> {
   bool _isLoadingMenu = true;
   String? _errorMenu;
 
-  // ── Menu Terlaris ──────────────────────────────────────────
   List<MenuModel> _menuTerlaris = [];
   bool _isLoadingTerlaris = true;
-  // ──────────────────────────────────────────────────────────
 
   List<UlasanModel> _daftarUlasan = [];
   bool _isLoadingUlasan = true;
@@ -88,7 +86,6 @@ class BerandaPageState extends State<BerandaPage> {
     }
   }
 
-  // ── Fetch 3 menu terlaris dari endpoint khusus ─────────────
   Future<void> _fetchMenuTerlaris() async {
     setState(() => _isLoadingTerlaris = true);
     try {
@@ -103,7 +100,6 @@ class BerandaPageState extends State<BerandaPage> {
       setState(() => _isLoadingTerlaris = false);
     }
   }
-  // ──────────────────────────────────────────────────────────
 
   Future<void> _fetchUlasan() async {
     setState(() {
@@ -171,10 +167,6 @@ class BerandaPageState extends State<BerandaPage> {
             m.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             m.kategori.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
-  }
-
-  List<MenuModel> get _menuTersedia {
-    return _semuaMenu.where((m) => m.stok > 0).toList();
   }
 
   void _keDetailMenu(MenuModel menu) {
@@ -258,222 +250,262 @@ class BerandaPageState extends State<BerandaPage> {
   Widget build(BuildContext context) {
     final navbarHeight = kBottomNavigationBarHeight + 60;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.zero,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    // ══════════════════════════════════════════════════════════
+    // POLA STICKY HEADER YANG BENAR:
+    //   Column
+    //   ├── _buildHeader()          ← TIDAK ikut scroll (sticky)
+    //   └── Expanded
+    //       └── SingleChildScrollView  ← hanya konten yang scroll
+    // ══════════════════════════════════════════════════════════
+    return Column(
+      children: [
+        // ── HEADER — selalu terlihat, tidak ikut scroll ────────
         _buildHeader(context),
-        const SizedBox(height: 16),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Text('Tracking Pesanan',
-              style: GoogleFonts.alexandria(
-                  color: const Color(0xFF1A1818),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: _TrackingCard(onLihatDetail: widget.onLihatDetail),
-        ),
-        const SizedBox(height: 24),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Text('Menu Terlaris',
-              style: GoogleFonts.alexandria(
-                  color: const Color(0xFF1A1818),
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 8),
-        // ── Menu Terlaris — data dari DB ───────────────────────
-        SizedBox(
-          height: 210,
-          child: _isLoadingTerlaris
-              ? const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFD05122)))
-              : _menuTerlaris.isEmpty
-                  ? const SizedBox()
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 26),
-                      itemCount: _menuTerlaris.length,
-                      itemBuilder: (_, i) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 16),
-                          child: GestureDetector(
-                            onTap: () => _keDetailMenu(_menuTerlaris[i]),
-                            child: _MenuTerlarisCard(menu: _menuTerlaris[i]),
-                          ),
-                        );
-                      },
-                    ),
-        ),
         // ──────────────────────────────────────────────────────
-        const SizedBox(height: 24),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Menu Tersedia',
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-              GestureDetector(
-                onTap: _fetchMenu,
-                child: Opacity(
-                    opacity: 0.5,
-                    child: Row(children: [
-                      const Icon(Icons.refresh,
-                          size: 14, color: Color(0xFF1A1818)),
-                      const SizedBox(width: 4),
-                      Text('Refresh',
-                          style: GoogleFonts.alexandria(
-                              color: const Color(0xFF1A1818),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
-                    ])),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
+        // ── KONTEN SCROLLABLE ──────────────────────────────────
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.zero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
 
-        if (_isLoadingMenu)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-                child: CircularProgressIndicator(color: Color(0xFFD05122))),
-          )
-        else if (_errorMenu != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
-            child: Column(children: [
-              Icon(Icons.wifi_off_rounded,
-                  color: Colors.grey.shade400, size: 40),
-              const SizedBox(height: 8),
-              Text(_errorMenu!,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                      color: Colors.grey, fontSize: 13)),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _fetchMenu,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFFD05122), Color(0xFFEE8B2E)]),
-                  ),
-                  child: Text('Coba Lagi',
-                      style: GoogleFonts.alexandria(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ]),
-          )
-        else if (_menuTerfilter.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
-            child: Text('Menu tidak ditemukan',
-                style:
-                    GoogleFonts.alexandria(color: Colors.grey, fontSize: 13)),
-          )
-        else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 0.68,
-            ),
-            itemCount: _menuTerfilter.length,
-            itemBuilder: (_, i) => GestureDetector(
-              onTap: () => _keDetailMenu(_menuTerfilter[i]),
-              child: _MenuCard(menu: _menuTerfilter[i]),
-            ),
-          ),
-        const SizedBox(height: 24),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Opacity(
-                opacity: 0.8,
-                child: Text('Ulasan',
-                    style: GoogleFonts.alexandria(
-                        color: const Color(0xFF1A1818),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
-              ),
-              GestureDetector(
-                onTap: _lihatSemuaUlasan,
-                child: Opacity(
-                  opacity: 0.5,
-                  child: Text('Lihat semua',
+                // Tracking Pesanan
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: Text('Tracking Pesanan',
                       style: GoogleFonts.alexandria(
                           color: const Color(0xFF1A1818),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: _TrackingCard(onLihatDetail: widget.onLihatDetail),
+                ),
+                const SizedBox(height: 24),
+
+                // Menu Terlaris
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: Text('Menu Terlaris',
+                      style: GoogleFonts.alexandria(
+                          color: const Color(0xFF1A1818),
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 210,
+                  child: _isLoadingTerlaris
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xFFD05122)))
+                      : _menuTerlaris.isEmpty
+                          ? const SizedBox()
+                          : ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 26),
+                              itemCount: _menuTerlaris.length,
+                              itemBuilder: (_, i) {
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.only(right: 16),
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        _keDetailMenu(_menuTerlaris[i]),
+                                    child: _MenuTerlarisCard(
+                                        menu: _menuTerlaris[i]),
+                                  ),
+                                );
+                              },
+                            ),
+                ),
+                const SizedBox(height: 24),
+
+                // Menu Tersedia
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Menu Tersedia',
+                          style: GoogleFonts.alexandria(
+                              color: const Color(0xFF1A1818),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                      GestureDetector(
+                        onTap: _fetchMenu,
+                        child: Opacity(
+                            opacity: 0.5,
+                            child: Row(children: [
+                              const Icon(Icons.refresh,
+                                  size: 14, color: Color(0xFF1A1818)),
+                              const SizedBox(width: 4),
+                              Text('Refresh',
+                                  style: GoogleFonts.alexandria(
+                                      color: const Color(0xFF1A1818),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600)),
+                            ])),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                if (_isLoadingMenu)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFFD05122))),
+                  )
+                else if (_errorMenu != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 26, vertical: 16),
+                    child: Column(children: [
+                      Icon(Icons.wifi_off_rounded,
+                          color: Colors.grey.shade400, size: 40),
+                      const SizedBox(height: 8),
+                      Text(_errorMenu!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              color: Colors.grey, fontSize: 13)),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: _fetchMenu,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(colors: [
+                              Color(0xFFD05122),
+                              Color(0xFFEE8B2E)
+                            ]),
+                          ),
+                          child: Text('Coba Lagi',
+                              style: GoogleFonts.alexandria(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ]),
+                  )
+                else if (_menuTerfilter.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 26, vertical: 16),
+                    child: Text('Menu tidak ditemukan',
+                        style: GoogleFonts.alexandria(
+                            color: Colors.grey, fontSize: 13)),
+                  )
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 0.68,
+                    ),
+                    itemCount: _menuTerfilter.length,
+                    itemBuilder: (_, i) => GestureDetector(
+                      onTap: () => _keDetailMenu(_menuTerfilter[i]),
+                      child: _MenuCard(menu: _menuTerfilter[i]),
+                    ),
+                  ),
+                const SizedBox(height: 24),
+
+                // Ulasan
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Opacity(
+                        opacity: 0.8,
+                        child: Text('Ulasan',
+                            style: GoogleFonts.alexandria(
+                                color: const Color(0xFF1A1818),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      GestureDetector(
+                        onTap: _lihatSemuaUlasan,
+                        child: Opacity(
+                          opacity: 0.5,
+                          child: Text('Lihat semua',
+                              style: GoogleFonts.alexandria(
+                                  color: const Color(0xFF1A1818),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                if (_isLoadingUlasan)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFFD05122))),
+                  )
+                else if (_errorUlasan != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 26, vertical: 8),
+                    child: Text(_errorUlasan!,
+                        style: GoogleFonts.alexandria(
+                            color: Colors.grey, fontSize: 12)),
+                  )
+                else if (_daftarUlasan.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 26, vertical: 8),
+                    child: Text('Belum ada ulasan.',
+                        style: GoogleFonts.alexandria(
+                            color: Colors.grey, fontSize: 13)),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 26),
+                    itemCount: _daftarUlasan.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (_, i) =>
+                        _UlasanCard(ulasan: _daftarUlasan[i]),
+                  ),
+
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: _buildFormUlasan(),
+                ),
+                SizedBox(height: navbarHeight),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-
-        if (_isLoadingUlasan)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-                child: CircularProgressIndicator(color: Color(0xFFD05122))),
-          )
-        else if (_errorUlasan != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 8),
-            child: Text(_errorUlasan!,
-                style:
-                    GoogleFonts.alexandria(color: Colors.grey, fontSize: 12)),
-          )
-        else if (_daftarUlasan.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 8),
-            child: Text('Belum ada ulasan.',
-                style:
-                    GoogleFonts.alexandria(color: Colors.grey, fontSize: 13)),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 26),
-            itemCount: _daftarUlasan.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (_, i) => _UlasanCard(ulasan: _daftarUlasan[i]),
-          ),
-
-        const SizedBox(height: 24),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: _buildFormUlasan(),
-        ),
-        SizedBox(height: navbarHeight),
-      ]),
+        // ──────────────────────────────────────────────────────
+      ],
     );
   }
 
@@ -486,118 +518,183 @@ class BerandaPageState extends State<BerandaPage> {
           colors: [Color(0xFFEE8B2E), Color(0xFFD05122), Color(0xFFAC3715)],
           stops: [0.17, 0.44, 0.79],
         ),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30)),
+        borderRadius:
+            BorderRadius.only(bottomLeft: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
-              color: Color(0x3F000000), blurRadius: 4, offset: Offset(0, 4))
+              color: Color(0x3F000000),
+              blurRadius: 4,
+              offset: Offset(0, 4))
         ],
       ),
-      padding: EdgeInsets.fromLTRB(26, 20 + statusBarH, 26, 16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          GestureDetector(
-            onTap: _getLocation,
-            child: Image.network(
-              'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2F2b2de4d17f51ac8a89f789b2c3fc544c438dac8cGoogle%20Maps.png?alt=media&token=1981c3aa-7e35-4fa9-af86-6bfa499edfc8',
-              width: 35,
-              height: 35,
-              fit: BoxFit.contain,
+      padding: EdgeInsets.fromLTRB(20, 12 + statusBarH, 20, 16),
+      child:
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Baris 1: Lokasi dan Ikon Kanan
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            GestureDetector(
+              onTap: _getLocation,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on,
+                        color: Colors.white, size: 16),
+                    const SizedBox(width: 4),
+                    Container(
+                      constraints:
+                          const BoxConstraints(maxWidth: 200),
+                      child: Text(
+                        _alamat,
+                        style: GoogleFonts.lora(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down,
+                        color: Colors.white, size: 18),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-              child: Opacity(
-                  opacity: 0.8,
-                  child: Text(_alamat,
-                      style: GoogleFonts.lora(
-                          color: const Color(0xFF1A1818), fontSize: 16),
-                      overflow: TextOverflow.ellipsis))),
-          Image.network(
-            'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMOKhEnss8buSiiHoow%2Fd154b179abf9d4a6058e12e77678299644c82914Notification.png?alt=media&token=ee7e3277-3227-4e20-bb69-f2a04c1cc16a',
-            width: 25,
-            height: 25,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(width: 16),
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(23)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(23),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Image.asset(
-                  'assets/avatars/$_avatar',
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.pets,
-                    color: Color(0xFFD05122),
-                    size: 24,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.notifications_none,
+                      color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.asset(
+                      'assets/avatars/$_avatar',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: const Color(0xFFD05122),
+                        child: const Icon(Icons.person,
+                            color: Colors.white, size: 24),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 14),
-        Row(children: [
-          Expanded(
-              child: Container(
-            height: 45,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2))
               ],
             ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _searchQuery = v),
-              textAlignVertical: TextAlignVertical.center,
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Baris 2: Judul Selamat Datang
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Selamat Datang',
               style: GoogleFonts.lora(
-                  color: const Color(0xFF1A1818), fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Mau Menu apa hari ini?',
-                hintStyle: GoogleFonts.lora(
-                    color: const Color(0xFF1A1818).withOpacity(0.5),
-                    fontSize: 14),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
-                border: InputBorder.none,
-                isDense: false,
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          )),
-          const SizedBox(width: 11),
-          GestureDetector(
-            onTap: () =>
-                setState(() => _searchQuery = _searchController.text),
-            child: Container(
-              width: 45,
-              height: 45,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFD05122),
-                    Color(0xFFEE8B2E),
-                    Color(0xFFFBA839)
-                  ],
-                  stops: [0.18, 0.61, 0.85],
-                ),
+            const SizedBox(height: 4),
+            Text(
+              'Apa yang ingin kamu pesan hari ini?',
+              style: GoogleFonts.lora(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              child:
-                  const Icon(Icons.search, color: Colors.white, size: 22),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Baris 3: Search Bar
+        Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (v) => setState(() => _searchQuery = v),
+            textAlignVertical: TextAlignVertical.center,
+            style: GoogleFonts.lora(
+              color: const Color(0xFF1A1818),
+              fontSize: 14,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Cari menu favoritmu...',
+              hintStyle: GoogleFonts.lora(
+                color: const Color(0xFF1A1818).withOpacity(0.5),
+                fontSize: 14,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFFD05122),
+                size: 22,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.grey,
+                        size: 20,
+                      ),
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: InputBorder.none,
+              isDense: false,
             ),
           ),
-        ]),
+        ),
       ]),
     );
   }
@@ -617,7 +714,8 @@ class BerandaPageState extends State<BerandaPage> {
               offset: Offset(0, 2))
         ],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child:
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Beri Ulasan',
             style: GoogleFonts.alexandria(
                 color: Colors.black,
@@ -832,32 +930,40 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
                     : _error != null
                         ? Center(
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.wifi_off_rounded,
-                                    color: Colors.grey.shade400, size: 40),
+                                    color: Colors.grey.shade400,
+                                    size: 40),
                                 const SizedBox(height: 8),
                                 Text(_error!,
                                     style: GoogleFonts.alexandria(
-                                        color: Colors.grey, fontSize: 13)),
+                                        color: Colors.grey,
+                                        fontSize: 13)),
                                 const SizedBox(height: 12),
                                 GestureDetector(
                                   onTap: _fetch,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 8),
+                                    padding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 8),
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      gradient: const LinearGradient(colors: [
-                                        Color(0xFFD05122),
-                                        Color(0xFFEE8B2E)
-                                      ]),
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFD05122),
+                                            Color(0xFFEE8B2E)
+                                          ]),
                                     ),
                                     child: Text('Coba Lagi',
                                         style: GoogleFonts.alexandria(
                                             color: Colors.white,
                                             fontSize: 13,
-                                            fontWeight: FontWeight.bold)),
+                                            fontWeight:
+                                                FontWeight.bold)),
                                   ),
                                 ),
                               ],
@@ -867,7 +973,8 @@ class _SemuaUlasanSheetState extends State<_SemuaUlasanSheet> {
                             ? Center(
                                 child: Text('Belum ada ulasan.',
                                     style: GoogleFonts.alexandria(
-                                        color: Colors.grey, fontSize: 13)))
+                                        color: Colors.grey,
+                                        fontSize: 13)))
                             : ListView.separated(
                                 controller: scrollController,
                                 padding: const EdgeInsets.symmetric(
@@ -956,7 +1063,8 @@ class _TrackingCardState extends State<_TrackingCard> {
       final hari = days[dt.weekday - 1];
       final tglFmt =
           '$hari, ${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-      final jamFmt = jam.length >= 5 ? ' • ${jam.substring(0, 5)}' : '';
+      final jamFmt =
+          jam.length >= 5 ? ' • ${jam.substring(0, 5)}' : '';
       final icon = tipe == 'antar' ? '🚗' : '🏪';
       final label = tipe == 'antar' ? 'Diantar' : 'Ambil';
       return '$icon $label  $tglFmt$jamFmt';
@@ -984,7 +1092,9 @@ class _TrackingCardState extends State<_TrackingCard> {
         ),
         boxShadow: const [
           BoxShadow(
-              color: Color(0xFFD05122), blurRadius: 18, offset: Offset(0, 8))
+              color: Color(0xFFD05122),
+              blurRadius: 18,
+              offset: Offset(0, 8))
         ],
       ),
       child: Stack(children: [
@@ -995,7 +1105,8 @@ class _TrackingCardState extends State<_TrackingCard> {
                 width: 130,
                 height: 130,
                 decoration: const BoxDecoration(
-                    shape: BoxShape.circle, color: Colors.white10))),
+                    shape: BoxShape.circle,
+                    color: Colors.white10))),
         Positioned(
             right: 20,
             top: 10,
@@ -1003,7 +1114,8 @@ class _TrackingCardState extends State<_TrackingCard> {
                 width: 70,
                 height: 70,
                 decoration: const BoxDecoration(
-                    shape: BoxShape.circle, color: Colors.white10))),
+                    shape: BoxShape.circle,
+                    color: Colors.white10))),
         Padding(
           padding: const EdgeInsets.all(18),
           child: _isLoading
@@ -1036,8 +1148,8 @@ class _TrackingCardState extends State<_TrackingCard> {
             color: Colors.white54, size: 36),
         const SizedBox(height: 8),
         Text('Belum ada pesanan aktif',
-            style:
-                GoogleFonts.alexandria(color: Colors.white70, fontSize: 13)),
+            style: GoogleFonts.alexandria(
+                color: Colors.white70, fontSize: 13)),
       ]);
 
   Widget _buildAktif() {
@@ -1045,108 +1157,127 @@ class _TrackingCardState extends State<_TrackingCard> {
     final status = p['status'] as String?;
     final itemCount = _resolveItemCount(p);
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Row(children: [
-          const Icon(Icons.local_shipping_rounded,
-              color: Colors.white, size: 16),
-          const SizedBox(width: 6),
-          Text('Tracking Pesanan',
-              style: GoogleFonts.alexandria(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
-        ]),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white38, width: 1)),
-          child: Row(children: [
-            Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                    color: Color(0xFFFFF176), shape: BoxShape.circle)),
-            const SizedBox(width: 5),
-            Text(_statusLabel(status),
-                style: GoogleFonts.alexandria(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold)),
-          ]),
-        ),
-      ]),
-      const SizedBox(height: 14),
-      Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.white24,
-                border: Border.all(color: Colors.white38, width: 1.5)),
-            child: const Icon(Icons.fastfood_rounded,
-                color: Colors.white, size: 30)),
-        const SizedBox(width: 14),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(
-              itemCount > 0 ? '$itemCount item pesanan' : 'Pesanan aktif',
-              style: GoogleFonts.alexandria(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(10)),
-              child: Text('Status: ${_statusLabel(status)}',
-                  style: GoogleFonts.alexandria(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600))),
-        ])),
-      ]),
-      const SizedBox(height: 14),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Expanded(
-            child: Row(children: [
-          const Icon(Icons.event_rounded, color: Colors.white70, size: 14),
-          const SizedBox(width: 4),
-          Expanded(
-              child: Text(_jadwalLabel(p),
-                  style: GoogleFonts.alexandria(
-                      color: Colors.white, fontSize: 11),
-                  overflow: TextOverflow.ellipsis)),
-        ])),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => widget.onLihatDetail?.call(p['id_pesanan'] as int?),
-          child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20)),
-              child: Text('Lihat Detail',
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFFD05122),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold))),
-        ),
-      ]),
-    ]);
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(children: [
+                  const Icon(Icons.local_shipping_rounded,
+                      color: Colors.white, size: 16),
+                  const SizedBox(width: 6),
+                  Text('Tracking Pesanan',
+                      style: GoogleFonts.alexandria(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
+                ]),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: Colors.white38, width: 1)),
+                  child: Row(children: [
+                    Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                            color: Color(0xFFFFF176),
+                            shape: BoxShape.circle)),
+                    const SizedBox(width: 5),
+                    Text(_statusLabel(status),
+                        style: GoogleFonts.alexandria(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold)),
+                  ]),
+                ),
+              ]),
+          const SizedBox(height: 14),
+          Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white24,
+                        border: Border.all(
+                            color: Colors.white38, width: 1.5)),
+                    child: const Icon(Icons.fastfood_rounded,
+                        color: Colors.white, size: 30)),
+                const SizedBox(width: 14),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(
+                          itemCount > 0
+                              ? '$itemCount item pesanan'
+                              : 'Pesanan aktif',
+                          style: GoogleFonts.alexandria(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius:
+                                  BorderRadius.circular(10)),
+                          child: Text(
+                              'Status: ${_statusLabel(status)}',
+                              style: GoogleFonts.alexandria(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600))),
+                    ])),
+              ]),
+          const SizedBox(height: 14),
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                    child: Row(children: [
+                  const Icon(Icons.event_rounded,
+                      color: Colors.white70, size: 14),
+                  const SizedBox(width: 4),
+                  Expanded(
+                      child: Text(_jadwalLabel(p),
+                          style: GoogleFonts.alexandria(
+                              color: Colors.white, fontSize: 11),
+                          overflow: TextOverflow.ellipsis)),
+                ])),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => widget.onLihatDetail
+                      ?.call(p['id_pesanan'] as int?),
+                  child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Text('Lihat Detail',
+                          style: GoogleFonts.alexandria(
+                              color: const Color(0xFFD05122),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                ),
+              ]),
+        ]);
   }
 }
 
 // ══════════════════════════════════════════════════════════════
-//  MENU TERLARIS CARD — tanpa bintang
+//  MENU TERLARIS CARD
 // ══════════════════════════════════════════════════════════════
 class _MenuTerlarisCard extends StatelessWidget {
   final MenuModel menu;
@@ -1156,60 +1287,61 @@ class _MenuTerlarisCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 300,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: menu.foto.isNotEmpty
-              ? Image.network(
-                  menu.imageUrl,
-                  width: 300,
-                  height: 160,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    );
-                  },
-                  errorBuilder: (_, __, ___) => _placeholder())
-              : _placeholder(),
-        ),
-        const SizedBox(height: 6),
-        // ── Info nama & kategori saja, tanpa bintang ───────────
-        Row(children: [
-          Flexible(
-            child: Opacity(
-              opacity: 0.8,
-              child: Text(
-                menu.nama,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.alexandria(
-                    color: const Color(0xFF1A1818),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500),
-              ),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: menu.foto.isNotEmpty
+                  ? Image.network(
+                      menu.imageUrl,
+                      width: 300,
+                      height: 160,
+                      fit: BoxFit.cover,
+                      loadingBuilder:
+                          (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => _placeholder())
+                  : _placeholder(),
             ),
-          ),
-          if (menu.kategori.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Opacity(
-              opacity: 0.6,
-              child: Text(
-                menu.kategori,
-                style: GoogleFonts.alexandria(
-                    color: const Color(0xFF1A1818),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500),
+            const SizedBox(height: 6),
+            Row(children: [
+              Flexible(
+                child: Opacity(
+                  opacity: 0.8,
+                  child: Text(
+                    menu.nama,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.alexandria(
+                        color: const Color(0xFF1A1818),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ),
               ),
-            ),
-          ],
-        ]),
-        // ──────────────────────────────────────────────────────
-      ]),
+              if (menu.kategori.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Opacity(
+                  opacity: 0.6,
+                  child: Text(
+                    menu.kategori,
+                    style: GoogleFonts.alexandria(
+                        color: const Color(0xFF1A1818),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ]),
+          ]),
     );
   }
 
@@ -1217,7 +1349,8 @@ class _MenuTerlarisCard extends StatelessWidget {
       width: 300,
       height: 160,
       color: const Color(0xFFF79F36),
-      child: const Icon(Icons.fastfood, color: Colors.white, size: 60));
+      child:
+          const Icon(Icons.fastfood, color: Colors.white, size: 60));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1236,67 +1369,76 @@ class _MenuCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
-                color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))
+                color: Color(0x1A000000),
+                blurRadius: 6,
+                offset: Offset(0, 2))
           ],
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12), topRight: Radius.circular(12)),
-            child: menu.foto.isNotEmpty
-                ? Image.network(
-                    menu.imageUrl,
-                    width: double.infinity,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12)),
+                child: menu.foto.isNotEmpty
+                    ? Image.network(
+                        menu.imageUrl,
+                        width: double.infinity,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        loadingBuilder:
+                            (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => _placeholder())
+                    : _placeholder(),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 5, 6, 6),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(menu.nama,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.alexandria(
+                              color: const Color(0xFF1A1818),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(menu.formattedHarga,
+                          style: GoogleFonts.alexandria(
+                              color: const Color(0xFFD05122),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Color(menu.warnaStok)
+                              .withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: Color(menu.warnaStok),
+                              width: 0.8),
                         ),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => _placeholder())
-                : _placeholder(),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(6, 5, 6, 6),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(menu.nama,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFF1A1818),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600)),
-              const SizedBox(height: 2),
-              Text(menu.formattedHarga,
-                  style: GoogleFonts.alexandria(
-                      color: const Color(0xFFD05122),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(height: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Color(menu.warnaStok).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border:
-                      Border.all(color: Color(menu.warnaStok), width: 0.8),
-                ),
-                child: Text(menu.labelStok,
-                    style: GoogleFonts.alexandria(
-                        color: Color(menu.warnaStok),
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold)),
+                        child: Text(menu.labelStok,
+                            style: GoogleFonts.alexandria(
+                                color: Color(menu.warnaStok),
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ]),
               ),
             ]),
-          ),
-        ]),
       ),
     ]);
   }
@@ -1305,7 +1447,8 @@ class _MenuCard extends StatelessWidget {
       width: double.infinity,
       height: 80,
       color: const Color(0xFFF79F36),
-      child: const Icon(Icons.fastfood, color: Colors.white, size: 30));
+      child:
+          const Icon(Icons.fastfood, color: Colors.white, size: 30));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1331,66 +1474,72 @@ class _UlasanCard extends StatelessWidget {
               offset: Offset(0, 2))
         ],
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── Avatar customer sesuai foto_profil ──
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(10)),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Image.asset(
-                'assets/avatars/${ulasan.fotoProfil}',
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                    _AvatarInisial(nama: ulasan.namaCustomer),
+      child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Image.asset(
+                    'assets/avatars/${ulasan.fotoProfil}',
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        _AvatarInisial(nama: ulasan.namaCustomer),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(ulasan.namaCustomer,
-                      style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold)),
-                  Opacity(
-                      opacity: 0.5,
-                      child: Text(ulasan.tanggal,
-                          style: GoogleFonts.alexandria(
-                              color: const Color(0xFF1A1818),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600))),
-                ]),
-            Row(
-                children: List.generate(
-                    5,
-                    (i) => Icon(
-                        i < ulasan.rating ? Icons.star : Icons.star_border,
-                        color: const Color(0xFFF79F36),
-                        size: 14))),
-            const SizedBox(height: 4),
-            Text(ulasan.komentar,
-                style: GoogleFonts.alexandria(
-                    color: Colors.black, fontSize: 12)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(ulasan.namaCustomer,
+                              style: GoogleFonts.alexandria(
+                                  color: Colors.black,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold)),
+                          Opacity(
+                              opacity: 0.5,
+                              child: Text(ulasan.tanggal,
+                                  style: GoogleFonts.alexandria(
+                                      color: const Color(0xFF1A1818),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600))),
+                        ]),
+                    Row(
+                        children: List.generate(
+                            5,
+                            (i) => Icon(
+                                i < ulasan.rating
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: const Color(0xFFF79F36),
+                                size: 14))),
+                    const SizedBox(height: 4),
+                    Text(ulasan.komentar,
+                        style: GoogleFonts.alexandria(
+                            color: Colors.black, fontSize: 12)),
+                  ]),
+            ),
           ]),
-        ),
-      ]),
     );
   }
 }
 
 // ══════════════════════════════════════════════════════════════
-//  AVATAR INISIAL — fallback jika asset tidak ditemukan
+//  AVATAR INISIAL
 // ══════════════════════════════════════════════════════════════
 class _AvatarInisial extends StatelessWidget {
   final String nama;
