@@ -95,10 +95,17 @@ class _KeranjangPageState extends State<KeranjangPage> {
       return;
     }
 
+    // FIX: Gunakan .then() agar saat user kembali dari CheckoutPage,
+    // keranjang di-reload ulang. Ini mencegah halaman stuck di loading
+    // karena CheckoutPage sebelumnya mengubah state _isLoading pada singleton.
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CheckoutPage()),
-    );
+    ).then((_) {
+      if (mounted) {
+        _ctrl.loadKeranjang();
+      }
+    });
   }
 
   String _getFullImageUrl(String imageUrl) {

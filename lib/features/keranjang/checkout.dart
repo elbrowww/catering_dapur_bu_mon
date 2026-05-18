@@ -37,7 +37,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   final List<String> _metodeBayarList = ['Transfer Bank', 'Cash'];
 
-  // Cek apakah tanggal yang dipilih adalah hari ini
   bool get _isOrderHariIni {
     if (_tglAntar == null) return false;
     final today = DateTime.now();
@@ -46,15 +45,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
         _tglAntar!.day == today.day;
   }
 
-  // Karena sudah divalidasi saat tambah item, keranjang pasti seragam tipenya.
-  // Cukup cek satu item saja untuk tahu tipe seluruh keranjang.
   bool get _adaItemPreorder => _ctrl.kartTipe == 'preorder';
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    _ctrl.loadKeranjang();
+    // FIX: Hapus _ctrl.loadKeranjang() dari sini.
+    // Data keranjang sudah dimuat oleh KeranjangPage sebelumnya.
+    // Memanggil loadKeranjang() di sini menyebabkan _isLoading = true
+    // pada singleton, sehingga KeranjangPage stuck loading saat user kembali.
+    // Hanya muat ulang jika keranjang benar-benar kosong (fallback).
+    if (_ctrl.items.isEmpty) {
+      _ctrl.loadKeranjang(showLoading: false);
+    }
   }
 
   String _getFullImageUrl(String imageUrl) {
@@ -91,8 +95,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
-    // Jika ada item pre-order → minimal besok
-    // Jika semua item tersedia → bisa hari ini
     final firstDate = _adaItemPreorder
         ? todayDate.add(const Duration(days: 1))
         : todayDate;
@@ -175,7 +177,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
-    // Validasi: jika keranjang pre-order, tanggal harus minimal besok
     if (_adaItemPreorder && _isOrderHariIni) {
       _showSnack('Semua menu adalah pre-order. Pilih tanggal minimal besok.');
       return;
