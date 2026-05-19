@@ -103,7 +103,6 @@ class AktivitasPageState extends State<AktivitasPage> {
     _loadPesanan();
   }
 
-  // Method public untuk buka detail dari luar (dipanggil dari MainScreen)
   void bukaDetail(int? idPesanan) {
     if (idPesanan != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -126,10 +125,9 @@ class AktivitasPageState extends State<AktivitasPage> {
         _pesananList = data.map((e) {
           final rawId = e['id_pesanan'];
           final rawTotal = e['total_harga'];
-          
           return {
-            'id_pesanan': rawId is int 
-                ? rawId 
+            'id_pesanan': rawId is int
+                ? rawId
                 : int.tryParse(rawId.toString()) ?? 0,
             'customer_name': e['customer_name']?.toString() ?? 'Customer',
             'customer_alamat': e['customer_alamat']?.toString() ?? 'Alamat tidak tersedia',
@@ -137,11 +135,11 @@ class AktivitasPageState extends State<AktivitasPage> {
             'tgl_pesan': e['tgl_pesan']?.toString() ?? DateTime.now().toIso8601String(),
             'tgl_antar': e['tgl_antar']?.toString(),
             'jam_antar': e['jam_antar']?.toString(),
-            'total_harga': rawTotal is num 
-                ? rawTotal.toDouble() 
+            'total_harga': rawTotal is num
+                ? rawTotal.toDouble()
                 : double.tryParse(rawTotal.toString()) ?? 0,
-            'item_count': e['item_count'] is int 
-                ? e['item_count'] 
+            'item_count': e['item_count'] is int
+                ? e['item_count']
                 : int.tryParse(e['item_count'].toString()) ?? 0,
             'metode_bayar': e['metode_bayar']?.toString() ?? '',
             'catatan': e['catatan']?.toString() ?? '',
@@ -171,45 +169,52 @@ class AktivitasPageState extends State<AktivitasPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom +
+        kBottomNavigationBarHeight;
+
     return Scaffold(
       backgroundColor: Colors.white,
+      // ════════════════════════════════════════════════
+      //  Struktur: Column
+      //    ├── _buildHeader()       ← STICKY
+      //    ├── _buildTitleFilter()  ← STICKY
+      //    └── Expanded → konten scroll
+      // ════════════════════════════════════════════════
       body: Column(
         children: [
+          // ── Header gradient — STICKY ────────────────
           _buildHeader(),
+
+          // ── Judul + Filter — STICKY ─────────────────
+          _buildTitleFilter(),
+
+          // ── Konten pesanan — SCROLLABLE ─────────────
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadPesanan,
               color: const Color(0xFFD05122),
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFD05122)))
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          color: Color(0xFFD05122)))
                   : _error != null
                       ? _buildError()
-                      : SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Aktivitas Pesanan',
-                                  style: GoogleFonts.alexandria(
-                                      fontSize: 20, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 12),
-                              _buildFilterRow(),
-                              const SizedBox(height: 16),
-                              if (_filteredList.isEmpty)
-                                _buildEmptyState()
-                              else
-                                ..._filteredList.map((p) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
-                                      child: _CustomerOrderCard(
-                                        pesanan: p,
-                                        onTap: () => _showDetail(p),
-                                      ),
-                                    )),
-                              const SizedBox(height: 80),
-                            ],
-                          ),
-                        ),
+                      : _filteredList.isEmpty
+                          ? _buildEmptyState()
+                          : ListView.builder(
+                              padding: EdgeInsets.fromLTRB(
+                                  16, 16, 16, bottomPad),
+                              itemCount: _filteredList.length,
+                              itemBuilder: (_, i) => Padding(
+                                padding:
+                                    const EdgeInsets.only(bottom: 12),
+                                child: _CustomerOrderCard(
+                                  pesanan: _filteredList[i],
+                                  onTap: () =>
+                                      _showDetail(_filteredList[i]),
+                                ),
+                              ),
+                            ),
             ),
           ),
         ],
@@ -217,9 +222,11 @@ class AktivitasPageState extends State<AktivitasPage> {
     );
   }
 
+  // ── Header gradient ──────────────────────────────────────────
   Widget _buildHeader() {
+    final statusBarH = MediaQuery.of(context).padding.top;
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+      padding: EdgeInsets.fromLTRB(20, statusBarH + 16, 20, 20),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
@@ -230,84 +237,87 @@ class AktivitasPageState extends State<AktivitasPage> {
           bottomRight: Radius.circular(20),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.receipt_long_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Aktivitas Saya',
-                      style: GoogleFonts.alexandria(
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.receipt_long_rounded,
+                color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Aktivitas Saya',
+                    style: GoogleFonts.alexandria(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Lihat riwayat pesanan Anda',
-                      style: GoogleFonts.alexandria(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                        color: Colors.white)),
+                Text('Lihat riwayat pesanan Anda',
+                    style: GoogleFonts.alexandria(
+                        fontSize: 12, color: Colors.white70)),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterRow() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(
-          _filterLabels.length,
-          (i) => Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedFilter = i),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: i == _selectedFilter 
-                      ? const Color(0xFFEE8B2E) 
-                      : Colors.transparent,
-                  border: Border.all(width: 1.5, color: const Color(0xFFDB6626)),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: Text(
-                  _filterLabels[i],
-                  style: GoogleFonts.lora(
-                    fontSize: 12,
-                    fontWeight: i == _selectedFilter ? FontWeight.bold : FontWeight.w500,
-                    color: i == _selectedFilter ? Colors.white : Colors.black,
+  // ── Judul + Filter row — ikut sticky ────────────────────────
+  Widget _buildTitleFilter() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Aktivitas Pesanan',
+              style: GoogleFonts.alexandria(
+                  fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(
+                _filterLabels.length,
+                (i) => GestureDetector(
+                  onTap: () => setState(() => _selectedFilter = i),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: i == _selectedFilter
+                          ? const Color(0xFFEE8B2E)
+                          : Colors.transparent,
+                      border: Border.all(
+                          width: 1.5, color: const Color(0xFFDB6626)),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Text(
+                      _filterLabels[i],
+                      style: GoogleFonts.lora(
+                        fontSize: 12,
+                        fontWeight: i == _selectedFilter
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                        color: i == _selectedFilter
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -320,16 +330,19 @@ class AktivitasPageState extends State<AktivitasPage> {
           Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 12),
           Text(_error!,
-              style: GoogleFonts.alexandria(color: Colors.grey, fontSize: 14),
+              style: GoogleFonts.alexandria(
+                  color: Colors.grey, fontSize: 14),
               textAlign: TextAlign.center),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadPesanan,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD05122),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Coba Lagi', style: GoogleFonts.alexandria(color: Colors.white)),
+            child: Text('Coba Lagi',
+                style: GoogleFonts.alexandria(color: Colors.white)),
           ),
         ],
       ),
@@ -342,13 +355,16 @@ class AktivitasPageState extends State<AktivitasPage> {
         padding: const EdgeInsets.only(top: 60),
         child: Column(
           children: [
-            Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[300]),
+            Icon(Icons.receipt_long_outlined,
+                size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text('Tidak ada pesanan',
-                style: GoogleFonts.alexandria(fontSize: 16, color: Colors.grey[500])),
+                style: GoogleFonts.alexandria(
+                    fontSize: 16, color: Colors.grey[500])),
             const SizedBox(height: 8),
             Text('Belum ada pesanan yang dibuat',
-                style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[400])),
+                style: GoogleFonts.alexandria(
+                    fontSize: 12, color: Colors.grey[400])),
           ],
         ),
       ),
@@ -378,7 +394,6 @@ class _CustomerOrderCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              spreadRadius: 0,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -390,7 +405,8 @@ class _CustomerOrderCard extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
               ),
             ),
             Padding(
@@ -401,22 +417,28 @@ class _CustomerOrderCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text('#${pesanan['id_pesanan']}',
                             style: GoogleFonts.alexandria(
-                                fontSize: 12, fontWeight: FontWeight.bold)),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(_formattedDate(pesanan['tgl_pesan']),
-                            style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600])),
+                        child: Text(
+                            _formattedDate(pesanan['tgl_pesan']),
+                            style: GoogleFonts.alexandria(
+                                fontSize: 11,
+                                color: Colors.grey[600])),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: color.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(12),
@@ -424,44 +446,56 @@ class _CustomerOrderCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(_statusIcon(status), size: 12, color: color),
+                            Icon(_statusIcon(status),
+                                size: 12, color: color),
                             const SizedBox(width: 4),
                             Text(_statusLabel(status),
                                 style: GoogleFonts.alexandria(
-                                    fontSize: 10, fontWeight: FontWeight.w500, color: color)),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: color)),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Alamat
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.location_on_rounded, size: 14, color: Colors.grey[500]),
+                      Icon(Icons.location_on_rounded,
+                          size: 14, color: Colors.grey[500]),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text(
-                          alamat,
-                          style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[700]),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: Text(alamat,
+                            style: GoogleFonts.alexandria(
+                                fontSize: 11, color: Colors.grey[700]),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  if (pesanan['tgl_antar'] != null && pesanan['tgl_antar'].toString().isNotEmpty) ...[
+                  if (pesanan['tgl_antar'] != null &&
+                      pesanan['tgl_antar'].toString().isNotEmpty) ...[
                     Row(
                       children: [
-                        Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey[500]),
+                        Icon(Icons.calendar_today_rounded,
+                            size: 12, color: Colors.grey[500]),
                         const SizedBox(width: 4),
-                        Text('Antar: ${_formatTglAntar(pesanan['tgl_antar'])}',
-                            style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600])),
-                        if (pesanan['jam_antar'] != null && pesanan['jam_antar'].toString().isNotEmpty)
-                          Text(' pukul ${_formatJamAntar(pesanan['jam_antar'])}',
-                              style: GoogleFonts.alexandria(fontSize: 11, color: const Color(0xFFD05122), fontWeight: FontWeight.w600)),
+                        Text(
+                            'Antar: ${_formatTglAntar(pesanan['tgl_antar'])}',
+                            style: GoogleFonts.alexandria(
+                                fontSize: 11,
+                                color: Colors.grey[600])),
+                        if (pesanan['jam_antar'] != null &&
+                            pesanan['jam_antar'].toString().isNotEmpty)
+                          Text(
+                              ' pukul ${_formatJamAntar(pesanan['jam_antar'])}',
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 11,
+                                  color: const Color(0xFFD05122),
+                                  fontWeight: FontWeight.w600)),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -473,15 +507,21 @@ class _CustomerOrderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Total',
-                              style: GoogleFonts.alexandria(fontSize: 11, color: Colors.grey[600])),
-                          Text(_formattedPrice(pesanan['total_harga']),
                               style: GoogleFonts.alexandria(
-                                  fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFFD05122))),
+                                  fontSize: 11,
+                                  color: Colors.grey[600])),
+                          Text(
+                              _formattedPrice(pesanan['total_harga']),
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFD05122))),
                         ],
                       ),
                       if (!isBatal)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFFD05122).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -489,8 +529,12 @@ class _CustomerOrderCard extends StatelessWidget {
                           child: Row(
                             children: [
                               Text('Lihat Detail',
-                                  style: GoogleFonts.alexandria(fontSize: 11, color: const Color(0xFFD05122), fontWeight: FontWeight.w600)),
-                              const Icon(Icons.arrow_forward_ios, size: 10, color: Color(0xFFD05122)),
+                                  style: GoogleFonts.alexandria(
+                                      fontSize: 11,
+                                      color: const Color(0xFFD05122),
+                                      fontWeight: FontWeight.w600)),
+                              const Icon(Icons.arrow_forward_ios,
+                                  size: 10, color: Color(0xFFD05122)),
                             ],
                           ),
                         ),
@@ -538,7 +582,8 @@ class _CustomerDetailDialog extends StatelessWidget {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -549,7 +594,11 @@ class _CustomerDetailDialog extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+                colors: [
+                  Color(0xFFD05122),
+                  Color(0xFFEE8B2E),
+                  Color(0xFFFBA839)
+                ],
                 stops: [0.17, 0.47, 0.60],
               ),
             ),
@@ -560,15 +609,19 @@ class _CustomerDetailDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Detail Pesanan',
-                          style: GoogleFonts.alexandria(fontSize: 12, color: Colors.white70)),
+                          style: GoogleFonts.alexandria(
+                              fontSize: 12, color: Colors.white70)),
                       Text('#${pesanan['id_pesanan']}',
                           style: GoogleFonts.alexandria(
-                              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                  icon: const Icon(Icons.close_rounded,
+                      color: Colors.white, size: 20),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -581,63 +634,82 @@ class _CustomerDetailDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status Timeline
                 if (!isBatal) ...[
                   const Text('Status Pesanan',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey)),
                   const SizedBox(height: 10),
                   _CustomerTimeline(
-                    steps: _timelineSteps,
-                    currentStep: currentStep,
-                  ),
+                      steps: _timelineSteps, currentStep: currentStep),
                   const SizedBox(height: 20),
                 ],
-
-                // Info Grid
                 const Text('Info Pesanan',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey)),
                 const SizedBox(height: 10),
                 _CustomerInfoGrid(items: [
-                  _InfoItem(icon: Icons.payment_rounded, label: 'Metode Bayar', 
+                  _InfoItem(
+                      icon: Icons.payment_rounded,
+                      label: 'Metode Bayar',
                       value: pesanan['metode_bayar']?.toString() ?? '-'),
-                  _InfoItem(icon: Icons.calendar_today_rounded, label: 'Tanggal', 
+                  _InfoItem(
+                      icon: Icons.calendar_today_rounded,
+                      label: 'Tanggal',
                       value: _formattedDate(pesanan['tgl_pesan'])),
-                  _InfoItem(icon: Icons.info_outline_rounded, label: 'Status', 
-                      value: _statusLabel(status), valueColor: color),
-                  _InfoItem(icon: Icons.location_on_rounded, label: 'Alamat',
-                      value: alamat, valueColor: const Color(0xFFD05122)),
-                  _InfoItem(icon: Icons.event_available_rounded, label: 'Tgl Antar', 
+                  _InfoItem(
+                      icon: Icons.info_outline_rounded,
+                      label: 'Status',
+                      value: _statusLabel(status),
+                      valueColor: color),
+                  _InfoItem(
+                      icon: Icons.location_on_rounded,
+                      label: 'Alamat',
+                      value: alamat,
+                      valueColor: const Color(0xFFD05122)),
+                  _InfoItem(
+                      icon: Icons.event_available_rounded,
+                      label: 'Tgl Antar',
                       value: _formatTglAntar(pesanan['tgl_antar'])),
-                  _InfoItem(icon: Icons.access_time_rounded, label: 'Jam Antar', 
-                      value: _formatJamAntar(pesanan['jam_antar']).isNotEmpty 
-                          ? _formatJamAntar(pesanan['jam_antar']) : '-'),
+                  _InfoItem(
+                      icon: Icons.access_time_rounded,
+                      label: 'Jam Antar',
+                      value: _formatJamAntar(pesanan['jam_antar'])
+                              .isNotEmpty
+                          ? _formatJamAntar(pesanan['jam_antar'])
+                          : '-'),
                 ]),
-
-                // Catatan
-                if (pesanan['catatan'] != null && pesanan['catatan'].toString().isNotEmpty) ...[
+                if (pesanan['catatan'] != null &&
+                    pesanan['catatan'].toString().isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF8E1),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFFCC02)),
+                      border:
+                          Border.all(color: const Color(0xFFFFCC02)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.sticky_note_2_outlined, size: 16, color: Color(0xFFF39C12)),
+                        const Icon(Icons.sticky_note_2_outlined,
+                            size: 16, color: Color(0xFFF39C12)),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(pesanan['catatan'].toString(),
-                              style: GoogleFonts.alexandria(fontSize: 12, color: const Color(0xFF7D5A00))),
+                          child: Text(
+                              pesanan['catatan'].toString(),
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 12,
+                                  color: const Color(0xFF7D5A00))),
                         ),
                       ],
                     ),
                   ),
                 ],
-
-                // Total
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -650,15 +722,17 @@ class _CustomerDetailDialog extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Total Pesanan',
-                          style: GoogleFonts.alexandria(fontSize: 14, fontWeight: FontWeight.bold)),
+                          style: GoogleFonts.alexandria(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold)),
                       Text(_formattedPrice(pesanan['total_harga']),
                           style: GoogleFonts.alexandria(
-                              fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFFD05122))),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFD05122))),
                     ],
                   ),
                 ),
-
-                // Status message
                 const SizedBox(height: 16),
                 if (status == 'selesai')
                   Container(
@@ -670,10 +744,14 @@ class _CustomerDetailDialog extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.check_circle_rounded, color: Color(0xFF0FBC5F), size: 18),
+                        const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF0FBC5F), size: 18),
                         const SizedBox(width: 8),
                         Text('Pesanan telah selesai',
-                            style: GoogleFonts.alexandria(fontSize: 13, color: Color(0xFF0FBC5F), fontWeight: FontWeight.w600)),
+                            style: GoogleFonts.alexandria(
+                                fontSize: 13,
+                                color: const Color(0xFF0FBC5F),
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   )
@@ -687,10 +765,14 @@ class _CustomerDetailDialog extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.cancel_rounded, color: Colors.red, size: 18),
+                        const Icon(Icons.cancel_rounded,
+                            color: Colors.red, size: 18),
                         const SizedBox(width: 8),
                         Text('Pesanan telah dibatalkan',
-                            style: GoogleFonts.alexandria(fontSize: 13, color: Colors.red, fontWeight: FontWeight.w600)),
+                            style: GoogleFonts.alexandria(
+                                fontSize: 13,
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -709,9 +791,12 @@ class _CustomerDetailDialog extends StatelessWidget {
                   backgroundColor: const Color(0xFFD05122),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                child: Text('Tutup', style: GoogleFonts.alexandria(fontSize: 14, fontWeight: FontWeight.bold)),
+                child: Text('Tutup',
+                    style: GoogleFonts.alexandria(
+                        fontSize: 14, fontWeight: FontWeight.bold)),
               ),
             ),
           ),
@@ -725,7 +810,8 @@ class _CustomerDetailDialog extends StatelessWidget {
 class _CustomerTimeline extends StatelessWidget {
   final List<Map<String, String?>> steps;
   final int currentStep;
-  const _CustomerTimeline({required this.steps, required this.currentStep});
+  const _CustomerTimeline(
+      {required this.steps, required this.currentStep});
 
   @override
   Widget build(BuildContext context) {
@@ -744,7 +830,8 @@ class _CustomerTimeline extends StatelessWidget {
                 child: Column(
                   children: [
                     Container(
-                      width: 24, height: 24,
+                      width: 24,
+                      height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDone
@@ -753,7 +840,8 @@ class _CustomerTimeline extends StatelessWidget {
                                 ? const Color(0xFFD05122)
                                 : Colors.grey.shade200,
                         border: isActive
-                            ? Border.all(color: const Color(0xFFD05122), width: 2)
+                            ? Border.all(
+                                color: const Color(0xFFD05122), width: 2)
                             : null,
                       ),
                       child: Icon(
@@ -763,7 +851,9 @@ class _CustomerTimeline extends StatelessWidget {
                                 ? Icons.radio_button_checked_rounded
                                 : Icons.radio_button_unchecked_rounded,
                         size: 14,
-                        color: isDone || isActive ? Colors.white : Colors.grey.shade400,
+                        color: isDone || isActive
+                            ? Colors.white
+                            : Colors.grey.shade400,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -771,7 +861,9 @@ class _CustomerTimeline extends StatelessWidget {
                       step['label'] ?? '',
                       style: GoogleFonts.alexandria(
                         fontSize: 9,
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: isDone
                             ? const Color(0xFF0FBC5F)
                             : isActive
@@ -828,37 +920,43 @@ class _CustomerInfoGrid extends StatelessWidget {
       crossAxisSpacing: 8,
       mainAxisSpacing: 8,
       childAspectRatio: 2.2,
-      children: items.map((item) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F8F8),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Row(
-          children: [
-            Icon(item.icon, size: 14, color: Colors.grey[500]),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(item.label,
-                      style: GoogleFonts.alexandria(fontSize: 10, color: Colors.grey[500]),
-                      overflow: TextOverflow.ellipsis),
-                  Text(item.value,
-                      style: GoogleFonts.alexandria(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: item.valueColor ?? Colors.black87),
-                      overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-          ],
-        ),
-      )).toList(),
+      children: items
+          .map((item) => Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F8F8),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(item.icon, size: 14, color: Colors.grey[500]),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(item.label,
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 10,
+                                  color: Colors.grey[500]),
+                              overflow: TextOverflow.ellipsis),
+                          Text(item.value,
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      item.valueColor ?? Colors.black87),
+                              overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ))
+          .toList(),
     );
   }
 }

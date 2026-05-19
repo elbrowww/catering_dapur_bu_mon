@@ -4,7 +4,7 @@ import 'package:catering_dapur_bu_mon/services/session_manager.dart';
 class DioHelper {
   static late Dio _dio;
 
-  static const String baseUrl = 'http://172.16.104.81/dapur_bu_mon/api/';
+  static const String baseUrl = 'http://192.168.1.24/dapur_bu_mon/api/';
 
   static void init() {
     _dio = Dio(
