@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 import 'package:catering_dapur_bu_mon/main.dart';
-import 'package:catering_dapur_bu_mon/services/config.dart';
+import 'package:catering_dapur_bu_mon/services/dio_helper.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -64,7 +64,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   String _getFullImageUrl(String imageUrl) {
     if (imageUrl.isEmpty) return '';
     if (imageUrl.startsWith('http')) return imageUrl;
-    return '${AppConfig.imageBaseUrl}$imageUrl';
+    return '${DioHelper.imageBaseUrl}$imageUrl';
   }
 
   Future<void> _loadUserData() async {

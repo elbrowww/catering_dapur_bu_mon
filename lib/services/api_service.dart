@@ -223,36 +223,77 @@ class ApiService {
     }
   }
 
+  // ── TAMBAH MENU (POST multipart/form-data) ─────────────────────────────────
   static Future<Map<String, dynamic>> tambahMenu({
     required String nama,
     required String deskripsi,
     required double harga,
+    required int    stok,       // ← ditambahkan
     String foto     = '',
     String kategori = '',
+    String? imagePath,
   }) async {
     try {
-      final response = await _dio.post(
-        '/menu.php',
-        data: {
-          'nama':      nama,
-          'deskripsi': deskripsi,
-          'harga':     harga,
-          'foto':      foto,
-          'kategori':  kategori,
-        },
-      );
+      final formData = FormData.fromMap({
+        'nama':      nama,
+        'deskripsi': deskripsi,
+        'harga':     harga,
+        'kategori':  kategori,
+        'stok':      stok,      // ← dikirim ke server
+      });
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        formData.files.add(MapEntry(
+          'foto',
+          await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split(Platform.pathSeparator).last,
+          ),
+        ));
+      } else if (foto.isNotEmpty) {
+        formData.fields.add(MapEntry('foto', foto));
+      }
+
+      final response = await _dio.post('/menu.php', data: formData);
       return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));
     }
   }
 
+  // ── EDIT MENU (PUT multipart/form-data) ────────────────────────────────────
   static Future<Map<String, dynamic>> editMenu(
     int idMenu,
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    String? imagePath,
+  }) async {
     try {
-      final response = await _dio.put('/menu.php?id_menu=$idMenu', data: data);
+      final formData = FormData.fromMap({
+        'nama':      data['nama']      ?? '',
+        'deskripsi': data['deskripsi'] ?? '',
+        'harga':     data['harga']     ?? 0,
+        'kategori':  data['kategori']  ?? '',
+        'stok':      data['stok']      ?? 0,
+      });
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        formData.files.add(MapEntry(
+          'foto',
+          await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split(Platform.pathSeparator).last,
+          ),
+        ));
+      } else if (data['foto'] != null && data['foto'].toString().isNotEmpty) {
+        formData.fields.add(MapEntry('foto', data['foto'].toString()));
+      }
+
+      // Gunakan PUT murni dengan multipart — PHP akan parse manual dari php://input
+      final response = await _dio.put(
+        '/menu.php?id_menu=$idMenu',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
       return _parse(response);
     } on DioException catch (e) {
       throw ApiException(_getErrorMessage(e));
@@ -329,11 +370,8 @@ class ApiService {
     }
   }
 
-  // 🔥 PERBAIKAN: idItem nullable — null = kosongkan semua, int = hapus satu item
   static Future<Map<String, dynamic>> hapusDariKeranjang(int? idItem) async {
     try {
-      // Jika idItem null → hapus semua (kosongkan keranjang), tidak kirim query param
-      // Jika idItem ada  → hapus item spesifik
       final url = idItem != null
           ? '/keranjang.php?id_item=$idItem'
           : '/keranjang.php';

@@ -1,12 +1,11 @@
+import 'package:catering_dapur_bu_mon/services/dio_helper.dart';
 import 'package:intl/intl.dart';
 
 class MenuModel {
-  // 🔥 TAMBAHKAN INI - Base URL untuk gambar
-  // Untuk emulator Android: gunakan 10.0.2.2
-  // Untuk device fisik: ganti dengan IP komputer (contoh: 192.168.1.100)
-  static const String baseImageUrl = 'http://192.168.1.11/dapur_bu_mon/assets/images/';
+  // Base URL untuk gambar (diambil terpusat dari DioHelper)
+  static String get baseImageUrl => DioHelper.imageBaseUrl;
   
- // 🔥 TAMBAHKAN GETTER INI - URL lengkap gambar
+  // URL lengkap gambar
   String get imageUrl => '$baseImageUrl$foto';
 
   final int idMenu;

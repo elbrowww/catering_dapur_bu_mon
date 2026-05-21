@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/keranjang-controller.dart';
 import 'package:catering_dapur_bu_mon/features/keranjang/checkout.dart';
-import 'package:catering_dapur_bu_mon/services/config.dart';
+import 'package:catering_dapur_bu_mon/services/dio_helper.dart';
 
 class KeranjangPage extends StatefulWidget {
   const KeranjangPage({super.key});
@@ -111,7 +111,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
   String _getFullImageUrl(String imageUrl) {
     if (imageUrl.isEmpty) return '';
     if (imageUrl.startsWith('http')) return imageUrl;
-    return '${AppConfig.imageBaseUrl}$imageUrl';
+    return '${DioHelper.imageBaseUrl}$imageUrl';
   }
 
   @override

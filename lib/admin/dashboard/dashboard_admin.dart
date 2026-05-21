@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:catering_dapur_bu_mon/admin/shared/header_admin.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
+import 'package:catering_dapur_bu_mon/services/dio_helper.dart';
 
 // ══════════════════════════════════════════════════════════════
 //  KONSTANTA DESAIN
@@ -774,8 +775,8 @@ class _MenuItemCard extends StatelessWidget {
   String get _imageUrl {
     final foto = item['foto']?.toString() ?? '';
     if (foto.isEmpty) return '';
-    // Sesuaikan base URL dengan server kamu
-    return 'http://10.0.2.2/dapur_bu_mon/uploads/menu/$foto';
+    if (foto.startsWith('http://') || foto.startsWith('https://')) return foto;
+    return '${DioHelper.imageBaseUrl}$foto';
   }
 
   @override

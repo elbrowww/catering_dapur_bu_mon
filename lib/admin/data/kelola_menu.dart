@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:catering_dapur_bu_mon/admin/shared/header_admin.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
+import 'package:catering_dapur_bu_mon/services/dio_helper.dart';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -125,8 +128,9 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
         nama      : result['nama']?.toString() ?? '',
         deskripsi : result['deskripsi']?.toString() ?? '',
         harga     : double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
-        foto      : _dummyImageUrl,
         kategori  : result['kategori']?.toString() ?? '',
+        stok      : int.tryParse(result['stok'].toString()) ?? 0,
+        imagePath : result['imagePath']?.toString(),
       );
       _showSnack('Menu berhasil ditambahkan', isError: false);
       await _loadMenu();
@@ -150,6 +154,7 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
         kategori  : (item['kategori']?.toString() ?? '').toUpperCase(),
         deskripsi : item['deskripsi']?.toString() ?? '',
         stok      : item['stok'] is int ? item['stok'] : int.tryParse(item['stok'].toString()) ?? 0,
+        fotoUrl   : item['foto']?.toString() ?? '',
       ),
     );
     if (result == null) return;
@@ -170,8 +175,9 @@ class _KelolaMenuPageState extends State<KelolaMenuPage> {
           'harga'    : double.tryParse(result['harga'].toString().replaceAll(',', '.')) ?? 0,
           'kategori' : result['kategori']?.toString() ?? '',
           'stok'     : int.tryParse(result['stok'].toString()) ?? 0,
-          'foto'     : item['foto']?.toString() ?? _dummyImageUrl,
+          'foto'     : result['foto']?.toString() ?? item['foto']?.toString() ?? '',
         },
+        imagePath: result['imagePath']?.toString(),
       );
       _showSnack('Menu berhasil diperbarui', isError: false);
       await _loadMenu();
@@ -355,6 +361,7 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
   final _deskripsiController = TextEditingController();
   final _stokController      = TextEditingController(text: '0');
   String? _selectedKategori;
+  File? _selectedImage;
 
   TextStyle _alex({double size = 14, Color color = Colors.black,
       FontWeight weight = FontWeight.normal}) =>
@@ -432,7 +439,6 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
     );
   }
 
-  // ── Stok stepper ──────────────────────────────────────────────────────────
   Widget _buildStokStepper() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,27 +450,23 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
           decoration: _fieldDecor(),
           child: Row(
             children: [
-              // Tombol kurang
               GestureDetector(
                 onTap: () {
                   final cur = int.tryParse(_stokController.text) ?? 0;
                   if (cur > 0) _stokController.text = (cur - 1).toString();
                 },
                 child: Container(
-                  width: 48,
-                  height: 48,
+                  width: 48, height: 48,
                   decoration: const BoxDecoration(
                     color: Color(0xFFAC3715),
                     borderRadius: BorderRadius.only(
-                      topLeft    : Radius.circular(9),
-                      bottomLeft : Radius.circular(9),
+                      topLeft: Radius.circular(9),
+                      bottomLeft: Radius.circular(9),
                     ),
                   ),
-                  child: const Icon(Icons.remove,
-                      color: Colors.white, size: 20),
+                  child: const Icon(Icons.remove, color: Colors.white, size: 20),
                 ),
               ),
-              // Input stok
               Expanded(
                 child: TextField(
                   controller   : _stokController,
@@ -477,24 +479,21 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
                   ),
                 ),
               ),
-              // Tombol tambah
               GestureDetector(
                 onTap: () {
                   final cur = int.tryParse(_stokController.text) ?? 0;
                   _stokController.text = (cur + 1).toString();
                 },
                 child: Container(
-                  width: 48,
-                  height: 48,
+                  width: 48, height: 48,
                   decoration: const BoxDecoration(
                     color: Color(0xFF0FBC5F),
                     borderRadius: BorderRadius.only(
-                      topRight    : Radius.circular(9),
-                      bottomRight : Radius.circular(9),
+                      topRight: Radius.circular(9),
+                      bottomRight: Radius.circular(9),
                     ),
                   ),
-                  child: const Icon(Icons.add,
-                      color: Colors.white, size: 20),
+                  child: const Icon(Icons.add, color: Colors.white, size: 20),
                 ),
               ),
             ],
@@ -503,6 +502,19 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
         const SizedBox(height: 16),
       ],
     );
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      setState(() => _selectedImage = File(picked.path));
+    }
   }
 
   void _simpan() {
@@ -520,11 +532,12 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
     }
 
     Navigator.pop(context, {
-      'nama'     : _namaController.text.trim(),
-      'harga'    : _hargaController.text.trim(),
-      'deskripsi': _deskripsiController.text.trim(),
-      'kategori' : _selectedKategori,
-      'stok'     : int.tryParse(_stokController.text) ?? 0,
+      'nama'      : _namaController.text.trim(),
+      'harga'     : _hargaController.text.trim(),
+      'deskripsi' : _deskripsiController.text.trim(),
+      'kategori'  : _selectedKategori,
+      'stok'      : int.tryParse(_stokController.text) ?? 0,
+      'imagePath' : _selectedImage?.path,
     });
   }
 
@@ -551,7 +564,6 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Header ──
             Container(
               width: double.infinity, height: 70,
               decoration: const BoxDecoration(
@@ -572,7 +584,6 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
                 ],
               ),
             ),
-            // ── Form ──
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(22),
@@ -589,25 +600,60 @@ class _TambahMenuDialogState extends State<TambahMenuDialog> {
                         maxLines: 4, height: 100),
                     _buildDropdown(),
                     _buildStokStepper(),
-                    // Gambar placeholder
+                    // Gambar
                     Text('Gambar', style: _alex()),
                     const SizedBox(height: 6),
-                    Container(
-                      width: double.infinity, height: 70,
-                      decoration: _fieldDecor(),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.image_outlined,
-                              color: Colors.grey, size: 24),
-                          const SizedBox(width: 8),
-                          Text('Foto default (sementara)',
-                              style: _alex(color: Colors.grey)),
-                        ],
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: double.infinity,
+                        height: _selectedImage != null ? 150 : 70,
+                        decoration: _fieldDecor(),
+                        child: _selectedImage != null
+                            ? Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(9),
+                                    child: Image.file(
+                                      _selectedImage!,
+                                      width: double.infinity,
+                                      height: 150,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 6, right: 6,
+                                    child: GestureDetector(
+                                      onTap: () => setState(
+                                          () => _selectedImage = null),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: const Icon(Icons.close,
+                                            color: Colors.white, size: 16),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.add_photo_alternate_outlined,
+                                      color: Color(0xFFD05122), size: 24),
+                                  const SizedBox(width: 8),
+                                  Text('Tap untuk pilih gambar',
+                                      style: _alex(
+                                          color: const Color(0xFFD05122))),
+                                ],
+                              ),
                       ),
                     ),
                     const SizedBox(height: 30),
-                    // Tombol aksi
                     Row(
                       children: [
                         Expanded(
@@ -705,8 +751,7 @@ class HapusMenuDialog extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: 30, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
               child: Column(
                 children: [
                   const Icon(Icons.warning_amber_rounded,
@@ -715,15 +760,13 @@ class HapusMenuDialog extends StatelessWidget {
                   Text(
                     'Yakin ingin hapus menu "$namaMenu" dari daftar menu?',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.lora(
-                        color: Colors.black, fontSize: 16),
+                    style: GoogleFonts.lora(color: Colors.black, fontSize: 16),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(
-                  left: 20, right: 20, bottom: 25),
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 25),
               child: Row(
                 children: [
                   Expanded(
@@ -783,6 +826,7 @@ class EditMenuDialog extends StatefulWidget {
   final String kategori;
   final String deskripsi;
   final int    stok;
+  final String fotoUrl;   // ← foto lama dari server
 
   const EditMenuDialog({
     super.key,
@@ -791,6 +835,7 @@ class EditMenuDialog extends StatefulWidget {
     required this.kategori,
     this.deskripsi = '',
     this.stok      = 0,
+    this.fotoUrl   = '',
   });
 
   @override
@@ -803,6 +848,7 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
   late TextEditingController _deskripsiController;
   late TextEditingController _stokController;
   String? _selectedKategori;
+  File?   _selectedImage;   // ← gambar baru yang dipilih user
 
   @override
   void initState() {
@@ -813,7 +859,7 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     _stokController      = TextEditingController(text: widget.stok.toString());
 
     final kategoriUpper = widget.kategori.toUpperCase().trim();
-    _selectedKategori = _kategoriDb.contains(kategoriUpper)
+    _selectedKategori   = _kategoriDb.contains(kategoriUpper)
         ? kategoriUpper
         : _kategoriDb.first;
   }
@@ -901,7 +947,6 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     );
   }
 
-  // ── Stok stepper ──────────────────────────────────────────────────────────
   Widget _buildStokStepper() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -913,29 +958,26 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
           decoration: _fieldDecor(),
           child: Row(
             children: [
-              // Tombol kurang
               GestureDetector(
                 onTap: () {
                   final cur = int.tryParse(_stokController.text) ?? 0;
                   if (cur > 0) {
-                    setState(() => _stokController.text = (cur - 1).toString());
+                    setState(() =>
+                        _stokController.text = (cur - 1).toString());
                   }
                 },
                 child: Container(
-                  width: 48,
-                  height: 48,
+                  width: 48, height: 48,
                   decoration: const BoxDecoration(
                     color: Color(0xFFAC3715),
                     borderRadius: BorderRadius.only(
-                      topLeft    : Radius.circular(9),
-                      bottomLeft : Radius.circular(9),
+                      topLeft: Radius.circular(9),
+                      bottomLeft: Radius.circular(9),
                     ),
                   ),
-                  child: const Icon(Icons.remove,
-                      color: Colors.white, size: 20),
+                  child: const Icon(Icons.remove, color: Colors.white, size: 20),
                 ),
               ),
-              // Input angka stok
               Expanded(
                 child: TextField(
                   controller  : _stokController,
@@ -949,30 +991,158 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
                   onChanged: (_) => setState(() {}),
                 ),
               ),
-              // Tombol tambah
               GestureDetector(
                 onTap: () {
                   final cur = int.tryParse(_stokController.text) ?? 0;
                   setState(() => _stokController.text = (cur + 1).toString());
                 },
                 child: Container(
-                  width: 48,
-                  height: 48,
+                  width: 48, height: 48,
                   decoration: const BoxDecoration(
                     color: Color(0xFF0FBC5F),
                     borderRadius: BorderRadius.only(
-                      topRight    : Radius.circular(9),
-                      bottomRight : Radius.circular(9),
+                      topRight: Radius.circular(9),
+                      bottomRight: Radius.circular(9),
                     ),
                   ),
-                  child: const Icon(Icons.add,
-                      color: Colors.white, size: 20),
+                  child: const Icon(Icons.add, color: Colors.white, size: 20),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // ── Pilih gambar baru dari galeri ─────────────────────────────────────────
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      setState(() => _selectedImage = File(picked.path));
+    }
+  }
+
+  // ── Widget preview gambar ─────────────────────────────────────────────────
+  Widget _buildGambarPicker() {
+    // Prioritas: gambar baru → foto lama dari server → placeholder
+    Widget preview;
+
+    if (_selectedImage != null) {
+      // Gambar baru dipilih dari galeri
+      preview = Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(9),
+            child: Image.file(
+              _selectedImage!,
+              width: double.infinity,
+              height: 150,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 6, right: 6,
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedImage = null),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 6, right: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('Tap untuk ganti',
+                  style: _alex(size: 11, color: Colors.white)),
+            ),
+          ),
+        ],
+      );
+    } else if (widget.fotoUrl.isNotEmpty) {
+      // Tampilkan foto lama dari server
+      final fullUrl = widget.fotoUrl.startsWith('http')
+          ? widget.fotoUrl
+          : '${DioHelper.imageBaseUrl}${widget.fotoUrl}';
+      preview = Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(9),
+            child: Image.network(
+              fullUrl,
+              width: double.infinity,
+              height: 150,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _placeholderGambar(),
+            ),
+          ),
+          Positioned(
+            bottom: 6, right: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('Tap untuk ganti',
+                  style: _alex(size: 11, color: Colors.white)),
+            ),
+          ),
+        ],
+      );
+    } else {
+      preview = _placeholderGambar();
+    }
+
+    final containerHeight = (_selectedImage != null || widget.fotoUrl.isNotEmpty)
+        ? 150.0
+        : 70.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Gambar', style: _alex()),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            width: double.infinity,
+            height: containerHeight,
+            decoration: _fieldDecor(),
+            child: preview,
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _placeholderGambar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.add_photo_alternate_outlined,
+            color: Color(0xFFD05122), size: 24),
+        const SizedBox(width: 8),
+        Text('Tap untuk pilih gambar',
+            style: _alex(color: const Color(0xFFD05122))),
       ],
     );
   }
@@ -988,11 +1158,13 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
     }
 
     Navigator.pop(context, {
-      'nama'     : _namaController.text.trim(),
-      'harga'    : _hargaController.text.trim(),
-      'deskripsi': _deskripsiController.text.trim(),
-      'kategori' : _selectedKategori ?? widget.kategori,
-      'stok'     : int.tryParse(_stokController.text) ?? 0,
+      'nama'      : _namaController.text.trim(),
+      'harga'     : _hargaController.text.trim(),
+      'deskripsi' : _deskripsiController.text.trim(),
+      'kategori'  : _selectedKategori ?? widget.kategori,
+      'stok'      : int.tryParse(_stokController.text) ?? 0,
+      'foto'      : widget.fotoUrl,         // foto lama (dipakai jika tidak ada gambar baru)
+      'imagePath' : _selectedImage?.path,   // gambar baru (null jika tidak ganti)
     });
   }
 
@@ -1019,7 +1191,6 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Header ──
             Container(
               width: double.infinity, height: 70,
               decoration: const BoxDecoration(
@@ -1029,8 +1200,7 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.edit_outlined,
-                      color: Colors.white, size: 22),
+                  const Icon(Icons.edit_outlined, color: Colors.white, size: 22),
                   const SizedBox(width: 8),
                   Text('EDIT MENU',
                       style: _alex(
@@ -1040,7 +1210,6 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
                 ],
               ),
             ),
-            // ── Form ──
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(22),
@@ -1057,25 +1226,8 @@ class _EditMenuDialogState extends State<EditMenuDialog> {
                         maxLines: 4, height: 100),
                     _buildDropdown(),
                     _buildStokStepper(),
-                    // Gambar placeholder
-                    Text('Gambar', style: _alex()),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: double.infinity, height: 90,
-                      decoration: _fieldDecor(),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.image_outlined,
-                              color: Colors.grey, size: 24),
-                          const SizedBox(width: 8),
-                          Text('Foto default (sementara)',
-                              style: _alex(color: Colors.grey)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    // Tombol aksi
+                    _buildGambarPicker(),   // ← sekarang pakai ImagePicker
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
@@ -1300,7 +1452,6 @@ class _MenuItemCard extends StatelessWidget {
       hargaStr = harga?.toString() ?? '-';
     }
 
-    // Warna badge stok
     Color stokColor;
     String stokLabel;
     if (stok == 0) {
@@ -1314,6 +1465,17 @@ class _MenuItemCard extends StatelessWidget {
       stokLabel = 'Stok: $stok';
     }
 
+    String fullImageUrl = '';
+    if (foto.isNotEmpty) {
+      if (foto.startsWith('http://') || foto.startsWith('https://')) {
+        fullImageUrl = foto;
+      } else {
+        fullImageUrl = '${DioHelper.imageBaseUrl}$foto';
+      }
+    } else {
+      fullImageUrl = _dummyImageUrl;
+    }
+
     return Container(
       decoration: BoxDecoration(
           color: Colors.white,
@@ -1322,11 +1484,10 @@ class _MenuItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Row(
         children: [
-          // Foto menu
           ClipRRect(
             borderRadius: BorderRadius.circular(5),
             child: Image.network(
-              foto.isNotEmpty ? foto : _dummyImageUrl,
+              fullImageUrl,
               width: 65, height: 65, fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 width: 65, height: 65,
@@ -1337,7 +1498,6 @@ class _MenuItemCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Info menu
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1352,7 +1512,6 @@ class _MenuItemCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     )),
                 const SizedBox(height: 4),
-                // Badge stok
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 2),
@@ -1373,7 +1532,6 @@ class _MenuItemCard extends StatelessWidget {
               ],
             ),
           ),
-          // Tombol aksi
           Column(
             children: [
               _ActionButton(
