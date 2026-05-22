@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
-import 'package:catering_dapur_bu_mon/features/auth/buat_password_baru.dart'; // ← langkah 3 (nanti dibuat)
+import 'package:catering_dapur_bu_mon/features/auth/buat_password_baru.dart';
 
 class VerifikasiKodePage extends StatefulWidget {
   final String metode;
@@ -18,14 +18,12 @@ class VerifikasiKodePage extends StatefulWidget {
 }
 
 class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
-  // ── 6 controller untuk 6 kotak OTP ────────────────────────
+  // ── LOGIKA TIDAK DIUBAH ────────────────────────────────────
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(6, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
-  // ── Timer countdown ────────────────────────────────────────
-  int _secondsLeft = 299; // 4 menit 59 detik
+  int _secondsLeft = 299;
   Timer? _timer;
 
   @override
@@ -55,24 +53,21 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
     if (kode.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Masukkan 6 digit kode OTP!',
-            style: GoogleFonts.alexandria(color: Colors.white),
-          ),
+          content: Text('Masukkan 6 digit kode OTP!',
+              style: GoogleFonts.alexandria(color: Colors.white)),
           backgroundColor: const Color(0xFFD05122),
         ),
       );
       return;
     }
-    // ← navigasi ke langkah 3
     Navigator.push(
       context,
-     MaterialPageRoute(
-  builder: (_) => BuatPasswordBaruPage(
-  noTelp: widget.noTelp ?? '',
-  otpCode: kode,
-),
-),
+      MaterialPageRoute(
+        builder: (_) => BuatPasswordBaruPage(
+          noTelp: widget.noTelp ?? '',
+          otpCode: kode,
+        ),
+      ),
     );
   }
 
@@ -83,432 +78,315 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
     _timer?.cancel();
     super.dispose();
   }
+  // ──────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       body: Container(
-        width: screenWidth,
-        height: screenHeight,
-        clipBehavior: Clip.hardEdge,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFEE8B2E)],
             stops: [0.21, 0.56, 0.83],
           ),
         ),
-        child: SizedBox(
-          width: double.infinity,
-          child: Stack(
-            clipBehavior: Clip.none,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
             children: [
-
-              /// Panel putih bawah
-              Positioned(
-                left: 0,
-                top: statusBarHeight + 251,
-                child: Container(
-                  width: screenWidth,
-                  height: screenHeight,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(46),
-                  ),
-                ),
-              ),
-
-              /// Ikon gembok
-              Positioned(
-                left: screenWidth * 0.313,
-                top: statusBarHeight + 30,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(75),
-                  ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: 15,
-                        top: 15,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(46),
-                          clipBehavior: Clip.hardEdge,
-                          child: SizedBox.square(
-                            dimension: 120,
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  left: 8,
-                                  top: 8,
-                                  width: 120,
-                                  height: 120,
-                                  child: Image.network(
-                                    'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2Fd9a301e2d64a9171618781d7bcf96f3b5983ca8fpadlock%201.png?alt=media&token=eb230f17-8780-4501-9022-120425e8be3f',
-                                    width: 120,
-                                    height: 120,
-                                    fit: BoxFit.none,
-                                    scale: 4.267,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              /// Judul "Lupa Password"
-              Positioned(
-                left: 0,
-                right: 0,
-                top: statusBarHeight + 10,
-                child: Text(
-                  'Lupa Password',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              /// Sub judul
-              Positioned(
-                left: screenWidth * 0.097,
-                right: screenWidth * 0.097,
-                top: statusBarHeight + 36,
-                child: Text(
-                  'Ikuti Langkah Untuk membuat Password Baru',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-
-              /// "Ubah Password" di panel putih
-              Positioned(
-                left: 0,
-                right: 0,
-                top: statusBarHeight + 270,
-                child: Text(
-                  'Ubah Password',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              /// Indikator langkah (1, 2, 3)
-              Positioned(
-                left: screenWidth * 0.15,
-                right: screenWidth * 0.15,
-                top: statusBarHeight + 300,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Step 1 (sudah selesai - abu)
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9F4EE),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '1',
-                          style: GoogleFonts.alexandria(
-                            color: Colors.black,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Garis
-                    Expanded(
-                      child: Container(height: 2, color: Colors.grey.shade300),
-                    ),
-                    // Step 2 (aktif - kuning)
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFCE0A),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '2',
-                          style: GoogleFonts.alexandria(
-                            color: Colors.black,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Garis
-                    Expanded(
-                      child: Container(height: 2, color: Colors.grey.shade300),
-                    ),
-                    // Step 3
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9F4EE),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '3',
-                          style: GoogleFonts.alexandria(
-                            color: Colors.black,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
+              // ── Bagian atas (gradient) ──────────────────────
+              const SizedBox(height: 24),
+              Container(
+                width: 96,
+                height: 96,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Color(0x30000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 4))
                   ],
                 ),
+                child: const Icon(Icons.shield_rounded,
+                    size: 50, color: Color(0xFFD05122)),
               ),
+              const SizedBox(height: 14),
+              Text(
+                'Lupa Password',
+                style: GoogleFonts.alexandria(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Ikuti langkah untuk membuat password baru',
+                style: GoogleFonts.alexandria(
+                    color: Colors.white70, fontSize: 11),
+              ),
+              const SizedBox(height: 24),
 
-              /// Label langkah
-              Positioned(
-                left: 0,
-                right: 0,
-                top: statusBarHeight + 360,
-                child: Opacity(
-                  opacity: 0.8,
-                  child: Text(
-                    'Langkah 2 dari 3 — Kode OTP',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 12,
+              // ── Panel putih ─────────────────────────────────
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(36),
+                      topRight: Radius.circular(36),
                     ),
                   ),
-                ),
-              ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Ubah Password',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
 
-              /// Deskripsi
-              Positioned(
-                left: screenWidth * 0.107,
-                right: screenWidth * 0.107,
-                top: statusBarHeight + 382,
-                child: Text(
-                  'Kode 6-digit telah dikirim ke ${widget.metode == 'telp' ? 'No Telp kamu 0821*******' : 'Email kamu'}. Masukkan dalam 5 menit.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+                        // Step indicator
+                        _StepIndicator(currentStep: 2),
+                        const SizedBox(height: 8),
 
-              /// 6 Kotak OTP
-              Positioned(
-                left: screenWidth * 0.1,
-                right: screenWidth * 0.1,
-                top: statusBarHeight + 450,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (i) {
-                    return Container(
-                      width: 42,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x3F000000),
-                            spreadRadius: 0,
-                            offset: Offset(0, 4),
-                            blurRadius: 15,
+                        Text(
+                          'Langkah 2 dari 3 — Kode OTP',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 11, color: Colors.black45),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Kode 6-digit telah dikirim ke\n'
+                          '${widget.metode == 'telp' ? 'No. WA kamu 0821*******' : 'Email kamu'}.\n'
+                          'Masukkan dalam 5 menit.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // 6 Kotak OTP
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(6, (i) {
+                            return _OtpBox(
+                              controller: _controllers[i],
+                              focusNode: _focusNodes[i],
+                              onChanged: (val) {
+                                if (val.isNotEmpty && i < 5) {
+                                  FocusScope.of(context)
+                                      .requestFocus(_focusNodes[i + 1]);
+                                } else if (val.isEmpty && i > 0) {
+                                  FocusScope.of(context)
+                                      .requestFocus(_focusNodes[i - 1]);
+                                }
+                              },
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Timer
+                        Text(
+                          _secondsLeft > 0
+                              ? 'Kirim ulang dalam $_timerText'
+                              : 'Kode sudah kadaluarsa',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 12, color: Colors.black45),
+                        ),
+
+                        if (_secondsLeft == 0) ...[
+                          const SizedBox(height: 6),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _secondsLeft = 299);
+                              _startTimer();
+                            },
+                            child: Text(
+                              'Kirim Ulang Kode',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.alexandria(
+                                color: const Color(0xFFD05122),
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                                decorationColor: const Color(0xFFD05122),
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                      child: TextField(
-                        controller: _controllers[i],
-                        focusNode: _focusNodes[i],
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-                        style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+
+                        const SizedBox(height: 28),
+
+                        _FPButton(
+                          label: 'Verifikasi Kode',
+                          onTap: _verifikasi,
                         ),
-                        decoration: const InputDecoration(
-                          counterText: '',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        onChanged: (val) {
-                          if (val.isNotEmpty && i < 5) {
-                            FocusScope.of(context)
-                                .requestFocus(_focusNodes[i + 1]);
-                          } else if (val.isEmpty && i > 0) {
-                            FocusScope.of(context)
-                                .requestFocus(_focusNodes[i - 1]);
-                          }
-                        },
-                      ),
-                    );
-                  }),
-                ),
-              ),
-
-              /// Timer countdown
-              Positioned(
-                left: 0,
-                right: 0,
-                top: statusBarHeight + 518,
-                child: Opacity(
-                  opacity: 0.8,
-                  child: Text(
-                    _secondsLeft > 0
-                        ? 'Kirim ulang dalam $_timerText'
-                        : 'Kode sudah kadaluarsa',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-
-              /// Kirim ulang (muncul kalau timer habis)
-              if (_secondsLeft == 0)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: statusBarHeight + 540,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _secondsLeft = 299);
-                      _startTimer();
-                    },
-                    child: Text(
-                      'Kirim Ulang Kode',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.alexandria(
-                        color: const Color(0xFFD05122),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        decoration: TextDecoration.underline,
-                        decorationColor: const Color(0xFFD05122),
-                      ),
-                    ),
-                  ),
-                ),
-
-              /// Tombol Verifikasi Kode
-              Positioned(
-                left: screenWidth * 0.144,
-                right: screenWidth * 0.144,
-                top: statusBarHeight + 580,
-                child: GestureDetector(
-                  onTap: _verifikasi,
-                  child: Container(
-                    height: 47,
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x3F000000),
-                          spreadRadius: 3,
-                          offset: Offset(0, 2),
-                          blurRadius: 4,
+                        const SizedBox(height: 10),
+                        _FPButton(
+                          label: 'Batal',
+                          isSecondary: true,
+                          onTap: () => Navigator.pop(context),
                         ),
                       ],
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFD05122),
-                          Color(0xFFEE8B2E),
-                          Color(0xFFFBA839),
-                        ],
-                        stops: [0.17, 0.47, 0.60],
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Verifikasi Kode',
-                        style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              /// Tombol Batal
-              Positioned(
-                left: screenWidth * 0.144,
-                right: screenWidth * 0.144,
-                top: statusBarHeight + 640,
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    height: 47,
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x3F000000),
-                          spreadRadius: 3,
-                          offset: Offset(0, 2),
-                          blurRadius: 4,
-                        ),
-                      ],
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFAC3715),
-                          Color(0xFFD05122),
-                          Color(0xFFAC3715),
-                        ],
-                        stops: [0.17, 0.43, 0.61],
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Batal',
-                        style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 20,
-                        ),
-                      ),
                     ),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── OTP Box ────────────────────────────────────────────────────
+class _OtpBox extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
+
+  const _OtpBox({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 52,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x28000000),
+              blurRadius: 10,
+              offset: Offset(0, 3))
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        maxLength: 1,
+        style: GoogleFonts.alexandria(
+            color: Colors.black87,
+            fontSize: 20,
+            fontWeight: FontWeight.bold),
+        decoration: const InputDecoration(
+          counterText: '',
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHARED WIDGETS
+// ═══════════════════════════════════════════════════════════════
+
+class _StepIndicator extends StatelessWidget {
+  final int currentStep;
+  const _StepIndicator({required this.currentStep});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [_circle(1), _line(), _circle(2), _line(), _circle(3)],
+    );
+  }
+
+  Widget _circle(int n) {
+    final isActive = n == currentStep;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFFFFCE0A) : const Color(0xFFF0EDE8),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          '$n',
+          style: GoogleFonts.alexandria(
+            fontSize: 16,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _line() =>
+      Expanded(child: Container(height: 2, color: const Color(0xFFE0DDD9)));
+}
+
+class _FPButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final bool isSecondary;
+  final bool isLoading;
+
+  const _FPButton({
+    required this.label,
+    this.onTap,
+    this.isSecondary = false,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: isSecondary
+                ? const [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFAC3715)]
+                : const [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+            stops: const [0.17, 0.50, 0.85],
+          ),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x30000000),
+                blurRadius: 6,
+                offset: Offset(0, 3))
+          ],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2.5))
+              : Text(
+                  label,
+                  style: GoogleFonts.alexandria(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600),
+                ),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catering_dapur_bu_mon/features/auth/login.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
+
 class BuatPasswordBaruPage extends StatefulWidget {
   final String noTelp;
   final String otpCode;
@@ -29,532 +30,382 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
     super.dispose();
   }
 
-Future<void> _buatPasswordBaru() async {
-  final password = _passwordController.text.trim();
-  final konfirmasi = _konfirmasiController.text.trim();
+  // ── LOGIKA TIDAK DIUBAH ────────────────────────────────────
+  Future<void> _buatPasswordBaru() async {
+    final password = _passwordController.text.trim();
+    final konfirmasi = _konfirmasiController.text.trim();
 
-  if (password.isEmpty || konfirmasi.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Semua kolom harus diisi!',
-          style: GoogleFonts.alexandria(color: Colors.white),
-        ),
+    if (password.isEmpty || konfirmasi.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Semua kolom harus diisi!',
+            style: GoogleFonts.alexandria(color: Colors.white)),
         backgroundColor: const Color(0xFFD05122),
-      ),
-    );
-    return;
-  }
-
-  if (password.length < 8) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Password minimal 8 karakter!',
-          style: GoogleFonts.alexandria(color: Colors.white),
-        ),
+      ));
+      return;
+    }
+    if (password.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Password minimal 8 karakter!',
+            style: GoogleFonts.alexandria(color: Colors.white)),
         backgroundColor: const Color(0xFFD05122),
-      ),
-    );
-    return;
-  }
-
-  if (password != konfirmasi) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Password tidak cocok!',
-          style: GoogleFonts.alexandria(color: Colors.white),
-        ),
+      ));
+      return;
+    }
+    if (password != konfirmasi) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Password tidak cocok!',
+            style: GoogleFonts.alexandria(color: Colors.white)),
         backgroundColor: const Color(0xFFD05122),
-      ),
-    );
-    return;
-  }
-
-  try {
-   await ApiService.resetPassword(
-  noTelp: widget.noTelp,
-  otpCode: widget.otpCode,
-  passwordBaru: password,
-);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Password berhasil diubah!',
-          style: GoogleFonts.alexandria(
-            color: Colors.white,
-          ),
-        ),
+      ));
+      return;
+    }
+    try {
+      await ApiService.resetPassword(
+        noTelp: widget.noTelp,
+        otpCode: widget.otpCode,
+        passwordBaru: password,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Password berhasil diubah!',
+            style: GoogleFonts.alexandria(color: Colors.white)),
         backgroundColor: Colors.green,
-      ),
-    );
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const Login(),
-      ),
-      (route) => false,
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.toString()),
-      ),
-    );
+      ));
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const Login()),
+        (route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
-}
+  // ──────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       body: Container(
-        width: screenWidth,
-        height: screenHeight,
-        clipBehavior: Clip.hardEdge,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFEE8B2E)],
             stops: [0.21, 0.56, 0.83],
           ),
         ),
-        child: SizedBox(
-          width: double.infinity,
-          child: Stack(
-            clipBehavior: Clip.none,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
             children: [
-
-              /// Panel putih bawah
-              Positioned(
-                left: 0,
-                top: statusBarHeight + 251,
-                child: Container(
-                  width: screenWidth,
-                  height: screenHeight,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(46),
-                  ),
-                ),
-              ),
-
-              /// Ikon gembok
-              Positioned(
-                left: screenWidth * 0.313,
-                top: statusBarHeight + 30,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(75),
-                  ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: 15,
-                        top: 15,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(46),
-                          clipBehavior: Clip.hardEdge,
-                          child: SizedBox.square(
-                            dimension: 120,
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  left: 8,
-                                  top: 8,
-                                  width: 120,
-                                  height: 120,
-                                  child: Image.network(
-                                    'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2Fd9a301e2d64a9171618781d7bcf96f3b5983ca8fpadlock%201.png?alt=media&token=cee5584c-673b-44d5-aa33-e0292fbb28c8',
-                                    width: 120,
-                                    height: 120,
-                                    fit: BoxFit.none,
-                                    scale: 4.267,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              /// Judul "Lupa Password"
-              Positioned(
-                left: 0,
-                right: 0,
-                top: statusBarHeight + 10,
-                child: Text(
-                  'Lupa Password',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              /// Sub judul
-              Positioned(
-                left: screenWidth * 0.097,
-                right: screenWidth * 0.097,
-                top: statusBarHeight + 36,
-                child: Text(
-                  'Ikuti Langkah Untuk membuat Password Baru',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-
-              /// "Ubah Password" di panel putih
-              Positioned(
-                left: 0,
-                right: 0,
-                top: statusBarHeight + 270,
-                child: Text(
-                  'Ubah Password',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              /// Indikator langkah (1, 2, 3)
-              Positioned(
-                left: screenWidth * 0.15,
-                right: screenWidth * 0.15,
-                top: statusBarHeight + 300,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Step 1 (selesai - abu)
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9F4EE),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '1',
-                          style: GoogleFonts.alexandria(
-                            color: Colors.black,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Garis
-                    Expanded(
-                      child: Container(height: 2, color: Colors.grey.shade300),
-                    ),
-                    // Step 2 (selesai - abu)
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9F4EE),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '2',
-                          style: GoogleFonts.alexandria(
-                            color: Colors.black,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Garis
-                    Expanded(
-                      child: Container(height: 2, color: Colors.grey.shade300),
-                    ),
-                    // Step 3 (aktif - kuning)
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFCE0A),
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '3',
-                          style: GoogleFonts.alexandria(
-                            color: Colors.black,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+              // ── Bagian atas (gradient) ──────────────────────
+              const SizedBox(height: 24),
+              Container(
+                width: 96,
+                height: 96,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Color(0x30000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 4))
                   ],
                 ),
+                child: const Icon(Icons.lock_open_rounded,
+                    size: 50, color: Color(0xFFD05122)),
               ),
-
-              /// Label langkah
-              Positioned(
-                left: 0,
-                right: 0,
-                top: statusBarHeight + 360,
-                child: Opacity(
-                  opacity: 0.8,
-                  child: Text(
-                    'Langkah 3 dari 3 — Password Baru',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-
-              /// Deskripsi
-              Positioned(
-                left: screenWidth * 0.1,
-                right: screenWidth * 0.1,
-                top: statusBarHeight + 382,
-                child: Text(
-                  'Buat kata sandi baru yang\nkuat untuk akun kamu.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              /// Label Password Baru
-              Positioned(
-                left: screenWidth * 0.142,
-                top: statusBarHeight + 450,
-                child: Text(
-                  'Masukkan Password Baru',
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-
-              /// Input Password Baru
-              Positioned(
-                left: screenWidth * 0.142,
-                top: statusBarHeight + 474,
-                child: Container(
-                  width: screenWidth * 0.714,
-                  height: 48,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
+              const SizedBox(height: 14),
+              Text(
+                'Lupa Password',
+                style: GoogleFonts.alexandria(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        spreadRadius: 3,
-                        offset: Offset(0, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    textAlignVertical: TextAlignVertical.center,
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 15,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Masukkan Password Baru',
-                      hintStyle: GoogleFonts.alexandria(
-                        color: Colors.black.withOpacity(0.2),
-                        fontSize: 15,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      border: InputBorder.none,
-                      suffixIcon: GestureDetector(
-                        onTap: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
-                        child: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.black26,
-                          size: 18,
-                        ),
-                      ),
-                      suffixIconConstraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 48,
-                      ),
-                    ),
-                  ),
-                ),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
               ),
-
-              /// Label Konfirmasi Password Baru
-              Positioned(
-                left: screenWidth * 0.142,
-                top: statusBarHeight + 538,
-                child: Text(
-                  'Konfirmasi Password Baru',
-                  style: GoogleFonts.alexandria(
-                    color: Colors.black,
-                    fontSize: 14,
-                  ),
-                ),
+              const SizedBox(height: 4),
+              Text(
+                'Ikuti langkah untuk membuat password baru',
+                style: GoogleFonts.alexandria(
+                    color: Colors.white70, fontSize: 11),
               ),
+              const SizedBox(height: 24),
 
-              /// Input Konfirmasi Password Baru
-              Positioned(
-                left: screenWidth * 0.142,
-                top: statusBarHeight + 562,
+              // ── Panel putih ─────────────────────────────────
+              Expanded(
                 child: Container(
-                  width: screenWidth * 0.714,
-                  height: 48,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        spreadRadius: 3,
-                        offset: Offset(0, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _konfirmasiController,
-                    obscureText: _obscureKonfirmasi,
-                    textAlignVertical: TextAlignVertical.center,
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 15,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(36),
+                      topRight: Radius.circular(36),
                     ),
-                    decoration: InputDecoration(
-                      hintText: 'Konfirmasi Password Baru',
-                      hintStyle: GoogleFonts.alexandria(
-                        color: Colors.black.withOpacity(0.2),
-                        fontSize: 15,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      border: InputBorder.none,
-                      suffixIcon: GestureDetector(
-                        onTap: () => setState(
-                            () => _obscureKonfirmasi = !_obscureKonfirmasi),
-                        child: Icon(
-                          _obscureKonfirmasi
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: Colors.black26,
-                          size: 18,
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Ubah Password',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                      ),
-                      suffixIconConstraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 48,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+                        const SizedBox(height: 16),
 
-              /// Tips password
-              Positioned(
-                left: screenWidth * 0.1,
-                right: screenWidth * 0.1,
-                top: statusBarHeight + 626,
-                child: Opacity(
-                  opacity: 0.8,
-                  child: Text(
-                    '✅ Minimal 8 karakter  ·  ✅ Gunakan huruf & angka  ·  ✅ Hindari password lama',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.alexandria(
-                      color: Colors.black,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
+                        // Step indicator
+                        _StepIndicator(currentStep: 3),
+                        const SizedBox(height: 8),
 
-              /// Tombol Buat Password Baru
-              Positioned(
-                left: screenWidth * 0.144,
-                right: screenWidth * 0.144,
-                top: statusBarHeight + 686,
-                child: GestureDetector(
-                  onTap: _buatPasswordBaru,
-                  child: Container(
-                    height: 47,
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x3F000000),
-                          spreadRadius: 3,
-                          offset: Offset(0, 2),
-                          blurRadius: 4,
+                        Text(
+                          'Langkah 3 dari 3 — Password Baru',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 11, color: Colors.black45),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Buat kata sandi baru yang\nkuat untuk akun kamu',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.alexandria(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Input Password Baru
+                        _FPLabel('Masukkan Password Baru'),
+                        const SizedBox(height: 6),
+                        _FPInputField(
+                          controller: _passwordController,
+                          hint: 'Masukkan password baru',
+                          obscure: _obscurePassword,
+                          onToggleObscure: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
+                          prefixIcon: Icons.lock_outline_rounded,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Input Konfirmasi
+                        _FPLabel('Konfirmasi Password Baru'),
+                        const SizedBox(height: 6),
+                        _FPInputField(
+                          controller: _konfirmasiController,
+                          hint: 'Ulangi password baru',
+                          obscure: _obscureKonfirmasi,
+                          onToggleObscure: () => setState(
+                              () => _obscureKonfirmasi = !_obscureKonfirmasi),
+                          prefixIcon: Icons.lock_person_outlined,
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Tips
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF8F0),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: const Color(0xFFEE8B2E).withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            '✅  Min. 8 karakter\n'
+                            '✅  Kombinasi huruf & angka\n'
+                            '✅  Hindari password lama',
+                            style: GoogleFonts.alexandria(
+                                fontSize: 11,
+                                color: Colors.black54,
+                                height: 1.7),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        _FPButton(
+                          label: 'Buat Password Baru',
+                          onTap: _buatPasswordBaru,
+                        ),
+                        const SizedBox(height: 10),
+                        _FPButton(
+                          label: 'Batal',
+                          isSecondary: true,
+                          onTap: () => Navigator.pop(context),
                         ),
                       ],
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFD05122),
-                          Color(0xFFEE8B2E),
-                          Color(0xFFFBA839),
-                        ],
-                        stops: [0.17, 0.47, 0.60],
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Buat Password Baru',
-                        style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 20,
-                        ),
-                      ),
                     ),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHARED WIDGETS
+// ═══════════════════════════════════════════════════════════════
+
+class _StepIndicator extends StatelessWidget {
+  final int currentStep;
+  const _StepIndicator({required this.currentStep});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [_circle(1), _line(), _circle(2), _line(), _circle(3)],
+    );
+  }
+
+  Widget _circle(int n) {
+    final isActive = n == currentStep;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFFFFCE0A) : const Color(0xFFF0EDE8),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          '$n',
+          style: GoogleFonts.alexandria(
+            fontSize: 16,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _line() =>
+      Expanded(child: Container(height: 2, color: const Color(0xFFE0DDD9)));
+}
+
+class _FPLabel extends StatelessWidget {
+  final String text;
+  const _FPLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text,
+        style: GoogleFonts.alexandria(fontSize: 13, color: Colors.black87));
+  }
+}
+
+class _FPInputField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final bool obscure;
+  final VoidCallback? onToggleObscure;
+  final TextInputType keyboardType;
+  final IconData? prefixIcon;
+
+  const _FPInputField({
+    required this.controller,
+    required this.hint,
+    this.obscure = false,
+    this.onToggleObscure,
+    this.keyboardType = TextInputType.text,
+    this.prefixIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x28000000),
+              spreadRadius: 1,
+              blurRadius: 8,
+              offset: Offset(0, 2))
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        textAlignVertical: TextAlignVertical.center,
+        style: GoogleFonts.alexandria(fontSize: 14, color: Colors.black87),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle:
+              GoogleFonts.alexandria(color: Colors.black26, fontSize: 13),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+          border: InputBorder.none,
+          prefixIcon: prefixIcon != null
+              ? Icon(prefixIcon, color: const Color(0xFFD05122), size: 18)
+              : null,
+          suffixIcon: onToggleObscure != null
+              ? GestureDetector(
+                  onTap: onToggleObscure,
+                  child: Icon(
+                    obscure ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.black26,
+                    size: 18,
+                  ),
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+class _FPButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final bool isSecondary;
+  final bool isLoading;
+
+  const _FPButton({
+    required this.label,
+    this.onTap,
+    this.isSecondary = false,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: isSecondary
+                ? const [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFAC3715)]
+                : const [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
+            stops: const [0.17, 0.50, 0.85],
+          ),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x30000000), blurRadius: 6, offset: Offset(0, 3))
+          ],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2.5))
+              : Text(
+                  label,
+                  style: GoogleFonts.alexandria(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600),
+                ),
         ),
       ),
     );
