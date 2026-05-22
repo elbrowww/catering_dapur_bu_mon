@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:catering_dapur_bu_mon/features/auth/login.dart'; // ← setelah berhasil, kembali ke login
-
+import 'package:catering_dapur_bu_mon/features/auth/login.dart';
+import 'package:catering_dapur_bu_mon/services/api_service.dart';
 class BuatPasswordBaruPage extends StatefulWidget {
-  const BuatPasswordBaruPage({super.key});
+  final String noTelp;
+  final String otpCode;
+
+  const BuatPasswordBaruPage({
+    super.key,
+    required this.noTelp,
+    required this.otpCode,
+  });
 
   @override
   State<BuatPasswordBaruPage> createState() => _BuatPasswordBaruPageState();
@@ -22,55 +29,65 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
     super.dispose();
   }
 
-  void _buatPasswordBaru() {
-    final password = _passwordController.text.trim();
-    final konfirmasi = _konfirmasiController.text.trim();
+Future<void> _buatPasswordBaru() async {
+  final password = _passwordController.text.trim();
+  final konfirmasi = _konfirmasiController.text.trim();
 
-    if (password.isEmpty || konfirmasi.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Semua kolom harus diisi!',
-            style: GoogleFonts.alexandria(color: Colors.white),
-          ),
-          backgroundColor: const Color(0xFFD05122),
+  if (password.isEmpty || konfirmasi.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Semua kolom harus diisi!',
+          style: GoogleFonts.alexandria(color: Colors.white),
         ),
-      );
-      return;
-    }
+        backgroundColor: const Color(0xFFD05122),
+      ),
+    );
+    return;
+  }
 
-    if (password.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Password minimal 8 karakter!',
-            style: GoogleFonts.alexandria(color: Colors.white),
-          ),
-          backgroundColor: const Color(0xFFD05122),
+  if (password.length < 8) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Password minimal 8 karakter!',
+          style: GoogleFonts.alexandria(color: Colors.white),
         ),
-      );
-      return;
-    }
+        backgroundColor: const Color(0xFFD05122),
+      ),
+    );
+    return;
+  }
 
-    if (password != konfirmasi) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Password tidak cocok!',
-            style: GoogleFonts.alexandria(color: Colors.white),
-          ),
-          backgroundColor: const Color(0xFFD05122),
+  if (password != konfirmasi) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Password tidak cocok!',
+          style: GoogleFonts.alexandria(color: Colors.white),
         ),
-      );
-      return;
-    }
+        backgroundColor: const Color(0xFFD05122),
+      ),
+    );
+    return;
+  }
 
-    // Berhasil → kembali ke login
+  try {
+   await ApiService.resetPassword(
+  noTelp: widget.noTelp,
+  otpCode: widget.otpCode,
+  passwordBaru: password,
+);
+
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Password berhasil diubah!',
-          style: GoogleFonts.alexandria(color: Colors.white),
+          style: GoogleFonts.alexandria(
+            color: Colors.white,
+          ),
         ),
         backgroundColor: Colors.green,
       ),
@@ -78,10 +95,19 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const Login()),
+      MaterialPageRoute(
+        builder: (_) => const Login(),
+      ),
       (route) => false,
     );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(e.toString()),
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

@@ -4,8 +4,14 @@ import 'dart:async';
 import 'package:catering_dapur_bu_mon/features/auth/buat_password_baru.dart'; // ← langkah 3 (nanti dibuat)
 
 class VerifikasiKodePage extends StatefulWidget {
-  final String metode; // 'telp' atau 'email'
-  const VerifikasiKodePage({super.key, required this.metode});
+  final String metode;
+  final String? noTelp;
+
+  const VerifikasiKodePage({
+    super.key,
+    required this.metode,
+    this.noTelp,
+  });
 
   @override
   State<VerifikasiKodePage> createState() => _VerifikasiKodePageState();
@@ -61,7 +67,12 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
     // ← navigasi ke langkah 3
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const BuatPasswordBaruPage()),
+     MaterialPageRoute(
+  builder: (_) => BuatPasswordBaruPage(
+  noTelp: widget.noTelp ?? '',
+  otpCode: kode,
+),
+),
     );
   }
 

@@ -156,7 +156,47 @@ class ApiService {
       throw ApiException(_getErrorMessage(e));
     }
   }
+  // ==========================================================
+  //  LUPA PASSWORD
+  // ==========================================================
 
+  static Future<Map<String, dynamic>> forgotPassword({
+    required String phone,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth.php?action=forgot_password',
+        data: {
+          'no_telp': phone,
+        },
+      );
+
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> resetPassword({
+    required String noTelp,
+    required String otpCode,
+    required String passwordBaru,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth.php?action=reset_password',
+        data: {
+          'no_telp': noTelp,
+          'otp_code': otpCode,
+          'password_baru': passwordBaru,
+        },
+      );
+
+      return _parse(response);
+    } on DioException catch (e) {
+      throw ApiException(_getErrorMessage(e));
+    }
+  }
   static Future<void> logout() async {
     try {
       await _dio.post('/auth.php?action=logout');
