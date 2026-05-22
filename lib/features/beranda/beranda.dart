@@ -577,16 +577,6 @@ class BerandaPageState extends State<BerandaPage> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.notifications_none,
-                        color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(

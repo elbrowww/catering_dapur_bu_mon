@@ -83,7 +83,7 @@ class _ProfilPageState extends State<ProfilPage> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Pilih Avatar Shio-mu 🐾',
+                'Pilih Avatar 🐾',
                 style: GoogleFonts.alexandria(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -376,351 +376,366 @@ class _ProfilPageState extends State<ProfilPage> {
   @override
   Widget build(BuildContext context) {
     final double statusBarHeight = MediaQuery.of(context).padding.top;
-    final double screenWidth    = MediaQuery.of(context).size.width;
-    final double screenHeight   = MediaQuery.of(context).size.height;
 
-    return Container(
-      width: screenWidth,
-      height: screenHeight,
-      clipBehavior: Clip.hardEdge,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFAC3715), Color(0xFFD05122), Color(0xFFEE8B2E)],
-          stops: [0.21, 0.56, 0.83],
-        ),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-
-            // ── Header ────────────────────────────────────────
-            Positioned(
-              left: screenWidth * 0.060,
-              top: statusBarHeight + 14,
-              right: screenWidth * 0.060,
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(46),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF3F1F0C),
-                      Color(0xFFAC3715),
-                      Color(0xFFD05122),
-                      Color(0xFF66270F),
-                    ],
-                    stops: [0.13, 0.36, 0.61, 0.82],
-                  ),
-                ),
-                child: Center(
-                  child: Text('Profil',
-                      style: GoogleFonts.alexandria(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                      )),
-                ),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // ── Header ────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(20, statusBarHeight + 16, 20, 24),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFEE8B2E),
+                  Color(0xFFD05122),
+                  Color(0xFFAC3715),
+                ],
+                stops: [0.17, 0.44, 0.79],
               ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x3F000000),
+                  blurRadius: 4,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
-
-            // ── Avatar (tap untuk ganti) ───────────────────────
-            Positioned(
-              left: screenWidth * 0.358,
-              top: statusBarHeight + 70,
-              child: GestureDetector(
-                onTap: _showPilihAvatar,
-                child: Stack(
-                  clipBehavior: Clip.none,
+            child: Column(
+              children: [
+                // Baris ikon + judul
+                Row(
                   children: [
                     Container(
-                      width: 114, height: 114,
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: ClipOval(
-                        child: _isSavingAvatar
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xFFD05122),
-                                  strokeWidth: 2.5,
-                                ),
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Image.asset(
-                                  'assets/avatars/$_avatar',
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.pets,
-                                    size: 55,
-                                    color: Color(0xFFD05122),
-                                  ),
-                                ),
-                              ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 24,
                       ),
                     ),
-                    // Badge edit
-                    Positioned(
-                      right: 2, bottom: 2,
-                      child: Container(
-                        width: 30, height: 30,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(colors: [
-                            Color(0xFFD05122),
-                            Color(0xFFFBA839),
-                          ]),
-                        ),
-                        child: const Icon(Icons.edit,
-                            color: Colors.white, size: 16),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Profil',
+                            style: GoogleFonts.alexandria(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            'Kelola akun dan preferensimu',
+                            style: GoogleFonts.alexandria(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
 
-            // ── Nama ──────────────────────────────────────────
-            Positioned(
-              left: screenWidth * 0.05,
-              right: screenWidth * 0.05,
-              top: statusBarHeight + 190,
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20, height: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(
-                      _nama.isEmpty ? '-' : _nama,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.alexandria(
-                        color: Colors.black,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-            ),
+                const SizedBox(height: 20),
 
-            // ── Panel putih bawah ──────────────────────────────
-            Positioned(
-              left: 0,
-              top: statusBarHeight + 230,
-              child: Container(
-                width: screenWidth,
-                height: screenHeight,
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-            ),
-
-            // ── Label Akun Saya ────────────────────────────────
-            Positioned(
-              left: screenWidth * 0.109,
-              top: statusBarHeight + 273,
-              child: Text('Akun Saya',
-                  style: GoogleFonts.alexandria(
-                      color: Colors.black, fontSize: 20)),
-            ),
-
-            // ── Card Edit Profil ───────────────────────────────
-            Positioned(
-              left: screenWidth * 0.056,
-              right: screenWidth * 0.056,
-              top: statusBarHeight + 317,
-              child: GestureDetector(
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const EditProfilPage()),
-                  );
-                  _loadProfil();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        spreadRadius: 2,
-                        offset: Offset(0, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: Row(
+                // Avatar
+                GestureDetector(
+                  onTap: _showPilihAvatar,
+                  child: Stack(
+                    clipBehavior: Clip.none,
                     children: [
                       Container(
-                        width: 52, height: 52,
+                        width: 100, height: 100,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2F316b1609f20a8554436bf178b307cada634003f6user%201.png?alt=media&token=0dd54a77-ed31-408c-9241-66cd7452900f',
-                            width: 38, height: 38,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Edit Profil',
-                                style: GoogleFonts.alexandria(
-                                  color: Colors.black,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                )),
-                            const SizedBox(height: 2),
-                            Text('Ubah nama, alamat, dll',
-                                style: GoogleFonts.alexandria(
-                                    color: Colors.black54, fontSize: 12)),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
                           ],
                         ),
+                        child: ClipOval(
+                          child: _isSavingAvatar
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFFD05122),
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.all(10),
+                                  child: Image.asset(
+                                    'assets/avatars/$_avatar',
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.pets,
+                                      size: 50,
+                                      color: Color(0xFFD05122),
+                                    ),
+                                  ),
+                                ),
+                        ),
                       ),
-                      const Icon(Icons.chevron_right,
-                          color: Colors.black45, size: 22),
+                      // Badge edit
+                      Positioned(
+                        right: 2, bottom: 2,
+                        child: Container(
+                          width: 28, height: 28,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(colors: [
+                              Color(0xFFD05122),
+                              Color(0xFFFBA839),
+                            ]),
+                          ),
+                          child: const Icon(Icons.edit,
+                              color: Colors.white, size: 14),
+                        ),
+                      ),
                     ],
                   ),
                 ),
+
+                const SizedBox(height: 12),
+
+                // Nama
+                _isLoading
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : Text(
+                        _nama.isEmpty ? '-' : _nama,
+                        style: GoogleFonts.alexandria(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Label Akun Saya ────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Akun Saya',
+                style: GoogleFonts.alexandria(
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+          ),
 
-            // ── Card Keamanan ──────────────────────────────────
-            Positioned(
-              left: screenWidth * 0.056,
-              right: screenWidth * 0.056,
-              top: statusBarHeight + 397,
-              child: GestureDetector(
-                onTap: () => Navigator.push(
+          const SizedBox(height: 12),
+
+          // ── Card Edit Profil ───────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: GestureDetector(
+              onTap: () async {
+                await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (_) => const KeamananPage()),
+                  MaterialPageRoute(builder: (_) => const EditProfilPage()),
+                );
+                _loadProfil();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      spreadRadius: 2,
+                      offset: Offset(0, 2),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        spreadRadius: 2,
-                        offset: Offset(0, 2),
-                        blurRadius: 4,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52, height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 52, height: 52,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF8EF),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2Fd9a301e2d64a9171618781d7bcf96f3b5983ca8fpadlock%201.png?alt=media&token=c787a911-aa18-4b7d-90ba-f77d1988788c',
-                            width: 30, height: 30,
-                            fit: BoxFit.contain,
-                          ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2F316b1609f20a8554436bf178b307cada634003f6user%201.png?alt=media&token=0dd54a77-ed31-408c-9241-66cd7452900f',
+                          width: 38, height: 38,
+                          fit: BoxFit.cover,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Keamanan & Password',
-                                style: GoogleFonts.alexandria(
-                                  color: Colors.black,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                )),
-                            const SizedBox(height: 2),
-                            Text('Ubah password',
-                                style: GoogleFonts.alexandria(
-                                    color: Colors.black54, fontSize: 12)),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Edit Profil',
+                              style: GoogleFonts.alexandria(
+                                color: Colors.black,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              )),
+                          const SizedBox(height: 2),
+                          Text('Ubah nama, alamat, dll',
+                              style: GoogleFonts.alexandria(
+                                  color: Colors.black54, fontSize: 12)),
+                        ],
                       ),
-                      const Icon(Icons.chevron_right,
-                          color: Colors.black45, size: 22),
-                    ],
-                  ),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        color: Colors.black45, size: 22),
+                  ],
                 ),
               ),
             ),
+          ),
 
-            // ── Tombol Logout ──────────────────────────────────
-            Positioned(
-              left: screenWidth * 0.144,
-              right: screenWidth * 0.144,
-              top: statusBarHeight + 540,
-              child: GestureDetector(
-                onTap: _showLogoutDialog,
-                child: Container(
-                  height: 47,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x3F000000),
-                        spreadRadius: 3,
-                        offset: Offset(0, 2),
-                        blurRadius: 4,
+          const SizedBox(height: 12),
+
+          // ── Card Keamanan ──────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KeamananPage()),
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      spreadRadius: 2,
+                      offset: Offset(0, 2),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52, height: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8EF),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          'https://firebasestorage.googleapis.com/v0/b/codeless-app.appspot.com/o/projects%2F0SMpkHR7SLEvor999HjP%2Fd9a301e2d64a9171618781d7bcf96f3b5983ca8fpadlock%201.png?alt=media&token=c787a911-aa18-4b7d-90ba-f77d1988788c',
+                          width: 30, height: 30,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Keamanan & Password',
+                              style: GoogleFonts.alexandria(
+                                color: Colors.black,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              )),
+                          const SizedBox(height: 2),
+                          Text('Ubah password',
+                              style: GoogleFonts.alexandria(
+                                  color: Colors.black54, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        color: Colors.black45, size: 22),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ── Tombol Logout ──────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: GestureDetector(
+              onTap: _showLogoutDialog,
+              child: Container(
+                width: double.infinity,
+                height: 47,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x3F000000),
+                      spreadRadius: 3,
+                      offset: Offset(0, 2),
+                      blurRadius: 4,
+                    ),
+                  ],
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFD05122),
+                      Color(0xFFEE8B2E),
+                      Color(0xFFFBA839),
                     ],
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFFD05122),
-                        Color(0xFFEE8B2E),
-                        Color(0xFFFBA839),
-                      ],
-                      stops: [0.17, 0.47, 0.60],
+                    stops: [0.17, 0.47, 0.60],
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    'Logout',
+                    style: GoogleFonts.alexandria(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: Center(
-                    child: Text('Logout',
-                        style: GoogleFonts.alexandria(
-                          color: Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                        )),
-                  ),
                 ),
               ),
             ),
+          ),
 
-          ],
-        ),
+          const SizedBox(height: 100),
+        ],
       ),
     );
   }

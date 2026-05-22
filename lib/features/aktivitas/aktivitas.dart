@@ -174,21 +174,10 @@ class AktivitasPageState extends State<AktivitasPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // ════════════════════════════════════════════════
-      //  Struktur: Column
-      //    ├── _buildHeader()       ← STICKY
-      //    ├── _buildTitleFilter()  ← STICKY
-      //    └── Expanded → konten scroll
-      // ════════════════════════════════════════════════
       body: Column(
         children: [
-          // ── Header gradient — STICKY ────────────────
           _buildHeader(),
-
-          // ── Judul + Filter — STICKY ─────────────────
           _buildTitleFilter(),
-
-          // ── Konten pesanan — SCROLLABLE ─────────────
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadPesanan,
@@ -229,13 +218,24 @@ class AktivitasPageState extends State<AktivitasPage> {
       padding: EdgeInsets.fromLTRB(20, statusBarH + 16, 20, 20),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFD05122), Color(0xFFEE8B2E), Color(0xFFFBA839)],
-          stops: [0.17, 0.47, 0.60],
+          colors: [
+            Color(0xFFEE8B2E),
+            Color(0xFFD05122),
+            Color(0xFFAC3715),
+          ],
+          stops: [0.17, 0.44, 0.79],
         ),
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(20),
           bottomRight: Radius.circular(20),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x3F000000),
+            blurRadius: 4,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -269,7 +269,7 @@ class AktivitasPageState extends State<AktivitasPage> {
     );
   }
 
-  // ── Judul + Filter row — ikut sticky ────────────────────────
+  // ── Judul + Filter row ───────────────────────────────────────
   Widget _buildTitleFilter() {
     return Container(
       color: Colors.white,
@@ -595,11 +595,11 @@ class _CustomerDetailDialog extends StatelessWidget {
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFFD05122),
                   Color(0xFFEE8B2E),
-                  Color(0xFFFBA839)
+                  Color(0xFFD05122),
+                  Color(0xFFAC3715),
                 ],
-                stops: [0.17, 0.47, 0.60],
+                stops: [0.17, 0.44, 0.79],
               ),
             ),
             child: Row(

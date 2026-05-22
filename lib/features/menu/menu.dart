@@ -120,11 +120,9 @@ class _MenuPageState extends State<MenuPage> {
           // ── Header ─────────────────────────────────────
           Container(
             width: double.infinity,
-            height: 100 + statusBarHeight,
+            padding: EdgeInsets.fromLTRB(20, statusBarHeight + 16, 20, 20),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment(-0.04, 0.80),
-                end: Alignment(0.98, -0.49),
                 colors: [
                   Color(0xFFEE8B2E),
                   Color(0xFFD05122),
@@ -133,7 +131,8 @@ class _MenuPageState extends State<MenuPage> {
                 stops: [0.17, 0.44, 0.79],
               ),
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
               boxShadow: [
                 BoxShadow(
@@ -143,34 +142,44 @@ class _MenuPageState extends State<MenuPage> {
                 ),
               ],
             ),
-            padding: EdgeInsets.only(top: statusBarHeight),
-            child: Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(46),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF3F1F0C),
-                      Color(0xFFAC3715),
-                      Color(0xFFD05122),
-                      Color(0xFF66270F),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.restaurant_menu_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Menu',
+                        style: GoogleFonts.alexandria(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'Pilih makanan favoritmu',
+                        style: GoogleFonts.alexandria(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
                     ],
-                    stops: [0.13, 0.36, 0.61, 0.82],
                   ),
                 ),
-                child: Center(
-                  child: Text(
-                    'Menu',
-                    style: GoogleFonts.alexandria(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
+              ],
             ),
           ),
 
