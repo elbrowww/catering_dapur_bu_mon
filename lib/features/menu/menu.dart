@@ -13,12 +13,15 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   String _kategoriAktif = 'Semua';
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
 
+  final TextEditingController _searchController =
+      TextEditingController();
+
+  String _searchQuery = '';
   String _jenisFilter = 'Semua';
 
   List<MenuModel> _semuaMenu = [];
+
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -30,6 +33,9 @@ class _MenuPageState extends State<MenuPage> {
     _fetchMenu();
   }
 
+  // ============================================================
+  // FETCH MENU
+  // ============================================================
   Future<void> _fetchMenu() async {
     setState(() {
       _isLoading = true;
@@ -45,6 +51,7 @@ class _MenuPageState extends State<MenuPage> {
         });
       } else {
         final List<MenuModel> menuList = [];
+
         for (var item in response) {
           menuList.add(MenuModel.fromJson(item));
         }
@@ -54,19 +61,28 @@ class _MenuPageState extends State<MenuPage> {
         });
 
         final kategoriSet = <String>{};
+
         for (var menu in _semuaMenu) {
-          if (menu.kategori.isNotEmpty && menu.kategori != 'Lainnya') {
+          if (menu.kategori.isNotEmpty &&
+              menu.kategori != 'Lainnya') {
             kategoriSet.add(menu.kategori);
           }
         }
-        _kategoriList = ['Semua', ...kategoriSet.toList()];
+
+        _kategoriList = [
+          'Semua',
+          ...kategoriSet.toList(),
+        ];
       }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat menu: $e')),
+        SnackBar(
+          content: Text('Gagal memuat menu: $e'),
+        ),
       );
     } finally {
       setState(() {
@@ -79,30 +95,44 @@ class _MenuPageState extends State<MenuPage> {
     await _fetchMenu();
   }
 
+  // ============================================================
+  // FILTER MENU
+  // ============================================================
   List<MenuModel> get _menuTerfilter {
     return _semuaMenu.where((item) {
       final cocokKategori =
-          _kategoriAktif == 'Semua' || item.kategori == _kategoriAktif;
+          _kategoriAktif == 'Semua' ||
+              item.kategori == _kategoriAktif;
 
       final cocokSearch = _searchQuery.isEmpty ||
-          item.nama.toLowerCase().contains(_searchQuery.toLowerCase());
+          item.nama
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase());
 
       bool cocokJenis = true;
+
       switch (_jenisFilter) {
         case 'Tersedia':
           cocokJenis = item.isAvailableForToday;
           break;
+
         case 'Pre-order':
           cocokJenis = !item.isAvailableForToday;
           break;
+
         default:
           cocokJenis = true;
       }
 
-      return cocokKategori && cocokSearch && cocokJenis;
+      return cocokKategori &&
+          cocokSearch &&
+          cocokJenis;
     }).toList();
   }
 
+  // ============================================================
+  // SEARCH
+  // ============================================================
   void _onSearchChanged(String value) {
     setState(() {
       _searchQuery = value;
@@ -111,6 +141,7 @@ class _MenuPageState extends State<MenuPage> {
 
   void _clearSearch() {
     _searchController.clear();
+
     setState(() {
       _searchQuery = '';
     });
@@ -122,19 +153,28 @@ class _MenuPageState extends State<MenuPage> {
     super.dispose();
   }
 
+  // ============================================================
+  // UI
+  // ============================================================
   @override
   Widget build(BuildContext context) {
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final double statusBarHeight =
+        MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFFF7F7F7),
+
       body: RefreshIndicator(
         onRefresh: _refreshMenu,
+
         child: Column(
           children: [
-            // HEADER FIXED
+            // ==================================================
+            // HEADER
+            // ==================================================
             Container(
               width: double.infinity,
+
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -144,50 +184,71 @@ class _MenuPageState extends State<MenuPage> {
                   ],
                   stops: [0.17, 0.44, 0.79],
                 ),
+
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
                 ),
+
                 boxShadow: [
                   BoxShadow(
                     color: Color(0x3F000000),
-                    blurRadius: 4,
+                    blurRadius: 6,
                     offset: Offset(0, 4),
                   ),
                 ],
               ),
+
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20, statusBarHeight + 16, 20, 20),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  statusBarHeight + 16,
+                  20,
+                  20,
+                ),
+
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(10),
+
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+
+                        borderRadius:
+                            BorderRadius.circular(14),
                       ),
+
                       child: const Icon(
                         Icons.restaurant_menu_rounded,
                         color: Colors.white,
                         size: 24,
                       ),
                     ),
+
                     const SizedBox(width: 12),
+
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
                         children: [
                           Text(
                             'Menu',
-                            style: GoogleFonts.alexandria(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                            style:
+                                GoogleFonts.alexandria(
+                              fontSize: 20,
+                              fontWeight:
+                                  FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
+
                           Text(
                             'Pilih makanan favoritmu',
-                            style: GoogleFonts.alexandria(
+                            style:
+                                GoogleFonts.alexandria(
                               fontSize: 12,
                               color: Colors.white70,
                             ),
@@ -200,103 +261,173 @@ class _MenuPageState extends State<MenuPage> {
               ),
             ),
 
-            // KONTEN YANG DISCROLL
+            // ==================================================
+            // CONTENT
+            // ==================================================
             Expanded(
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
+                physics:
+                    const AlwaysScrollableScrollPhysics(),
+
                 child: Column(
                   children: [
                     const SizedBox(height: 12),
 
+                    // ==========================================
                     // SEARCH BAR
+                    // ==========================================
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 45,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(15),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: _onSearchChanged,
-                                textAlignVertical: TextAlignVertical.center,
-                                style: GoogleFonts.lora(
-                                  color: const Color(0xFF1A1818),
-                                  fontSize: 14,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Cari menu',
-                                  hintStyle: GoogleFonts.lora(
-                                    color: const Color(0xFF1A1818).withOpacity(0.5),
-                                    fontSize: 14,
-                                  ),
-                                  prefixIcon: const Icon(Icons.search,
-                                      color: Color(0xFFD05122), size: 20),
-                                  suffixIcon: _searchQuery.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.close,
-                                              size: 18, color: Colors.grey),
-                                          onPressed: _clearSearch,
-                                        )
-                                      : null,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  border: InputBorder.none,
-                                  isDense: false,
-                                ),
-                              ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+
+                      child: Container(
+                        height: 50,
+
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+
+                          borderRadius:
+                              BorderRadius.circular(18),
+
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black
+                                  .withOpacity(0.06),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: _onSearchChanged,
+
+                          style:
+                              GoogleFonts.alexandria(
+                            fontSize: 14,
+                            color:
+                                const Color(0xFF1A1818),
+                          ),
+
+                          decoration: InputDecoration(
+                            hintText: 'Cari menu...',
+                            hintStyle:
+                                GoogleFonts.alexandria(
+                              color:
+                                  Colors.grey.shade500,
+                              fontSize: 14,
+                            ),
+
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Color(0xFFD05122),
+                            ),
+
+                            suffixIcon:
+                                _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        onPressed:
+                                            _clearSearch,
+
+                                        icon: const Icon(
+                                          Icons.close,
+                                          size: 18,
+                                        ),
+                                      )
+                                    : null,
+
+                            border: InputBorder.none,
+
+                            contentPadding:
+                                const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
 
+                    const SizedBox(height: 10),
+
+                    // ==========================================
                     // FILTER JENIS
+                    // ==========================================
                     SizedBox(
                       height: 40,
+
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+
+                        padding:
+                            const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+
                         child: Row(
-                          children: ['Semua', 'Tersedia', 'Pre-order'].map((jenis) {
-                            final aktif = _jenisFilter == jenis;
+                          children: [
+                            'Semua',
+                            'Tersedia',
+                            'Pre-order'
+                          ].map((jenis) {
+                            final aktif =
+                                _jenisFilter == jenis;
+
                             return GestureDetector(
-                              onTap: () => setState(() => _jenisFilter = jenis),
+                              onTap: () {
+                                setState(() {
+                                  _jenisFilter = jenis;
+                                });
+                              },
+
                               child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 6),
+                                margin:
+                                    const EdgeInsets.only(
+                                  right: 10,
+                                ),
+
+                                padding:
+                                    const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
+
                                 decoration: BoxDecoration(
                                   color: aktif
-                                      ? const Color(0xFFEE8B2E)
+                                      ? const Color(
+                                          0xFFEE8B2E)
                                       : Colors.white,
+
+                                  borderRadius:
+                                      BorderRadius
+                                          .circular(22),
+
                                   border: Border.all(
-                                    color: const Color(0xFFDB6626),
-                                    width: 1.5,
+                                    color:
+                                        const Color(
+                                      0xFFDB6626,
+                                    ),
+                                    width: 1.4,
                                   ),
-                                  borderRadius: BorderRadius.circular(22),
                                 ),
+
                                 child: Text(
                                   jenis,
-                                  style: GoogleFonts.lora(
-                                    color: aktif ? Colors.white : Colors.black87,
+
+                                  style:
+                                      GoogleFonts
+                                          .alexandria(
+                                    color: aktif
+                                        ? Colors.white
+                                        : Colors.black87,
+
                                     fontSize: 12,
-                                    fontWeight:
-                                        aktif ? FontWeight.bold : FontWeight.w500,
+
+                                    fontWeight: aktif
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -305,40 +436,83 @@ class _MenuPageState extends State<MenuPage> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 8),
 
+                    // ==========================================
                     // FILTER KATEGORI
+                    // ==========================================
                     SizedBox(
                       height: 40,
+
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+
+                        padding:
+                            const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+
                         child: Row(
-                          children: _kategoriList.map((kat) {
-                            final aktif = _kategoriAktif == kat;
+                          children:
+                              _kategoriList.map((kat) {
+                            final aktif =
+                                _kategoriAktif == kat;
+
                             return GestureDetector(
-                              onTap: () => setState(() => _kategoriAktif = kat),
+                              onTap: () {
+                                setState(() {
+                                  _kategoriAktif =
+                                      kat;
+                                });
+                              },
+
                               child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 6),
+                                margin:
+                                    const EdgeInsets.only(
+                                  right: 10,
+                                ),
+
+                                padding:
+                                    const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
+
                                 decoration: BoxDecoration(
                                   color: aktif
-                                      ? const Color(0xFFEE8B2E)
+                                      ? const Color(
+                                          0xFFEE8B2E)
                                       : Colors.white,
+
+                                  borderRadius:
+                                      BorderRadius
+                                          .circular(22),
+
                                   border: Border.all(
-                                    color: const Color(0xFFDB6626),
-                                    width: 1.5,
+                                    color:
+                                        const Color(
+                                      0xFFDB6626,
+                                    ),
+                                    width: 1.4,
                                   ),
-                                  borderRadius: BorderRadius.circular(22),
                                 ),
+
                                 child: Text(
                                   kat,
-                                  style: GoogleFonts.lora(
-                                    color: aktif ? Colors.white : Colors.black87,
+
+                                  style:
+                                      GoogleFonts
+                                          .alexandria(
+                                    color: aktif
+                                        ? Colors.white
+                                        : Colors.black87,
+
                                     fontSize: 12,
-                                    fontWeight:
-                                        aktif ? FontWeight.bold : FontWeight.w500,
+
+                                    fontWeight: aktif
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -348,32 +522,48 @@ class _MenuPageState extends State<MenuPage> {
                       ),
                     ),
 
-                    // ⚠️ PERUBAHAN 1: Kurangi jarak setelah filter kategori
-                    const SizedBox(height: 4), // Sebelumnya: 12
+                    // ==========================================
+                    // JARAK LEBIH RAPAT
+                    // ==========================================
+                    const SizedBox(height: 4),
 
-                    // INFORMASI JUMLAH HASIL PENCARIAN
-                    if (_searchQuery.isNotEmpty && !_isLoading)
+                    // ==========================================
+                    // INFO SEARCH
+                    // ==========================================
+                    if (_searchQuery.isNotEmpty &&
+                        !_isLoading)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding:
+                            const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+
                         child: Align(
-                          alignment: Alignment.centerLeft,
+                          alignment:
+                              Alignment.centerLeft,
+
                           child: Text(
                             'Ditemukan ${_menuTerfilter.length} menu untuk "$_searchQuery"',
-                            style: GoogleFonts.alexandria(
-                              color: Colors.grey.shade600,
+
+                            style:
+                                GoogleFonts.alexandria(
+                              color:
+                                  Colors.grey.shade600,
                               fontSize: 12,
-                              fontStyle: FontStyle.italic,
+                              fontStyle:
+                                  FontStyle.italic,
                             ),
                           ),
                         ),
                       ),
 
-                    // ⚠️ PERUBAHAN 2: Kurangi jarak sebelum content (dari 8 menjadi 0)
-                    const SizedBox(height: 0), // Sebelumnya: 8
+                    const SizedBox(height: 4),
 
+                    // ==========================================
                     // CONTENT
+                    // ==========================================
                     _buildContent(),
-                    
+
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -385,11 +575,19 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
+  // ============================================================
+  // BUILD CONTENT
+  // ============================================================
   Widget _buildContent() {
+    // ==========================================================
+    // LOADING
+    // ==========================================================
     if (_isLoading) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 32),
+          padding:
+              EdgeInsets.symmetric(vertical: 32),
+
           child: CircularProgressIndicator(
             color: Color(0xFFD05122),
           ),
@@ -397,30 +595,55 @@ class _MenuPageState extends State<MenuPage> {
       );
     }
 
+    // ==========================================================
+    // ERROR
+    // ==========================================================
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
+          padding:
+              const EdgeInsets.symmetric(vertical: 32),
+
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment:
+                MainAxisAlignment.center,
+
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Colors.grey[400],
+              ),
+
               const SizedBox(height: 12),
+
               Text(
                 _errorMessage!,
-                style: GoogleFonts.alexandria(
-                    color: Colors.grey, fontSize: 14),
                 textAlign: TextAlign.center,
+
+                style:
+                    GoogleFonts.alexandria(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
               ),
+
               const SizedBox(height: 16),
+
               ElevatedButton(
                 onPressed: _fetchMenu,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD05122),
+
+                style:
+                    ElevatedButton.styleFrom(
+                  backgroundColor:
+                      const Color(0xFFD05122),
+
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius:
+                        BorderRadius.circular(12),
                   ),
                 ),
+
                 child: const Text('Coba Lagi'),
               ),
             ],
@@ -429,233 +652,405 @@ class _MenuPageState extends State<MenuPage> {
       );
     }
 
+    // ==========================================================
+    // EMPTY
+    // ==========================================================
     if (_menuTerfilter.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
+          padding:
+              const EdgeInsets.symmetric(vertical: 32),
+
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off, color: Colors.grey.shade400, size: 64),
+              Icon(
+                Icons.search_off,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
+
               const SizedBox(height: 16),
+
               Text(
                 'Menu Tidak Ditemukan',
-                style: GoogleFonts.alexandria(
+
+                style:
+                    GoogleFonts.alexandria(
                   color: Colors.grey.shade700,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 8),
+
               Text(
                 _searchQuery.isEmpty
-                    ? 'Tidak ada menu yang tersedia'
+                    ? 'Tidak ada menu tersedia'
                     : 'Tidak ada menu dengan kata "$_searchQuery"',
-                style: GoogleFonts.alexandria(
+
+                style:
+                    GoogleFonts.alexandria(
                   color: Colors.grey.shade600,
                   fontSize: 14,
                 ),
               ),
-              if (_searchQuery.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: _clearSearch,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(25),
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFD05122),
-                          Color(0xFFEE8B2E),
-                        ],
-                      ),
-                    ),
-                    child: Text(
-                      'Hapus Pencarian',
-                      style: GoogleFonts.alexandria(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
       );
     }
 
-    // Grid Menu
+    // ==========================================================
+    // GRID MENU
+    // ==========================================================
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding:
+          const EdgeInsets.fromLTRB(14, 6, 14, 0),
+
       child: GridView.builder(
         shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.85,
-        ),
+
+        physics:
+            const NeverScrollableScrollPhysics(),
+
         itemCount: _menuTerfilter.length,
+
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+
+          childAspectRatio: 0.70,
+
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 14,
+        ),
+
         itemBuilder: (context, index) {
-          return _MenuCard(item: _menuTerfilter[index]);
+          return _MenuCard(
+            item: _menuTerfilter[index],
+          );
         },
       ),
     );
   }
 }
 
-// Menu Card
+// ================================================================
+// MENU CARD
+// ================================================================
 class _MenuCard extends StatelessWidget {
   final MenuModel item;
-  const _MenuCard({required this.item});
+
+  const _MenuCard({
+    required this.item,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final bool isPreorder =
+        !item.isAvailableForToday;
+
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => DetailMenuPage(menu: item),
+          builder: (_) =>
+              DetailMenuPage(menu: item),
         ),
       ),
+
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: const [
+
+          borderRadius:
+              BorderRadius.circular(24),
+
+          boxShadow: [
             BoxShadow(
-              color: Color(0x3F000000),
-              blurRadius: 6,
-              offset: Offset(0, 5),
+              color:
+                  Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
+
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
           children: [
-            const SizedBox(height: 10),
-            Stack(
-              children: [
-                Container(
-                  width: 105,
-                  height: 105,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF79F36),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: item.foto.isNotEmpty
-                        ? Image.network(
-                            item.imageUrl,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              );
-                            },
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.fastfood,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.fastfood,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                  ),
-                ),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+            // =================================================
+            // IMAGE
+            // =================================================
+            Expanded(
+              flex: 6,
+
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+
+                    margin:
+                        const EdgeInsets.all(10),
+
                     decoration: BoxDecoration(
-                      color: item.isAvailableForToday
-                          ? Colors.green
-                          : Colors.orange,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      item.isAvailableForToday ? 'Tersedia' : 'Pre-order',
-                      style: GoogleFonts.alexandria(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+                      borderRadius:
+                          BorderRadius.circular(20),
+
+                      gradient:
+                          const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end:
+                            Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFEE8B2E),
+                          Color(0xFFD05122),
+                        ],
                       ),
                     ),
+
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(20),
+
+                      child: item.foto.isNotEmpty
+                          ? Image.network(
+                              item.imageUrl,
+                              fit: BoxFit.cover,
+
+                              loadingBuilder:
+                                  (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress ==
+                                    null) {
+                                  return child;
+                                }
+
+                                return const Center(
+                                  child:
+                                      CircularProgressIndicator(
+                                    color:
+                                        Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                );
+                              },
+
+                              errorBuilder:
+                                  (_, __, ___) {
+                                return const Center(
+                                  child: Icon(
+                                    Icons.fastfood,
+                                    color:
+                                        Colors.white,
+                                    size: 46,
+                                  ),
+                                );
+                              },
+                            )
+                          : const Center(
+                              child: Icon(
+                                Icons.fastfood,
+                                color: Colors.white,
+                                size: 46,
+                              ),
+                            ),
+                    ),
                   ),
-                ),
-                if (!item.isAvailableForToday)
-                  Positioned.fill(
+
+                  // =============================================
+                  // BADGE
+                  // =============================================
+                  Positioned(
+                    top: 18,
+                    right: 18,
+
                     child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        color: isPreorder
+                            ? Colors.orange
+                            : Colors.green,
+
+                        borderRadius:
+                            BorderRadius.circular(
+                                20),
+
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black
+                                .withOpacity(0.15),
+                            blurRadius: 4,
+                            offset:
+                                const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+
+                      child: Row(
+                        mainAxisSize:
+                            MainAxisSize.min,
+
+                        children: [
+                          Icon(
+                            isPreorder
+                                ? Icons
+                                    .schedule_rounded
+                                : Icons
+                                    .check_circle,
+
+                            size: 11,
+                            color: Colors.white,
+                          ),
+
+                          const SizedBox(width: 4),
+
+                          Text(
+                            isPreorder
+                                ? 'Pre-order'
+                                : 'Tersedia',
+
+                            style:
+                                GoogleFonts
+                                    .alexandria(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight:
+                                  FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                item.nama,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.alexandria(
-                  color: const Color(0xFF1A1818),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+
+            // =================================================
+            // CONTENT
+            // =================================================
+            Expanded(
+              flex: 4,
+
+              child: Padding(
+                padding:
+                    const EdgeInsets.fromLTRB(
+                  14,
+                  2,
+                  14,
+                  12,
+                ),
+
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween,
+
+                  children: [
+                    // =========================================
+                    // NAMA MENU
+                    // =========================================
+                    Text(
+                      item.nama,
+
+                      maxLines: 2,
+                      overflow:
+                          TextOverflow.ellipsis,
+
+                      style:
+                          GoogleFonts.alexandria(
+                        fontSize: 14,
+                        height: 1.3,
+                        fontWeight:
+                            FontWeight.w700,
+                        color:
+                            const Color(0xFF1A1818),
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // =========================================
+                    // HARGA
+                    // =========================================
+                    Text(
+                      item.formattedHarga,
+
+                      style:
+                          GoogleFonts.alexandria(
+                        color:
+                            const Color(0xFFD05122),
+                        fontSize: 16,
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+
+                    // =========================================
+                    // PREORDER TEXT
+                    // =========================================
+                    if (isPreorder)
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(
+                          top: 4,
+                        ),
+
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons
+                                  .access_time_rounded,
+                              size: 12,
+                              color: Colors
+                                  .orange.shade700,
+                            ),
+
+                            const SizedBox(width: 4),
+
+                            Expanded(
+                              child: Text(
+                                'Pre-order H-1',
+
+                                overflow:
+                                    TextOverflow
+                                        .ellipsis,
+
+                                style:
+                                    GoogleFonts
+                                        .alexandria(
+                                  color: Colors
+                                      .orange
+                                      .shade700,
+                                  fontSize: 10,
+                                  fontWeight:
+                                      FontWeight
+                                          .w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 0),
-            Text(
-              item.formattedHarga,
-              style: GoogleFonts.alexandria(
-                color: const Color(0xFFD05122),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (!item.isAvailableForToday)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 8),
-                child: Text(
-                  '⏰ Pre-order H-1',
-                  style: GoogleFonts.alexandria(
-                    color: Colors.orange.shade700,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
