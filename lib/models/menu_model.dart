@@ -133,7 +133,7 @@ class MenuModel {
   
   String get labelStok {
     if (stok == 0) return 'Pre-order';
-    if (stok <= 5) return 'Stok: $stok (Segera Habis)';
+    if (stok <= 5) return 'Stok: $stok';
     return 'Stok: $stok';
   }
   
