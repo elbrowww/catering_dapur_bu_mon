@@ -31,15 +31,15 @@ const _filterLabels = ['Semua', 'Pending', 'Proses', 'Selesai', 'Batal'];
 const _filterValues = ['', 'pending', 'diproses', 'selesai', 'batal'];
 
 // ── Helpers URL gambar ──────────────────────────────────────────
+// FIX: logika build URL diperbaiki agar tidak ada double slash
 String _buildImageUrl(String? raw) {
-  if (raw == null || raw.isEmpty) return '';
-  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-  final base = DioHelper.baseUrl.endsWith('/')
-      ? DioHelper.baseUrl
-      : '${DioHelper.baseUrl}/';
-  final path = raw.startsWith('/') ? raw.substring(1) : raw;
-  final url = '$base$path';
-  debugPrint('=== _buildImageUrl: $url ===');
+  if (raw == null || raw.trim().isEmpty) return '';
+  final path = raw.trim();
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  final base  = DioHelper.baseUrl.replaceAll(RegExp(r'/+$'), '');
+  final clean = path.replaceAll(RegExp(r'^/+'), '');
+  final url   = '$base/$clean';
+  debugPrint('=== _buildImageUrl: "$raw" → "$url" ===');
   return url;
 }
 
@@ -147,27 +147,29 @@ class _PesananAdminPageState extends State<PesananAdminPage> {
           final rawId = e['id_pesanan'];
           final rawCustomerId = e['id_customer'];
           final rawTotal = e['total_harga'];
-          
+
           return {
-            'id_pesanan': rawId is int 
-                ? rawId 
+            'id_pesanan': rawId is int
+                ? rawId
                 : int.tryParse(rawId.toString()) ?? 0,
-            'id_customer': rawCustomerId is int 
-                ? rawCustomerId 
+            'id_customer': rawCustomerId is int
+                ? rawCustomerId
                 : int.tryParse(rawCustomerId.toString()) ?? 0,
             'customer_name': e['customer_name']?.toString() ?? 'Customer',
-            'customer_alamat': e['customer_alamat']?.toString() ?? 'Alamat tidak tersedia', // 🔥 ALAMAT
+            'customer_alamat': e['customer_alamat']?.toString() ?? 'Alamat tidak tersedia',
             'status': e['status']?.toString() ?? 'pending',
             'tgl_pesan': e['tgl_pesan']?.toString() ?? DateTime.now().toIso8601String(),
             'tgl_antar': e['tgl_antar']?.toString(),
             'jam_antar': e['jam_antar']?.toString(),
-            'total_harga': rawTotal is num 
-                ? rawTotal.toDouble() 
+            'total_harga': rawTotal is num
+                ? rawTotal.toDouble()
                 : double.tryParse(rawTotal.toString()) ?? 0,
-            'item_count': e['item_count'] is int 
-                ? e['item_count'] 
+            'item_count': e['item_count'] is int
+                ? e['item_count']
                 : int.tryParse(e['item_count'].toString()) ?? 0,
-            'metode_bayar': e['metode_bayar']?.toString() ?? '',
+            // FIX: baca metode_bayar dari pb.metode (sudah di-JOIN di PHP)
+            'metode_bayar': e['metode_bayar']?.toString() ?? e['metode']?.toString() ?? '',
+            'bukti_transfer': e['bukti_transfer']?.toString() ?? '',
             'catatan': e['catatan']?.toString() ?? '',
           };
         }).toList();
@@ -694,7 +696,6 @@ class _DetailDialogState extends State<_DetailDialog> {
   bool _loadingDetail = true;
   Map<String, dynamic>? _detail;
 
-  // ── State edit jadwal ──
   bool       _isEditingJadwal = false;
   DateTime?  _tglAntarEdit;
   TimeOfDay? _jamAntarEdit;
@@ -710,38 +711,46 @@ class _DetailDialogState extends State<_DetailDialog> {
     try {
       final d = await ApiService.getDetailPesanan(widget.pesanan['id_pesanan']);
 
+      debugPrint('=== getDetailPesanan keys: ${d.keys.toList()} ===');
+      debugPrint('=== metode_bayar: ${d['metode_bayar']} ===');
+      debugPrint('=== bukti_transfer: ${d['bukti_transfer']} ===');
+
       setState(() {
         _detail = {
-          'id_pesanan': d['id_pesanan'] is int 
-              ? d['id_pesanan'] 
+          'id_pesanan': d['id_pesanan'] is int
+              ? d['id_pesanan']
               : int.tryParse(d['id_pesanan'].toString()) ?? 0,
           'customer_name': d['customer_name']?.toString() ?? widget.pesanan['customer_name'],
-          'customer_alamat': d['customer_alamat']?.toString() ?? widget.pesanan['customer_alamat'] ?? 'Alamat tidak tersedia', // 🔥 ALAMAT
+          'customer_alamat': d['customer_alamat']?.toString() ??
+              widget.pesanan['customer_alamat'] ?? 'Alamat tidak tersedia',
           'status': d['status']?.toString() ?? widget.pesanan['status'],
           'tgl_pesan': d['tgl_pesan']?.toString() ?? widget.pesanan['tgl_pesan'],
           'tgl_antar': d['tgl_antar']?.toString() ?? widget.pesanan['tgl_antar'],
           'jam_antar': d['jam_antar']?.toString() ?? widget.pesanan['jam_antar'],
-          'total_harga': d['total_harga'] is num 
-              ? d['total_harga'].toDouble() 
+          'total_harga': d['total_harga'] is num
+              ? d['total_harga'].toDouble()
               : double.tryParse(d['total_harga'].toString()) ?? 0,
-          'metode_bayar': d['metode_bayar']?.toString() ?? widget.pesanan['metode_bayar'] ?? '',
+          // FIX: baca metode_bayar dari response detail (pb.metode AS metode_bayar)
+          'metode_bayar': d['metode_bayar']?.toString() ??
+                          d['metode']?.toString() ??
+                          widget.pesanan['metode_bayar']?.toString() ?? '',
           'catatan': d['catatan']?.toString() ?? '',
-          'bukti_transfer': d['bukti_transfer']?.toString() ?? 
-                            d['bukti_bayar']?.toString() ?? '',
+          // FIX: baca bukti_transfer langsung dari response
+          'bukti_transfer': d['bukti_transfer']?.toString() ?? '',
           'items': (d['items'] as List<dynamic>?)?.map((item) {
             return {
-              'id_item': item['id_item'] is int 
-                  ? item['id_item'] 
+              'id_item': item['id_item'] is int
+                  ? item['id_item']
                   : int.tryParse(item['id_item'].toString()) ?? 0,
-              'id_menu': item['id_menu'] is int 
-                  ? item['id_menu'] 
+              'id_menu': item['id_menu'] is int
+                  ? item['id_menu']
                   : int.tryParse(item['id_menu'].toString()) ?? 0,
               'nama': item['nama']?.toString() ?? '-',
-              'jumlah': item['jumlah'] is int 
-                  ? item['jumlah'] 
+              'jumlah': item['jumlah'] is int
+                  ? item['jumlah']
                   : int.tryParse(item['jumlah'].toString()) ?? 0,
-              'harga_satuan': item['harga_satuan'] is num 
-                  ? item['harga_satuan'].toDouble() 
+              'harga_satuan': item['harga_satuan'] is num
+                  ? item['harga_satuan'].toDouble()
                   : double.tryParse(item['harga_satuan'].toString()) ?? 0,
             };
           }).toList() ?? [],
@@ -751,39 +760,34 @@ class _DetailDialogState extends State<_DetailDialog> {
     } catch (e) {
       debugPrint('=== getDetailPesanan ERROR: $e ===');
       setState(() {
-        _detail = widget.pesanan;
+        _detail = {
+          ...widget.pesanan,
+          'items': [],
+          'bukti_transfer': widget.pesanan['bukti_transfer'] ?? '',
+          'metode_bayar': widget.pesanan['metode_bayar'] ?? '',
+        };
         _loadingDetail = false;
       });
     }
   }
 
-  /// Resolves URL gambar bukti transfer
+  // FIX: getter _buktiBayarUrl — hanya baca dari satu field yang benar
   String get _buktiBayarUrl {
-    if (_detail == null) return '';
-    final raw = (_detail!['bukti_transfer'] ??
-                 _detail!['bukti_bayar']    ??
-                 _detail!['foto_bukti']     ??
-                 _detail!['payment_proof']  ??
-                 _detail!['foto_transfer']  ??
-                 '')
-        .toString()
-        .trim();
-    debugPrint('=== bukti_transfer raw: "$raw" ===');
+    final raw = (_detail?['bukti_transfer'] ?? '').toString().trim();
+    debugPrint('=== _buktiBayarUrl raw: "$raw" ===');
     return _buildImageUrl(raw.isEmpty ? null : raw);
   }
 
-  /// Cek apakah metode pembayaran adalah transfer
+  // FIX: _isTransfer — nilai DB adalah 'transfer', cocokkan langsung
   bool get _isTransfer {
     final metode = (_detail?['metode_bayar'] ??
-                    _detail?['metode'] ??
                     widget.pesanan['metode_bayar'] ??
-                    widget.pesanan['metode'] ??
                     '')
         .toString()
         .toLowerCase()
         .trim();
-    debugPrint('=== metode_bayar resolved: "$metode" ===');
-    return metode == 'transfer' || metode.contains('transfer');
+    debugPrint('=== _isTransfer metode: "$metode" ===');
+    return metode == 'transfer';
   }
 
   static const _nextStatus = {
@@ -816,13 +820,29 @@ class _DetailDialogState extends State<_DetailDialog> {
     }
   }
 
+  String _resolveMetodeLabel() {
+    final raw = (_detail?['metode_bayar'] ??
+                 widget.pesanan['metode_bayar'] ??
+                 '')
+        .toString()
+        .toLowerCase()
+        .trim();
+    switch (raw) {
+      case 'transfer': return 'Transfer Bank';
+      case 'cod':      return 'COD / Cash';
+      case 'ewallet':  return 'E-Wallet';
+      default:         return raw.isEmpty ? '-' : raw;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final status      = widget.pesanan['status'] as String?;
     final actions     = _nextStatus[status] ?? [];
     final nama        = widget.pesanan['customer_name'] ??
         'Customer #${widget.pesanan['id_customer']}';
-    final alamat      = _detail?['customer_alamat'] ?? widget.pesanan['customer_alamat'] ?? 'Alamat tidak tersedia'; // 🔥 ALAMAT
+    final alamat      = _detail?['customer_alamat'] ??
+        widget.pesanan['customer_alamat'] ?? 'Alamat tidak tersedia';
     final isBatal     = status == 'batal';
     final isSelesai   = status == 'selesai';
     final currentStep = _currentStepIndex(status);
@@ -884,7 +904,6 @@ class _DetailDialogState extends State<_DetailDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Timeline status
                         if (!isBatal) ...[
                           const _SectionLabel(label: 'Status Pesanan'),
                           const SizedBox(height: 10),
@@ -896,7 +915,6 @@ class _DetailDialogState extends State<_DetailDialog> {
                           const SizedBox(height: 16),
                         ],
 
-                        // Info grid
                         const _SectionLabel(label: 'Info Pesanan'),
                         const SizedBox(height: 10),
                         _InfoGrid(items: [
@@ -922,7 +940,6 @@ class _DetailDialogState extends State<_DetailDialog> {
                             label: 'Customer',
                             value: _detail?['customer_name'] ?? nama,
                           ),
-                          // 🔥 ALAMAT - Ditambahkan di InfoGrid
                           _InfoItem(
                             icon: Icons.location_on_rounded,
                             label: 'Alamat',
@@ -948,11 +965,9 @@ class _DetailDialogState extends State<_DetailDialog> {
                           ),
                         ]),
 
-                        // ── Edit jadwal antar ──
                         const SizedBox(height: 12),
                         _buildEditJadwal(),
 
-                        // Catatan
                         if ((_detail?['catatan'] ?? '').toString().isNotEmpty) ...[
                           const SizedBox(height: 14),
                           Container(
@@ -989,7 +1004,6 @@ class _DetailDialogState extends State<_DetailDialog> {
                           _BuktiTransferWidget(url: _buktiBayarUrl),
                         ],
 
-                        // Daftar item
                         const SizedBox(height: 16),
                         const _SectionLabel(label: 'Item Pesanan'),
                         const SizedBox(height: 10),
@@ -1008,7 +1022,6 @@ class _DetailDialogState extends State<_DetailDialog> {
                                         isLast: e.key ==
                                             ((_detail?['items'] as List<dynamic>?)?.length ?? 0) - 1,
                                       )),
-                              // Total row
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 10),
@@ -1140,24 +1153,6 @@ class _DetailDialogState extends State<_DetailDialog> {
     );
   }
 
-  /// Label ramah untuk metode bayar di InfoGrid
-  String _resolveMetodeLabel() {
-    final raw = (_detail?['metode_bayar'] ??
-                 _detail?['metode']       ??
-                 widget.pesanan['metode_bayar'] ??
-                 '')
-        .toString()
-        .toLowerCase()
-        .trim();
-    switch (raw) {
-      case 'transfer': return 'Transfer Bank';
-      case 'cod':      return 'COD / Cash';
-      case 'ewallet':  return 'E-Wallet';
-      default:         return raw.isEmpty ? '-' : raw;
-    }
-  }
-
-  // ── Widget edit jadwal antar ────────────────────────────────────
   Widget _buildEditJadwal() {
     if (!_isEditingJadwal) {
       return GestureDetector(
@@ -1198,7 +1193,6 @@ class _DetailDialogState extends State<_DetailDialog> {
       );
     }
 
-    // Form edit
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

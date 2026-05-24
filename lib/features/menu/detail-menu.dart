@@ -18,14 +18,10 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
   int _jumlah = 1;
   bool _isLoading = false;
 
-  // 🔥 Pre-order: tidak ada batasan stok, bisa tambah bebas
-  // Tersedia: dibatasi stok yang ada
   void _tambah() {
     if (widget.menu.isHabis) {
-      // Menu pre-order → tidak ada batasan jumlah (Bu Mon masak sesuai pesanan)
       setState(() => _jumlah++);
     } else {
-      // Menu tersedia → dibatasi stok
       if (_jumlah < widget.menu.stok) {
         setState(() => _jumlah++);
       } else {
@@ -51,9 +47,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
       });
 
   Future<void> _tambahKeranjang() async {
-    // 🔥 Tidak ada blokir — baik menu tersedia maupun pre-order bisa masuk keranjang
-    // Validasi tanggal dilakukan saat checkout
-
     setState(() => _isLoading = true);
 
     try {
@@ -67,7 +60,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
 
       if (mounted) {
         if (success) {
-          // Tampilkan info berbeda untuk tersedia vs pre-order
           final isPreorder = widget.menu.isHabis;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -132,7 +124,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 Gunakan isHabis untuk menentukan tampilan pre-order
     final bool isPreorder = widget.menu.isHabis;
 
     return Scaffold(
@@ -219,7 +210,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                                   ),
                           ),
                         ),
-                        // 🔥 Badge pre-order (ganti overlay "Stok Habis")
                         if (isPreorder)
                           Positioned(
                             top: 50,
@@ -308,36 +298,14 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.menu.nama,
-                            style: GoogleFonts.alexandria(
-                              color: const Color(0xFF1A1818).withOpacity(0.85),
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            const Icon(Icons.star_rounded,
-                                color: Color(0xFFF79F36), size: 24),
-                            const SizedBox(width: 2),
-                            Text(
-                              '5',
-                              style: GoogleFonts.alexandria(
-                                color: const Color(0xFF1A1818).withOpacity(0.8),
-                                fontSize: 22,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    // FIX: hapus rating bintang, tampilkan nama menu saja
+                    Text(
+                      widget.menu.nama,
+                      style: GoogleFonts.alexandria(
+                        color: const Color(0xFF1A1818).withOpacity(0.85),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
 
                     const SizedBox(height: 4),
@@ -354,7 +322,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // 🔥 Badge stok / pre-order
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 5),
@@ -391,7 +358,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
 
                     const SizedBox(height: 6),
 
-                    // 🔥 Info berbeda untuk tersedia vs pre-order
                     Text(
                       isPreorder
                           ? '⏰ Pre-order  |  Pilih tanggal saat checkout (min. besok)'
@@ -405,7 +371,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                       ),
                     ),
 
-                    // 🔥 Banner info pre-order
                     if (isPreorder) ...[
                       const SizedBox(height: 12),
                       Container(
@@ -487,7 +452,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
               ),
               child: Row(
                 children: [
-                  // 🔥 Tombol kurang — selalu aktif (pre-order bebas jumlah)
                   _TombolBulat(
                     icon: Icons.remove,
                     onTap: _kurang,
@@ -515,7 +479,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                   ),
                   const SizedBox(width: 8),
 
-                  // 🔥 Tombol tambah — selalu aktif
                   _TombolBulat(
                     icon: Icons.add,
                     onTap: _tambah,
@@ -523,7 +486,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                   ),
                   const SizedBox(width: 14),
 
-                  // 🔥 Tombol Tambah Keranjang — selalu aktif (tidak ada blokir)
                   Expanded(
                     child: GestureDetector(
                       onTap: _isLoading ? null : _tambahKeranjang,
@@ -534,7 +496,6 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
                           gradient: LinearGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
-                            // 🔥 Warna oranye untuk pre-order, gradient normal untuk tersedia
                             colors: isPreorder
                                 ? [
                                     Colors.orange.shade600,
