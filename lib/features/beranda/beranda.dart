@@ -5,6 +5,86 @@ import 'package:catering_dapur_bu_mon/models/menu_model.dart';
 import 'package:catering_dapur_bu_mon/models/ulasan_model.dart';
 import 'package:catering_dapur_bu_mon/features/menu/detail-menu.dart';
 
+// ================================================================
+// HELPER FUNCTIONS (sama seperti di AktivitasPage)
+// ================================================================
+String _formattedPrice(dynamic harga) {
+  final h = (double.tryParse(harga.toString()) ?? 0).toInt();
+  final s = h.toString();
+  final buf = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+    buf.write(s[i]);
+  }
+  return 'Rp $buf';
+}
+
+String _formattedDate(dynamic tgl) {
+  try {
+    final dt = DateTime.parse(tgl.toString());
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/'
+        '${dt.year}  '
+        '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}';
+  } catch (_) {
+    return tgl?.toString() ?? '-';
+  }
+}
+
+String _formatTglAntar(dynamic tgl) {
+  if (tgl == null || tgl.toString().isEmpty) return 'Belum dijadwalkan';
+  try {
+    final dt = DateTime.parse(tgl.toString());
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  } catch (_) {
+    return tgl.toString();
+  }
+}
+
+String _formatJamAntar(dynamic jam) {
+  if (jam == null || jam.toString().isEmpty) return '';
+  final s = jam.toString();
+  return s.length >= 5 ? s.substring(0, 5) : s;
+}
+
+Color _statusColor(String? status) {
+  switch (status) {
+    case 'pending':  return const Color(0xFFF39C12);
+    case 'diterima': return const Color(0xFF3498DB);
+    case 'diproses': return const Color(0xFFEE8B2E);
+    case 'selesai':  return const Color(0xFF0FBC5F);
+    case 'batal':    return const Color(0xFFE74C3C);
+    default:         return Colors.grey;
+  }
+}
+
+String _statusLabel(String? status) {
+  switch (status) {
+    case 'pending':  return 'Pending';
+    case 'diterima': return 'Diterima';
+    case 'diproses': return 'Proses';
+    case 'selesai':  return 'Selesai';
+    case 'batal':    return 'Batal';
+    default:         return status ?? '-';
+  }
+}
+
+IconData _statusIcon(String? status) {
+  switch (status) {
+    case 'pending':  return Icons.hourglass_empty_rounded;
+    case 'diterima': return Icons.thumb_up_rounded;
+    case 'diproses': return Icons.local_fire_department_rounded;
+    case 'selesai':  return Icons.check_circle_rounded;
+    case 'batal':    return Icons.cancel_rounded;
+    default:         return Icons.help_outline;
+  }
+}
+
+// ================================================================
+// BERANDA PAGE
+// ================================================================
 class BerandaPage extends StatefulWidget {
   final void Function(int? idPesanan)? onLihatDetail;
   const BerandaPage({super.key, this.onLihatDetail});
@@ -33,7 +113,6 @@ class BerandaPageState extends State<BerandaPage> {
   int _rating = 5;
   bool _isSubmittingUlasan = false;
 
-  // Scroll controller untuk auto-scroll
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -126,7 +205,6 @@ class BerandaPageState extends State<BerandaPage> {
     }
   }
 
-  // Getter untuk menu terfilter
   List<MenuModel> get _menuTerfilter {
     if (_searchQuery.isEmpty) return _semuaMenu;
     return _semuaMenu
@@ -213,25 +291,96 @@ class BerandaPageState extends State<BerandaPage> {
     });
   }
 
-  // Method untuk menangani pencarian saat tombol search ditekan
   void _onSearchSubmitted(String value) {
     setState(() {
       _searchQuery = value;
     });
     
-    // Auto-scroll ke bagian menu jika ada pencarian
     if (value.isNotEmpty && _scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 10), () {
+      Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
             500,
-            duration: const Duration(milliseconds: 10),
+            duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
         }
       });
     }
   }
+
+  // ================================================================
+// METHOD UNTUK MENAMPILKAN DETAIL PESANAN (POPUP) - VERSI PERBAIKAN
+// ================================================================
+void _showDetailPesanan(Map<String, dynamic> pesanan) {
+  if (!mounted) return;
+  showDialog(
+    context: context,
+    barrierColor: Colors.black54,
+    builder: (_) => _CustomerDetailDialog(pesanan: pesanan),
+  );
+}
+
+void _keDetailPesanan(int? idPesanan) async {
+  if (idPesanan == null || !mounted) return;
+  
+  // Tampilkan loading
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(
+      child: CircularProgressIndicator(color: Color(0xFFD05122)),
+    ),
+  );
+
+  try {
+    // Konversi ke int dengan aman
+    final int id = int.tryParse(idPesanan.toString()) ?? 0;
+    if (id == 0) throw Exception('ID Pesanan tidak valid');
+    
+    final detail = await ApiService.getDetailPesanan(id);
+    
+    if (!mounted) return;
+    Navigator.pop(context); // Tutup loading
+    
+    final pesananData = {
+      'id_pesanan': int.tryParse(detail['id_pesanan'].toString()) ?? 0,
+      'customer_name': detail['customer_name']?.toString() ?? 'Customer',
+      'customer_alamat': detail['customer_alamat']?.toString() ?? 'Alamat tidak tersedia',
+      'status': detail['status']?.toString() ?? 'pending',
+      'tgl_pesan': detail['tgl_pesan']?.toString() ?? DateTime.now().toIso8601String(),
+      'tgl_antar': detail['tgl_antar']?.toString(),
+      'jam_antar': detail['jam_antar']?.toString(),
+      'total_harga': double.tryParse(detail['total_harga'].toString()) ?? 0,
+      'metode_bayar': detail['metode_bayar']?.toString() ?? detail['metode']?.toString() ?? '',
+      'catatan': detail['catatan']?.toString() ?? '',
+      'items': (detail['items'] as List<dynamic>?)?.map((item) {
+        return {
+          'id_item': int.tryParse(item['id_item'].toString()) ?? 0,
+          'id_menu': int.tryParse(item['id_menu'].toString()) ?? 0,
+          'nama': item['nama']?.toString() ?? '-',
+          'jumlah': int.tryParse(item['jumlah'].toString()) ?? 0,
+          'harga_satuan': double.tryParse(item['harga_satuan'].toString()) ?? 0,
+        };
+      }).toList() ?? [],
+    };
+    
+    if (mounted) _showDetailPesanan(pesananData);
+    
+  } catch (e) {
+    if (mounted) {
+      Navigator.pop(context); // Tutup loading jika error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memuat detail pesanan: $e',
+              style: GoogleFonts.alexandria(color: Colors.white)),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+}
 
   @override
   void dispose() {
@@ -243,8 +392,7 @@ class BerandaPageState extends State<BerandaPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).padding.bottom +
-        kBottomNavigationBarHeight;
+    final bottomPad = MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight;
 
     return Column(
       children: [
@@ -258,14 +406,12 @@ class BerandaPageState extends State<BerandaPage> {
               children: [
                 const SizedBox(height: 16),
 
-                // SEARCH BAR
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: _buildSearchBar(),
                 ),
                 const SizedBox(height: 16),
 
-                // INFORMASI JUMLAH HASIL PENCARIAN
                 if (_searchQuery.isNotEmpty && !_isLoadingMenu)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 26),
@@ -280,7 +426,6 @@ class BerandaPageState extends State<BerandaPage> {
                 
                 const SizedBox(height: 8),
 
-                // TRACKING PESANAN
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: Text(
@@ -294,11 +439,12 @@ class BerandaPageState extends State<BerandaPage> {
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
-                  child: _TrackingCard(onLihatDetail: widget.onLihatDetail),
+                  child: _TrackingCard(
+                    onLihatDetail: _keDetailPesanan, // ← TERHUBUNG KE POPUP
+                  ),
                 ),
                 const SizedBox(height: 24),
 
-                // MENU TERLARIS
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: Text(
@@ -320,23 +466,19 @@ class BerandaPageState extends State<BerandaPage> {
                           ? const SizedBox()
                           : ListView.builder(
                               scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 26),
+                              padding: const EdgeInsets.symmetric(horizontal: 26),
                               itemCount: _menuTerlaris.length,
                               itemBuilder: (_, i) => Padding(
                                 padding: const EdgeInsets.only(right: 16),
                                 child: GestureDetector(
-                                  onTap: () =>
-                                      _keDetailMenu(_menuTerlaris[i]),
-                                  child: _MenuTerlarisCard(
-                                      menu: _menuTerlaris[i]),
+                                  onTap: () => _keDetailMenu(_menuTerlaris[i]),
+                                  child: _MenuTerlarisCard(menu: _menuTerlaris[i]),
                                 ),
                               ),
                             ),
                 ),
                 const SizedBox(height: 24),
 
-                // MENU TERSEDIA / HASIL PENCARIAN
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: Row(
@@ -395,8 +537,7 @@ class BerandaPageState extends State<BerandaPage> {
                   )
                 else if (_errorMenu != null)
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 26, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
                     child: Column(children: [
                       Icon(Icons.wifi_off_rounded,
                           color: Colors.grey.shade400, size: 40),
@@ -441,7 +582,6 @@ class BerandaPageState extends State<BerandaPage> {
                     ),
                   )
                 else if (_menuTerfilter.isEmpty)
-                  // PESAN MENU TIDAK DITEMUKAN
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 32),
                     child: Column(
@@ -504,8 +644,7 @@ class BerandaPageState extends State<BerandaPage> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
@@ -519,7 +658,6 @@ class BerandaPageState extends State<BerandaPage> {
                   ),
                 const SizedBox(height: 24),
 
-                // ULASAN
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: Row(
@@ -558,16 +696,14 @@ class BerandaPageState extends State<BerandaPage> {
                   )
                 else if (_errorUlasan != null)
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 26, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 8),
                     child: Text(_errorUlasan!,
                         style: GoogleFonts.alexandria(
                             color: Colors.grey, fontSize: 12)),
                   )
                 else if (_daftarUlasan.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 26, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 8),
                     child: Text('Belum ada ulasan.',
                         style: GoogleFonts.alexandria(
                             color: Colors.grey, fontSize: 13)),
@@ -579,13 +715,11 @@ class BerandaPageState extends State<BerandaPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 26),
                     itemCount: _daftarUlasan.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) =>
-                        _UlasanCard(ulasan: _daftarUlasan[i]),
+                    itemBuilder: (_, i) => _UlasanCard(ulasan: _daftarUlasan[i]),
                   ),
 
                 const SizedBox(height: 24),
 
-                // FORM ULASAN
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: _buildFormUlasan(),
@@ -599,7 +733,6 @@ class BerandaPageState extends State<BerandaPage> {
     );
   }
 
-  // HEADER
   Widget _buildHeader(BuildContext context) {
     final statusBarH = MediaQuery.of(context).padding.top;
     return Container(
@@ -665,8 +798,7 @@ class BerandaPageState extends State<BerandaPage> {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: const Color(0xFFD05122),
-                  child: const Icon(Icons.person,
-                      color: Colors.white, size: 28),
+                  child: const Icon(Icons.person, color: Colors.white, size: 28),
                 ),
               ),
             ),
@@ -676,7 +808,6 @@ class BerandaPageState extends State<BerandaPage> {
     );
   }
 
-  // SEARCH BAR - dengan onSubmitted
   Widget _buildSearchBar() {
     return Container(
       height: 45,
@@ -696,9 +827,9 @@ class BerandaPageState extends State<BerandaPage> {
           Expanded(
             child: TextField(
               controller: _searchController,
-              onSubmitted: _onSearchSubmitted, // ← Dipanggil saat tombol search ditekan
+              onSubmitted: _onSearchSubmitted,
               textAlignVertical: TextAlignVertical.center,
-              textInputAction: TextInputAction.search, // ← Mengubah tombol menjadi "Search"
+              textInputAction: TextInputAction.search,
               style: GoogleFonts.lora(
                 color: const Color(0xFF1A1818),
                 fontSize: 14,
@@ -721,7 +852,6 @@ class BerandaPageState extends State<BerandaPage> {
           const SizedBox(width: 10),
           GestureDetector(
             onTap: () {
-              // Submit pencarian saat icon search ditekan
               _onSearchSubmitted(_searchController.text);
             },
             child: Container(
@@ -746,7 +876,6 @@ class BerandaPageState extends State<BerandaPage> {
     );
   }
 
-  // FORM ULASAN
   Widget _buildFormUlasan() {
     return Container(
       width: double.infinity,
@@ -818,17 +947,12 @@ class BerandaPageState extends State<BerandaPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   gradient: _isSubmittingUlasan
-                      ? const LinearGradient(
-                          colors: [Colors.grey, Colors.grey])
+                      ? const LinearGradient(colors: [Colors.grey, Colors.grey])
                       : const LinearGradient(colors: [
                           Color(0xFFD05122),
                           Color(0xFFEE8B2E),
                           Color(0xFFFBA839),
-                        ], stops: [
-                          0.18,
-                          0.61,
-                          0.85
-                        ]),
+                        ], stops: [0.18, 0.61, 0.85]),
                 ),
                 child: Center(
                   child: _isSubmittingUlasan
@@ -862,8 +986,7 @@ class BerandaPageState extends State<BerandaPage> {
                 ),
                 child: Center(
                   child: Text('Batal',
-                      style:
-                          GoogleFonts.lora(color: Colors.white, fontSize: 18)),
+                      style: GoogleFonts.lora(color: Colors.white, fontSize: 18)),
                 ),
               ),
             ),
@@ -1298,24 +1421,519 @@ class _TrackingCardState extends State<_TrackingCard> {
               ]),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () =>
-                  widget.onLihatDetail?.call(p['id_pesanan'] as int?),
-              child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20)),
-                  child: Text('Lihat Detail',
-                      style: GoogleFonts.alexandria(
-                          color: const Color(0xFFD05122),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold))),
-            ),
+            // Di dalam _buildAktif() method, ganti GestureDetector untuk Lihat Detail
+GestureDetector(
+  onTap: () {
+    final rawId = p['id_pesanan'];
+    final int idPesanan = int.tryParse(rawId.toString()) ?? 0;
+    if (widget.onLihatDetail != null && idPesanan > 0) {
+      widget.onLihatDetail!(idPesanan);
+    }
+  },
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20)),
+    child: Text('Lihat Detail',
+        style: GoogleFonts.alexandria(
+            color: const Color(0xFFD05122),
+            fontSize: 11,
+            fontWeight: FontWeight.bold)),
+  ),
+),
           ],
         ),
       ],
+    );
+  }
+}
+
+// ================================================================
+// DIALOG DETAIL PESANAN (POPUP)
+// ================================================================
+class _CustomerDetailDialog extends StatelessWidget {
+  final Map<String, dynamic> pesanan;
+  const _CustomerDetailDialog({required this.pesanan});
+
+  static const _timelineSteps = [
+    {'key': 'pending',  'label': 'Pending'},
+    {'key': 'diterima', 'label': 'Diterima'},
+    {'key': 'diproses', 'label': 'Diproses'},
+    {'key': 'selesai',  'label': 'Selesai'},
+  ];
+
+  int _currentStepIndex(String? status) {
+    switch (status) {
+      case 'pending':  return 0;
+      case 'diterima': return 1;
+      case 'diproses': return 2;
+      case 'selesai':  return 3;
+      default:         return -1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = pesanan['status'] as String?;
+    final color = _statusColor(status);
+    final currentStep = _currentStepIndex(status);
+    final isBatal = status == 'batal';
+    final alamat = pesanan['customer_alamat'] ?? 'Alamat tidak tersedia';
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFEE8B2E),
+                  Color(0xFFD05122),
+                  Color(0xFFAC3715),
+                ],
+                stops: [0.17, 0.44, 0.79],
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Detail Pesanan',
+                          style: GoogleFonts.alexandria(
+                              fontSize: 12, color: Colors.white70)),
+                      Text('#${pesanan['id_pesanan']}',
+                          style: GoogleFonts.alexandria(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded,
+                      color: Colors.white, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+
+          // Body
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.65,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isBatal) ...[
+                    const Text('Status Pesanan',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey)),
+                    const SizedBox(height: 10),
+                    _CustomerTimelineWidget(
+                        steps: _timelineSteps, currentStep: currentStep),
+                    const SizedBox(height: 20),
+                  ],
+                  const Text('Info Pesanan',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey)),
+                  const SizedBox(height: 10),
+                  _CustomerInfoGridWidget(items: [
+                    _InfoItemData(
+                        icon: Icons.payment_rounded,
+                        label: 'Metode Bayar',
+                        value: pesanan['metode_bayar']?.toString() ?? '-'),
+                    _InfoItemData(
+                        icon: Icons.calendar_today_rounded,
+                        label: 'Tanggal',
+                        value: _formattedDate(pesanan['tgl_pesan'])),
+                    _InfoItemData(
+                        icon: Icons.info_outline_rounded,
+                        label: 'Status',
+                        value: _statusLabel(status),
+                        valueColor: color),
+                    _InfoItemData(
+                        icon: Icons.location_on_rounded,
+                        label: 'Alamat',
+                        value: alamat,
+                        valueColor: const Color(0xFFD05122)),
+                    _InfoItemData(
+                        icon: Icons.event_available_rounded,
+                        label: 'Tgl Antar',
+                        value: _formatTglAntar(pesanan['tgl_antar'])),
+                    _InfoItemData(
+                        icon: Icons.access_time_rounded,
+                        label: 'Jam Antar',
+                        value: _formatJamAntar(pesanan['jam_antar'])
+                                .isNotEmpty
+                            ? _formatJamAntar(pesanan['jam_antar'])
+                            : '-'),
+                  ]),
+                  if (pesanan['catatan'] != null &&
+                      pesanan['catatan'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFFCC02)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.sticky_note_2_outlined,
+                              size: 16, color: Color(0xFFF39C12)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                                pesanan['catatan'].toString(),
+                                style: GoogleFonts.alexandria(
+                                    fontSize: 12,
+                                    color: const Color(0xFF7D5A00))),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  const Text('Item Pesanan',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade200),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: [
+                        ...(pesanan['items'] as List<dynamic>? ?? [])
+                            .asMap()
+                            .entries
+                            .map((e) => _ItemRowWidget(
+                                  item: e.value,
+                                  isLast: e.key ==
+                                      ((pesanan['items'] as List<dynamic>?)?.length ?? 0) - 1,
+                                )),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFAFAFA),
+                            borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(10)),
+                            border: Border(
+                                top: BorderSide(color: Colors.grey.shade200)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Total',
+                                  style: GoogleFonts.alexandria(
+                                      fontSize: 13, fontWeight: FontWeight.bold)),
+                              Text(
+                                _formattedPrice(pesanan['total_harga'] ?? 0),
+                                style: GoogleFonts.alexandria(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFD05122)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (status == 'selesai')
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F8EF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle_rounded,
+                              color: Color(0xFF0FBC5F), size: 18),
+                          const SizedBox(width: 8),
+                          Text('Pesanan telah selesai',
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 13,
+                                  color: const Color(0xFF0FBC5F),
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    )
+                  else if (status == 'batal')
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEB),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.cancel_rounded,
+                              color: Colors.red, size: 18),
+                          const SizedBox(width: 8),
+                          Text('Pesanan telah dibatalkan',
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 13,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // Close button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD05122),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text('Tutup',
+                    style: GoogleFonts.alexandria(
+                        fontSize: 14, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Timeline Widget
+class _CustomerTimelineWidget extends StatelessWidget {
+  final List<Map<String, String?>> steps;
+  final int currentStep;
+  const _CustomerTimelineWidget(
+      {required this.steps, required this.currentStep});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: steps.asMap().entries.map((e) {
+        final i = e.key;
+        final step = e.value;
+        final isDone = i < currentStep;
+        final isActive = i == currentStep;
+        final isLast = i == steps.length - 1;
+
+        return Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDone
+                            ? const Color(0xFF0FBC5F)
+                            : isActive
+                                ? const Color(0xFFD05122)
+                                : Colors.grey.shade200,
+                        border: isActive
+                            ? Border.all(
+                                color: const Color(0xFFD05122), width: 2)
+                            : null,
+                      ),
+                      child: Icon(
+                        isDone
+                            ? Icons.check_rounded
+                            : isActive
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                        size: 14,
+                        color: isDone || isActive
+                            ? Colors.white
+                            : Colors.grey.shade400,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      step['label'] ?? '',
+                      style: GoogleFonts.alexandria(
+                        fontSize: 9,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isDone
+                            ? const Color(0xFF0FBC5F)
+                            : isActive
+                                ? const Color(0xFFD05122)
+                                : Colors.grey.shade400,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 18),
+                    color: i < currentStep
+                        ? const Color(0xFF0FBC5F)
+                        : Colors.grey.shade200,
+                  ),
+                ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// Info Item Data
+class _InfoItemData {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+  const _InfoItemData({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+}
+
+// Info Grid Widget
+class _CustomerInfoGridWidget extends StatelessWidget {
+  final List<_InfoItemData> items;
+  const _CustomerInfoGridWidget({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 2.2,
+      children: items
+          .map((item) => Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F8F8),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(item.icon, size: 14, color: Colors.grey[500]),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(item.label,
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 10,
+                                  color: Colors.grey[500]),
+                              overflow: TextOverflow.ellipsis),
+                          Text(item.value,
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      item.valueColor ?? Colors.black87),
+                              overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ))
+          .toList(),
+    );
+  }
+}
+
+// Item Row Widget
+class _ItemRowWidget extends StatelessWidget {
+  final dynamic item;
+  final bool isLast;
+  const _ItemRowWidget({required this.item, required this.isLast});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        border: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28, height: 28,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF0E8),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Center(
+              child: Text('${item['jumlah']}x',
+                  style: GoogleFonts.alexandria(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFD05122))),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(item['nama'] ?? '-',
+                style: GoogleFonts.alexandria(fontSize: 13)),
+          ),
+          Text(
+            _formattedPrice(item['harga_satuan'] ?? 0),
+            style: GoogleFonts.alexandria(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
     );
   }
 }
