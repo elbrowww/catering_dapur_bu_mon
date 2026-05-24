@@ -171,148 +171,145 @@ class AktivitasPageState extends State<AktivitasPage> {
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom +
         kBottomNavigationBarHeight;
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          _buildHeader(),
-          _buildTitleFilter(),
+          // ============================================================
+          // HEADER FIXED (TIDAK IKUT SCROLL)
+          // ============================================================
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFEE8B2E),
+                  Color(0xFFD05122),
+                  Color(0xFFAC3715),
+                ],
+                stops: [0.17, 0.44, 0.79],
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x3F000000),
+                  blurRadius: 4,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, statusBarHeight + 16, 20, 20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.receipt_long_rounded,
+                        color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Aktivitas Saya',
+                            style: GoogleFonts.alexandria(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                        Text('Lihat riwayat pesanan Anda',
+                            style: GoogleFonts.alexandria(
+                                fontSize: 12, color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ============================================================
+          // KONTEN YANG DISCROLL (Filter dan List Pesanan)
+          // ============================================================
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadPesanan,
               color: const Color(0xFFD05122),
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFFD05122)))
-                  : _error != null
-                      ? _buildError()
-                      : _filteredList.isEmpty
-                          ? _buildEmptyState()
-                          : ListView.builder(
-                              padding: EdgeInsets.fromLTRB(
-                                  16, 16, 16, bottomPad),
-                              itemCount: _filteredList.length,
-                              itemBuilder: (_, i) => Padding(
-                                padding:
-                                    const EdgeInsets.only(bottom: 12),
-                                child: _CustomerOrderCard(
-                                  pesanan: _filteredList[i],
-                                  onTap: () =>
-                                      _showDetail(_filteredList[i]),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    // ── JUDUL + FILTER ─────────────────────────────────────
+                    Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Aktivitas Pesanan',
+                              style: GoogleFonts.alexandria(
+                                  fontSize: 20, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          // Filter scroll horizontal
+                          SizedBox(
+                            height: 42,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: List.generate(
+                                  _filterLabels.length,
+                                  (i) => GestureDetector(
+                                    onTap: () => setState(() => _selectedFilter = i),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: i == _selectedFilter
+                                            ? const Color(0xFFEE8B2E)
+                                            : Colors.white,
+                                        border: Border.all(
+                                            width: 1.5, color: const Color(0xFFDB6626)),
+                                        borderRadius: BorderRadius.circular(22),
+                                      ),
+                                      child: Text(
+                                        _filterLabels[i],
+                                        style: GoogleFonts.lora(
+                                          fontSize: 12,
+                                          fontWeight: i == _selectedFilter
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
+                                          color: i == _selectedFilter
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Header gradient ──────────────────────────────────────────
-  Widget _buildHeader() {
-    final statusBarH = MediaQuery.of(context).padding.top;
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, statusBarH + 16, 20, 20),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFFEE8B2E),
-            Color(0xFFD05122),
-            Color(0xFFAC3715),
-          ],
-          stops: [0.17, 0.44, 0.79],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x3F000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.receipt_long_rounded,
-                color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Aktivitas Saya',
-                    style: GoogleFonts.alexandria(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-                Text('Lihat riwayat pesanan Anda',
-                    style: GoogleFonts.alexandria(
-                        fontSize: 12, color: Colors.white70)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Judul + Filter row ───────────────────────────────────────
-  Widget _buildTitleFilter() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Aktivitas Pesanan',
-              style: GoogleFonts.alexandria(
-                  fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(
-                _filterLabels.length,
-                (i) => GestureDetector(
-                  onTap: () => setState(() => _selectedFilter = i),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: i == _selectedFilter
-                          ? const Color(0xFFEE8B2E)
-                          : Colors.transparent,
-                      border: Border.all(
-                          width: 1.5, color: const Color(0xFFDB6626)),
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    child: Text(
-                      _filterLabels[i],
-                      style: GoogleFonts.lora(
-                        fontSize: 12,
-                        fontWeight: i == _selectedFilter
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: i == _selectedFilter
-                            ? Colors.white
-                            : Colors.black,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: 4),
+
+                    // ── CONTENT (Loading, Error, Empty, atau List Pesanan) ──
+                    _buildContent(bottomPad),
+                    
+                    const SizedBox(height: 20),
+                  ],
                 ),
               ),
             ),
@@ -322,50 +319,81 @@ class AktivitasPageState extends State<AktivitasPage> {
     );
   }
 
-  Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 12),
-          Text(_error!,
-              style: GoogleFonts.alexandria(
-                  color: Colors.grey, fontSize: 14),
-              textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadPesanan,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD05122),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text('Coba Lagi',
-                style: GoogleFonts.alexandria(color: Colors.white)),
+  Widget _buildContent(double bottomPad) {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 48),
+          child: CircularProgressIndicator(
+            color: Color(0xFFD05122),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      );
+    }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 60),
-        child: Column(
-          children: [
-            Icon(Icons.receipt_long_outlined,
-                size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text('Tidak ada pesanan',
-                style: GoogleFonts.alexandria(
-                    fontSize: 16, color: Colors.grey[500])),
-            const SizedBox(height: 8),
-            Text('Belum ada pesanan yang dibuat',
-                style: GoogleFonts.alexandria(
-                    fontSize: 12, color: Colors.grey[400])),
-          ],
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              Text(_error!,
+                  style: GoogleFonts.alexandria(
+                      color: Colors.grey, fontSize: 14),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadPesanan,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD05122),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text('Coba Lagi',
+                    style: GoogleFonts.alexandria(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_filteredList.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Column(
+            children: [
+              Icon(Icons.receipt_long_outlined,
+                  size: 64, color: Colors.grey[300]),
+              const SizedBox(height: 16),
+              Text('Tidak ada pesanan',
+                  style: GoogleFonts.alexandria(
+                      fontSize: 16, color: Colors.grey[500])),
+              const SizedBox(height: 8),
+              Text('Belum ada pesanan yang dibuat',
+                  style: GoogleFonts.alexandria(
+                      fontSize: 12, color: Colors.grey[400])),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // List Pesanan
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPad + 80),
+      itemCount: _filteredList.length,
+      itemBuilder: (_, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _CustomerOrderCard(
+          pesanan: _filteredList[i],
+          onTap: () => _showDetail(_filteredList[i]),
         ),
       ),
     );
