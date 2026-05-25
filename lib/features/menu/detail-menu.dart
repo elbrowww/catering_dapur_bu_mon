@@ -75,6 +75,7 @@ class _DetailMenuPageState extends State<DetailMenuPage> {
         imageUrl: widget.menu.foto,
         jumlah: _jumlah,
         idMenu: widget.menu.idMenu,
+        stok: widget.menu.stok,
       );
 
       if (mounted) {
