@@ -5,7 +5,7 @@ class DioHelper {
   static late Dio _dio;
 
   // IP utama Server - Ganti di sini saja jika berpindah jaringan WiFi/komputer
-  static const String ipAddress = '172.16.104.34';
+  static const String ipAddress = '192.168.1.3';
 
   static const String baseUrl = 'http://$ipAddress/dapur_bu_mon/api/';
   static const String imageBaseUrl = 'http://$ipAddress/dapur_bu_mon/api/';

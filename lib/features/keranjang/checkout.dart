@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:catering_dapur_bu_mon/services/api_service.dart';
@@ -343,7 +344,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                // ── Banner tipe pesanan (simpel) ──────────────
+                // ── Banner tipe pesanan ──────────────────────
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -496,7 +497,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Tipe pengiriman
                         Row(children: [
                           Expanded(
                             child: _TipeBtn(
@@ -520,7 +520,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ]),
                         const SizedBox(height: 12),
 
-                        // Pilih tanggal
                         GestureDetector(
                           onTap: _pilihTanggal,
                           child: _PickerRow(
@@ -536,7 +535,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ),
                         const SizedBox(height: 8),
 
-                        // Pilih jam
                         GestureDetector(
                           onTap: _pilihWaktu,
                           child: _PickerRow(
@@ -657,8 +655,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                                 const Color(0xFFD05122))),
                                     const SizedBox(height: 8),
                                     _RekeningRow('Bank', _namaBank),
-                                    _RekeningRow(
-                                        'No. Rek', _noRekening),
+                                    _RekeningRow('No. Rek', _noRekening,
+                                        copyable: true),
                                     _RekeningRow(
                                         'Atas Nama', _namaRekening),
                                   ],
@@ -1053,7 +1051,8 @@ class _PickerRow extends StatelessWidget {
 class _RekeningRow extends StatelessWidget {
   final String label;
   final String value;
-  const _RekeningRow(this.label, this.value);
+  final bool copyable;
+  const _RekeningRow(this.label, this.value, {this.copyable = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1072,6 +1071,27 @@ class _RekeningRow extends StatelessWidget {
         Text(value,
             style: GoogleFonts.alexandria(
                 fontSize: 11, fontWeight: FontWeight.bold)),
+        if (copyable) ...[
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label disalin!',
+                      style: GoogleFonts.alexandria(color: Colors.white)),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            },
+            child: const Icon(Icons.copy_outlined,
+                size: 14, color: Color(0xFFD05122)),
+          ),
+        ],
       ]),
     );
   }
